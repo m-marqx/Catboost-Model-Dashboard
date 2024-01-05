@@ -90,3 +90,32 @@ class Liquidation:
         bankrupt = entry / (1 - self._initial_margin(leverage, funding_rate))
         liq = bankrupt - (entry * (self.maintenance_margin - funding_rate))
         return liq, bankrupt
+
+    def calculate_long(
+        self,
+        entry: float,
+        leverage: float,
+        funding_rate: float,
+    ) -> tuple:  #! Warning: this method isn't accurate
+        """
+        Calculates the liquidation value and bankrupt price for a long
+        position.
+
+        Parameters:
+        ----------
+        entry : float
+            The entry price.
+        leverage : float
+            The leverage value.
+        funding_rate : float
+            The funding rate.
+
+        Returns:
+        -------
+        tuple
+            The liquidation value and bankrupt price.
+        """
+        bankrupt = entry / (1 + self._initial_margin(leverage, funding_rate))
+        liq = bankrupt + (entry * (self.maintenance_margin + funding_rate))
+
+        return liq, bankrupt
