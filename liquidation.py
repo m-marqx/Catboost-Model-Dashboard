@@ -63,3 +63,30 @@ class Liquidation:
             The initial margin value.
         """
         return (1 + funding_rate) / leverage - self.taker_fee * 2
+
+    def calculate_short(
+        self,
+        entry: float,
+        leverage: float,
+        funding_rate: float,
+    ) -> tuple:
+        """
+        Calculates the liquidation value for a short position.
+
+        Parameters:
+        ----------
+        entry : float
+            The entry price.
+        leverage : float
+            The leverage value.
+        funding_rate : float
+            The funding rate.
+
+        Returns:
+        -------
+        float
+            The liquidation value.
+        """
+        bankrupt = entry / (1 - self._initial_margin(leverage, funding_rate))
+        liq = bankrupt - (entry * (self.maintenance_margin - funding_rate))
+        return liq, bankrupt
