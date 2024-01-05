@@ -11,6 +11,7 @@ class Liquidation:
     ----------
     taker_fee : float
         The taker fee percentage.
+
     maintenance_margin : float
         The maintenance margin percentage.
 
@@ -18,8 +19,10 @@ class Liquidation:
     -------
     _initial_margin(leverage, funding_rate)
         Calculates the initial margin.
+
     calc_sell(entry, leverage, funding_rate)
         Calculates the liquidation value for a sell order.
+
     calc_buy(entry, leverage, funding_rate)
         Calculates the liquidation value and bankrupt price for a buy
         order.
@@ -38,6 +41,7 @@ class Liquidation:
         taker_fee : float, optional
             The taker fee percentage, expressed as a decimal.
             (default: 0.05)
+
         maintenance_margin : float, optional
             The maintenance margin percentage, expressed as a
             decimal.
@@ -54,6 +58,7 @@ class Liquidation:
         ----------
         leverage : float
             The leverage value.
+
         funding_rate : float
             The funding rate.
 
@@ -77,8 +82,10 @@ class Liquidation:
         ----------
         entry : float
             The entry price.
+
         leverage : float
             The leverage value.
+
         funding_rate : float
             The funding rate.
 
@@ -105,8 +112,10 @@ class Liquidation:
         ----------
         entry : float
             The entry price.
+
         leverage : float
             The leverage value.
+
         funding_rate : float
             The funding rate.
 
