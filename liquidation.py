@@ -46,3 +46,20 @@ class Liquidation:
         self.taker_fee = taker_fee / 100
         self.maintenance_margin = (maintenance_margin / 100) - self.taker_fee
 
+    def _initial_margin(self, leverage: float, funding_rate: float) -> float:
+        """
+        Calculates the initial margin.
+
+        Parameters:
+        ----------
+        leverage : float
+            The leverage value.
+        funding_rate : float
+            The funding rate.
+
+        Returns:
+        -------
+        float
+            The initial margin value.
+        """
+        return (1 + funding_rate) / leverage - self.taker_fee * 2
