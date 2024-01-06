@@ -2,6 +2,7 @@
 Module for calculating liquidation values.
 """
 
+from typing import Literal
 
 class Liquidation:
     """
@@ -32,6 +33,7 @@ class Liquidation:
         self,
         taker_fee: float = 0.05,
         maintenance_margin: float = 0.40,
+        return_type: Literal['both', 'liq', 'bankrupt'] = 'bankrupt',
     ) -> None:
         """
         Initialize a Liquidation object.
@@ -49,6 +51,7 @@ class Liquidation:
         """
         self.taker_fee = taker_fee / 100
         self.maintenance_margin = (maintenance_margin / 100) - self.taker_fee
+        self.return_type = return_type
 
     def _initial_margin(self, leverage: float, funding_rate: float) -> float:
         """
@@ -96,7 +99,11 @@ class Liquidation:
         """
         bankrupt = entry / (1 - self._initial_margin(leverage, funding_rate))
         liq = bankrupt - (entry * (self.maintenance_margin - funding_rate))
-        return liq, bankrupt
+        if self.return_type == 'both':
+            return liq, bankrupt
+        if self.return_type == 'liq':
+            return liq
+        return bankrupt
 
     def calculate_long(
         self,
@@ -127,4 +134,8 @@ class Liquidation:
         bankrupt = entry / (1 + self._initial_margin(leverage, funding_rate))
         liq = bankrupt + (entry * (self.maintenance_margin + funding_rate))
 
-        return liq, bankrupt
+        if self.return_type == 'both':
+            return liq, bankrupt
+        if self.return_type == 'liq':
+            return liq
+        return bankrupt
