@@ -176,3 +176,107 @@ class CcxtAPI:
 
         return first_unix_time
 
+    def get_all_klines(
+        self,
+        until: int | None = None,
+        ignore_unsupported_exchanges: bool = False
+    ):
+        """
+        Fetch all K-line data for the specified symbol and interval
+        using a for loop.
+
+        Parameters:
+        -----------
+        until : None
+            The end time for fetching K-line data.
+        ignore_unsupported_exchanges : bool, optional
+            If True, ignore exchanges that do not support the specified
+            symbol.
+            (default: False).
+
+        Returns:
+        --------
+        CcxtAPI
+            Returns the CcxtAPI object with the fetched K-line data.
+        """
+        if ignore_unsupported_exchanges:
+            not_supported_types = None
+        else:
+            not_supported_types = (
+                type(ccxt.bittrex()),
+                type(ccxt.gemini()),
+                type(ccxt.huobi()),
+                type(ccxt.deribit()),
+                type(ccxt.hitbtc()),
+            )
+
+        if isinstance(self.exchange, not_supported_types):
+            raise ValueError(f"{self.exchange} is not supported")
+
+        klines = []
+        klines_list = []
+
+        first_call = self._fetch_klines(self.since, self.max_multiplier)
+
+        if first_call:
+            first_unix_time = first_call[0][0]
+        else:
+            first_unix_time = self.get_since_value()
+            first_call = self._fetch_klines(first_unix_time, self.max_multiplier)
+
+
+        last_candle_interval = (
+            (
+                time.time() * 1000 - interval_to_milliseconds(self.interval)
+                if until is None
+                else until
+            )
+        )
+
+        if self.verbose:
+            start = time.perf_counter()
+            logging.info("Starting requests")
+
+        time_value = klines[-1][0] + 1 if klines else first_unix_time
+        time_delta = first_call[-1][0] - first_call[0][0]
+        step = time_delta + pd.Timedelta(self.interval).value / 1e+6
+        end_times = np.arange(time_value, last_candle_interval, step)
+
+        for current_start_time in end_times:
+            klines = self._fetch_klines(
+                int(current_start_time),
+                self.max_multiplier
+            )
+            if not klines:
+                break
+
+            klines_list.extend(klines)
+
+            if klines_list[-1][0] >= last_candle_interval:
+                if self.verbose:
+                    logging.info(
+                        "Qty: %d - Total: 100%% complete",
+                        len(klines_list)
+                    )
+                break
+
+            if self.verbose:
+
+                percentage = (
+                    (np.where(end_times == current_start_time)[0][0] + 1)
+                    / end_times.shape[0]
+                ) * 100
+                logging.info(
+                    "Qty: %d - Total: %.2f%% complete",
+                    len(klines_list), percentage
+                )
+
+
+        if self.verbose:
+            logging.info(
+                "Requests elapsed time: %s\n",
+                time.perf_counter() - start
+            )
+        self.klines_list = klines_list
+        return self
+
