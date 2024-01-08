@@ -131,3 +131,48 @@ class CcxtAPI:
             limit=limit,
         )
 
+    def get_since_value(self):
+        """
+        Search for the Unix timestamp of the first candle in the
+        historical K-line data.
+
+        This method iteratively fetches K-line data in reverse
+        chronological order and stops when it finds the first candle.
+        It can be used to determine the starting point for fetching
+        historical data.
+
+        Returns:
+        --------
+        int or None
+            The Unix timestamp of the first candle found, or None
+            if not found.
+        """
+        end_times = self.utils.get_end_times(
+            self.since,
+            self.max_multiplier
+        )
+
+        for index in range(0, len(end_times) - 1):
+            klines = self._fetch_klines(
+                since=int(end_times[index]),
+                limit=self.max_multiplier,
+            )
+            if self.verbose:
+                load_percentage = (index / (len(end_times) - 1)) * 100
+                logging.info(
+                    "Finding first candle time [%.2f%%]",
+                    load_percentage
+                )
+
+            if len(klines) > 0:
+                first_unix_time = klines[0][0]
+                if self.verbose:
+                    logging.info("Finding first candle time [100%]")
+                    logging.info(
+                        "First candle time found: %s\n",
+                        first_unix_time
+                    )
+                break
+
+        return first_unix_time
+
