@@ -123,3 +123,11 @@ class CcxtAPI:
                 level=logging.CRITICAL,
             )
 
+    def _fetch_klines(self, since, limit: int=None) -> list:
+        return self.exchange.fetch_ohlcv(
+            symbol=self.symbol,
+            timeframe=self.interval,
+            since=since,
+            limit=limit,
+        )
+
