@@ -76,3 +76,42 @@ class KlineTimes:
             "1M",
         ]
 
+    def calculate_max_multiplier(
+        self,
+        max_candle_limit: int = 1500,
+    ):
+        """
+        Calculate the maximum multiplier based on the interval.
+
+        Returns:
+        --------
+        int
+            The maximum multiplier.
+        """
+        if self.interval != "1M":
+
+            interval_hours = (
+                interval_to_milliseconds(self.interval)
+                / 1000
+                / 60
+                / 60
+            )
+
+            max_multiplier_limit = max_candle_limit
+            max_days_limit = 200
+
+            total_time_hours = (
+                interval_hours
+                * np.arange(max_multiplier_limit, 0, -1)
+            )
+
+            time_total_days = total_time_hours / 24
+
+            max_multiplier = max_multiplier_limit - np.argmax(
+                time_total_days <= max_days_limit
+            )
+        else:
+            max_multiplier = 6
+
+        return max_multiplier
+
