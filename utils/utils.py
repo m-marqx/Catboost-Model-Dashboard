@@ -215,3 +215,31 @@ class Statistics:
 
         return sharpe_ratio
 
+    def calculate_estimed_sortino_ratio(self) -> pd.Series:
+        """
+        Calculate the Sortino ratio of the strategy.
+
+        Returns
+        -------
+        pd.Series
+            A series containing the Sortino ratio values.
+
+        """
+        results = self.dataframe["Result"]
+        returns_annualized = (
+            results
+            .resample(self.time_span)
+        )
+
+        negative_results = self.dataframe.query("Result < 0")["Result"]
+        negative_returns_annualized = (
+            negative_results
+            .resample(self.time_span)
+        )
+
+        mean_excess = returns_annualized.mean() - self.risk_free_rate
+
+        sortino_ratio = mean_excess / negative_returns_annualized.std()
+
+        return sortino_ratio
+
