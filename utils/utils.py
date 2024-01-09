@@ -193,3 +193,25 @@ class Statistics:
 
         return self.dataframe
 
+    def calculate_estimed_sharpe_ratio(self) -> pd.Series:
+        """
+        Calculate the Sharpe ratio of the strategy.
+
+        Returns
+        -------
+        pd.Series
+            A series containing the Sharpe ratio values.
+
+        """
+        results = self.dataframe["Result"]
+        returns_annualized = (
+            results
+            .resample(self.time_span)
+        )
+
+        mean_excess = returns_annualized.mean() - self.risk_free_rate
+
+        sharpe_ratio = mean_excess / returns_annualized.std()
+
+        return sharpe_ratio
+
