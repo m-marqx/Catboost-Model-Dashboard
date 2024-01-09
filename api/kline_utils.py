@@ -115,3 +115,38 @@ class KlineTimes:
 
         return max_multiplier
 
+    def get_end_times(
+        self,
+        start_time=1597118400000,
+        max_candle_limit=1500,
+    ):
+        """
+        Get the end times for retrieving Kline data.
+
+        Parameters:
+        -----------
+        start_time : int, optional
+            The start time for retrieving Kline data in milliseconds.
+            (default: 1597118400000)
+
+        Returns:
+        --------
+        numpy.ndarray
+            The array of end times.
+        """
+        time_delta = time.time() * 1000 - start_time
+        time_delta_ratio = time_delta / interval_to_milliseconds(self.interval)
+        request_qty = (
+            time_delta_ratio
+            / self.calculate_max_multiplier(max_candle_limit)
+        )
+
+        end_times = (
+            np.arange(ceil(request_qty))
+            * (time_delta / request_qty)
+            + start_time
+        )
+        end_times = np.append(end_times, time.time() * 1000)
+
+        return end_times
+
