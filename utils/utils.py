@@ -136,3 +136,60 @@ class Statistics:
             stats_df = stats_df.reindex(columns=["Date"] + list(stats_df.columns[:-1]))
         return round(stats_df, precision)
 
+    def calculate_expected_value(self):
+        """
+        Calculate the expected value of the strategy.
+
+        Returns
+        -------
+        pd.DataFrame
+            A dataframe with calculated statistics, including gain count,
+            loss count, mean gain, mean loss, total gain, total loss,
+            total trade, win rate, loss rate, and expected value (EM).
+
+        """
+        if self.is_percent:
+            self.dataframe = self.dataframe * 100
+
+        gain = self.dataframe["Result"] > 0
+        loss = self.dataframe["Result"] < 0
+
+        self.dataframe["Gain_Count"] = np.where(gain, 1, 0)
+        self.dataframe["Loss_Count"] = np.where(loss, 1, 0)
+
+        self.dataframe["Gain_Count"] = self.dataframe["Gain_Count"].cumsum()
+        self.dataframe["Loss_Count"] = self.dataframe["Loss_Count"].cumsum()
+
+        query_gains = self.dataframe.query("Result > 0")["Result"]
+        query_loss = self.dataframe.query("Result < 0")["Result"]
+
+        self.dataframe["Mean_Gain"] = query_gains.expanding().mean()
+        self.dataframe["Mean_Loss"] = query_loss.expanding().mean()
+
+        self.dataframe["Mean_Gain"].fillna(method="ffill", inplace=True)
+        self.dataframe["Mean_Loss"].fillna(method="ffill", inplace=True)
+
+        self.dataframe["Total_Gain"] = (
+            np.where(gain, self.dataframe["Result"], 0)
+            .cumsum()
+        )
+
+        self.dataframe["Total_Loss"] = (
+            np.where(loss, self.dataframe["Result"], 0)
+            .cumsum()
+        )
+
+        total_trade = self.dataframe["Gain_Count"] + self.dataframe["Loss_Count"]
+        win_rate = self.dataframe["Gain_Count"] / total_trade
+        loss_rate = self.dataframe["Loss_Count"] / total_trade
+
+        self.dataframe["Total_Trade"] = total_trade
+        self.dataframe["Win_Rate"] = win_rate
+        self.dataframe["Loss_Rate"] = loss_rate
+
+        ev_gain = self.dataframe["Mean_Gain"] * self.dataframe["Win_Rate"]
+        ev_loss = self.dataframe["Mean_Loss"] * self.dataframe["Loss_Rate"]
+        self.dataframe["Expected_Value"] = ev_gain - abs(ev_loss)
+
+        return self.dataframe
+
