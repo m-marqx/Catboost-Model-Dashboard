@@ -57,3 +57,36 @@ def resample_calculate_payoff(
     )
     return payoff.dropna()
 
+def resample_calculate_expected_return(
+    series: pd.Series,
+    period: str = "W"
+) -> pd.DataFrame:
+    """
+    Calculate expected return using resampling method.
+
+    Parameters:
+        series (pd.Series): The input time series data.
+        period (str): The resampling period.
+        (default: "W" (weekly))
+
+    Returns:
+        pd.DataFrame: The calculated expected return.
+
+    """
+    rt = series.to_frame().diff().fillna(0)
+
+    win_rate = rt[rt > 0].fillna(0)
+    win_rate = win_rate.where(win_rate == 0, 1).astype("bool")
+    win_rate = (
+        win_rate.resample(period).sum()
+        / win_rate.resample(period).count()
+    )
+
+    rt_mean_pos = rt[rt > 0].resample(period).mean()
+    rt_mean_neg = abs(rt[rt < 0]).resample(period).mean()
+
+    expected_return = rt_mean_pos * win_rate - rt_mean_neg * (1 - win_rate)
+    expected_return = expected_return.astype("float32")
+
+    return expected_return.dropna()
+
