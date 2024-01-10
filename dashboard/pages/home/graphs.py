@@ -233,3 +233,128 @@ def rolling_calculate_win_rate(
     win_rate = pos_count / (pos_count + neg_count)
     return win_rate
 
+def display_linechart(
+    asset_source: pd.DataFrame,
+    return_source: pd.DataFrame,
+    validation_date: str | pd.Timestamp,
+    stat: str,
+    period: Literal["full", "test", "validation"] = "validation",
+    timePeriod: int | str = 30,
+    iqr_scales: None | list[float, float] = None,
+    get_data: bool = False,
+) -> px.line:
+    """
+    Display a line chart.
+
+    Parameters:
+        asset_source (pd.DataFrame): The asset source data.
+        return_source (pd.DataFrame): The return source data.
+        validation_date (str | pd.Timestamp): The validation date.
+        stat (str): The statistic to display on the chart.
+        period (Literal["full", "test", "validation"]): The period of
+        data to display.
+        (default: "validation")
+        timePeriod (int | str): The time period for calculations.
+        (default: 30)
+        iqr_scales (list[float, float]): The IQR scales for outlier
+        detection.
+        (default: [1.0, 1.5])
+        get_data (bool): Whether to return the calculated data.
+        (default: False)
+
+    Returns:
+        px.line: The line chart.
+
+    """
+    if iqr_scales is None:
+        iqr_scales = [1.0, 1.5]
+
+    timePeriod = int(timePeriod)
+    method = "rolling"
+
+    calculate_drawdown = (
+        resample_calculate_drawdown
+        if method == "resample"
+        else rolling_calculate_drawdown
+    )
+
+    calculate_payoff = (
+        resample_calculate_payoff
+        if method == "resample"
+        else rolling_calculate_payoff
+    )
+
+    calculate_expected_return = (
+        resample_calculate_expected_return
+        if method == "resample"
+        else rolling_calculate_expected_return
+    )
+
+    calculate_win_rate = (
+        resample_calculate_win_rate
+        if method == "resample"
+        else rolling_calculate_win_rate
+    )
+
+    asset_source = (
+        asset_source
+        .copy()
+        .reindex(return_source.index)
+        .rename('Asset')
+    )
+
+    match stat:
+        case "drawdown":
+            drawdown_returns = calculate_drawdown(return_source, timePeriod)
+
+            asset_drawdown = (
+                asset_source.resample(timePeriod).std() if method == "resample"
+                else asset_source.rolling(timePeriod).std()
+            )
+
+            result_df = pd.concat([drawdown_returns, asset_drawdown], axis=1)
+        case "expected_return":
+            result_df = calculate_expected_return(return_source, timePeriod)
+        case "payoff_sum":
+            result_df = calculate_payoff(return_source, "sum", timePeriod)
+        case "payoff_mean":
+            result_df = calculate_payoff(return_source, "mean", timePeriod)
+        case "winrate":
+            result_df = calculate_win_rate(return_source, timePeriod)
+
+    match period:
+        case "test":
+            result_df = result_df.loc[:validation_date]
+        case "validation":
+            result_df = result_df.loc[validation_date:]
+
+    if get_data:
+        return result_df
+
+    limits = {}
+
+    column = result_df.columns[0]
+
+    for scale in iqr_scales:
+        limits[f"upper_limit_{scale}"], limits[f"lower_limit_{scale}"] = (
+            DataHandler(result_df)
+            .calculate_outlier_values(column, iqr_scale=scale)
+        )
+        if stat == "drawdown":
+            limits[f"lower_limit_{scale}"] = 0
+
+    fig = px.line(result_df, width=650, title=str(stat))
+
+    line_params = dict(line_width=3, line_dash="dash", line_color="white")
+
+    for idx, key in enumerate(limits):
+        if idx < 2:
+            fig.add_hline(limits[key])
+        else:
+            fig.add_hline(limits[key], **line_params)
+
+    fig = (
+        fig.add_vline(x=validation_date, line_dash="dash", line_color="yellow")
+        .update_layout(title_x=0.5)
+    )
+    return fig
