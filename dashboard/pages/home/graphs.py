@@ -116,3 +116,25 @@ def resample_calculate_win_rate(
     )
     return win_rate
 
+def rolling_calculate_drawdown(
+    series: pd.Series,
+    period: int = 30,
+) -> pd.DataFrame:
+    """
+    Calculate drawdown using rolling method.
+
+    Parameters:
+        series (pd.Series): The input time series data.
+        period (int): The rolling period.
+        (default: 30)
+
+    Returns:
+        pd.DataFrame: The calculated drawdown.
+
+    """
+    result_df = series.to_frame()
+    result_df = result_df + 1
+    max_results = result_df.expanding(365).max()
+    result_df = (max_results - result_df) / max_results
+    return result_df.fillna(0).astype("float32").rolling(period).mean()
+
