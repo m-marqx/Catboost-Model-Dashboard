@@ -90,3 +90,29 @@ def resample_calculate_expected_return(
 
     return expected_return.dropna()
 
+def resample_calculate_win_rate(
+    series: pd.Series,
+    period: str = "W"
+) -> pd.DataFrame:
+    """
+    Calculate win rate using resampling method.
+
+    Parameters:
+        series (pd.Series): The input time series data.
+        period (str): The resampling period.
+        (default: "W" (weekly))
+
+    Returns:
+        pd.DataFrame: The calculated win rate.
+
+    """
+    rt = series.to_frame().diff().fillna(0)
+
+    win_rate = rt[rt > 0].fillna(0)
+    win_rate = win_rate.where(win_rate == 0, 1).astype("bool")
+    win_rate = (
+        win_rate.resample(period).sum()
+        / win_rate.resample(period).count()
+    )
+    return win_rate
+
