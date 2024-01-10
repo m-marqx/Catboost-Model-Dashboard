@@ -138,3 +138,37 @@ def rolling_calculate_drawdown(
     result_df = (max_results - result_df) / max_results
     return result_df.fillna(0).astype("float32").rolling(period).mean()
 
+def rolling_calculate_payoff(
+    series: pd.Series,
+    method: Literal["sum", "mean"] = "sum",
+    period: int = 30,
+) -> pd.DataFrame:
+    """
+    Calculate payoff using rolling method.
+
+    Parameters:
+        series (pd.Series): The input time series data.
+        method (Literal["sum", "mean"]): The method for calculating
+        payoff.
+        (default: "sum")
+        period (int): The rolling period.
+        (default: 30)
+
+    Returns:
+        pd.DataFrame: The calculated payoff.
+
+    """
+    rt = series.to_frame().diff().fillna(0)
+    pos_values = rt[rt > 0]
+    neg_values = abs(rt[rt < 0])
+
+    if method == "sum":
+        pos_values = pos_values.fillna(0).rolling(period).sum()
+        neg_values = neg_values.fillna(0).rolling(period).sum()
+    else:
+        pos_values = pos_values.ffill().rolling(period).mean().fillna(0)
+        neg_values = neg_values.ffill().rolling(period).mean().fillna(0)
+
+    payoff = pos_values / neg_values
+    return payoff.dropna()
+
