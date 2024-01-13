@@ -266,9 +266,6 @@ def display_linechart(
         px.line: The line chart.
 
     """
-    if iqr_scales is None:
-        iqr_scales = [1.0, 1.5]
-
     timePeriod = int(timePeriod)
     method = "rolling"
 
@@ -331,6 +328,9 @@ def display_linechart(
     if get_data:
         return result_df
 
+    if iqr_scales is None:
+        iqr_scales = [1.0, 1.5]
+
     limits = {}
 
     column = result_df.columns[0]
@@ -358,3 +358,42 @@ def display_linechart(
         .update_layout(title_x=0.5)
     )
     return fig
+
+def add_outlier_lines(
+    result_df: pd.DataFrame,
+    fig,
+    iqr_scales: None | list[float, float] = None,
+    min_value=None,
+    **line_kwargs
+    ):
+    limits = {}
+
+    if iqr_scales is None:
+        iqr_scales = [1.0, 1.5]
+
+    column = result_df.columns[0]
+
+    for scale in iqr_scales:
+        limits[f"upper_limit_{scale}"], limits[f"lower_limit_{scale}"] = (
+            DataHandler(result_df)
+            .calculate_outlier_values(column, iqr_scale=scale)
+        )
+        if min_value or min_value == 0:
+            limits[f"lower_limit_{scale}"] = (
+                min_value
+                if limits[f"lower_limit_{scale}"] <= min_value
+                else limits[f"lower_limit_{scale}"]
+            )
+
+    if not line_kwargs:
+        line_kwargs = dict(
+            line_width=1,
+            # line_dash="dashdot",
+            line_color="#c9e75d"
+        )
+
+    for idx, key in enumerate(limits):
+        if idx < 2:
+            fig.add_hline(limits[key], **line_kwargs)
+        else:
+            fig.add_hline(limits[key], **line_kwargs)
