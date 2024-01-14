@@ -131,3 +131,52 @@ class GraphLayout:
         )
         return fig
 
+    def custom_fig_layout(self, fig, column):
+        """
+        Configure custom layout settings for the figure.
+
+        Parameters:
+        -----------
+        fig : go.Figure
+            The Plotly figure to configure.
+        column : str
+            The column name in the DataFrame.
+
+        Returns:
+        --------
+        go.Figure
+            The configured Plotly figure.
+        """
+        ticks = self.data_frame[column].std() / 2
+
+        fig.update_layout(
+            paper_bgcolor=self.tranp_color,
+            plot_bgcolor=self.tranp_color,
+            title={
+                "text": "Custom",
+                "x": 0.5,
+                "font": {"color": self.title_color},
+            },
+            font=dict(
+                size=18,
+            ),
+            legend_title="Trade Signals",
+            showlegend=True,
+            xaxis_rangeslider_visible=False,
+            xaxis=dict(
+                showgrid=False,
+                color=self.title_color,
+            ),
+            yaxis=dict(
+                zeroline=False,
+                showgrid=True,
+                gridwidth=1,
+                griddash="dash",
+                gridcolor=self.grid_color,
+                exponentformat="none",
+                dtick=ticks,
+                color=self.title_color,
+            ),
+        )
+        return fig
+
