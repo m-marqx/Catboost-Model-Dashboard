@@ -225,4 +225,3 @@ class GraphLayout:
         else:
             self.fig_layout(fig, column)
         return fig
-
