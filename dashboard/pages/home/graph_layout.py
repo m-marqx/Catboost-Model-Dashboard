@@ -70,3 +70,64 @@ class GraphLayout:
         self.api = api
         self.normalization = normalization
 
+    def fig_layout(self, fig, column):
+        """
+        Configure layout settings for the figure.
+
+        Parameters:
+        -----------
+        fig : go.Figure
+            The Plotly figure to configure.
+        column : str
+            The column name in the DataFrame.
+
+        Returns:
+        --------
+        go.Figure
+            The configured Plotly figure.
+        """
+        ticks = self.data_frame[column].std() / self.normalization
+
+        # coin_name = 'BTC'
+        # currency_name = 'USD'
+        pair_name = self.symbol
+
+        fig.update_layout(
+            paper_bgcolor=self.tranp_color,
+            plot_bgcolor=self.tranp_color,
+            title={
+                "text": f"{pair_name} - {self.interval}",
+                "x": 0.5,
+                "font": {"color": self.title_color},
+            },
+            font=dict(
+                size=18,
+            ),
+            legend_title="Trade Signals",
+            showlegend=True,
+            xaxis_rangeslider_visible=False,
+            xaxis=dict(
+                showgrid=False,
+                title={
+                    "text": "Date",
+                    "font": {"color": self.label_color},
+                },
+                color=self.title_color,
+            ),
+            yaxis=dict(
+                zeroline=False,
+                showgrid=True,
+                gridwidth=1,
+                griddash="dash",
+                gridcolor=self.grid_color,
+                exponentformat="none",
+                dtick=ticks,
+                title={
+                    "text": self.symbol,
+                    "font": {"color": self.label_color},
+                },
+                color=self.title_color,
+            ),
+        )
+        return fig
+
