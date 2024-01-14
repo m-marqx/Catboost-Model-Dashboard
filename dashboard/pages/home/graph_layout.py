@@ -180,3 +180,24 @@ class GraphLayout:
         )
         return fig
 
+    def plot_cumulative_results(self):
+        """
+        Plot cumulative results line chart.
+
+        Returns:
+        --------
+        go.Figure
+            The Plotly figure for the cumulative results line chart.
+        """
+        column = "Cumulative_Result"
+        fig = px.line(
+            x=self.data_frame.index,
+            y=self.data_frame[column],
+            color_discrete_sequence=[self.primary_color],
+        )
+        if self.api == "custom":
+            self.custom_fig_layout(fig, column)
+        else:
+            self.fig_layout(fig, column)
+        return fig
+
