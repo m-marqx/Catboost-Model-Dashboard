@@ -172,3 +172,102 @@ class DataHandler:
         )
         return self.data_frame
 
+    def model_pipeline(
+        self,
+        features_columns: list,
+        target_column: str,
+        estimator: object,
+        return_series: pd.Series,
+        split_location: float | int | str = 0.3,
+    ) -> pd.DataFrame:
+        """
+        Execute a machine learning pipeline for model evaluation.
+
+        This method performs a machine learning pipeline, including
+        data splitting, training, validation, and evaluation.
+
+        Parameters:
+        -----------
+        features_columns : list
+            List of column names representing features used for training
+            the model.
+        target_column : str
+            Name of the target variable column.
+        estimator : object
+            Machine learning model (estimator) to be trained and
+            evaluated.
+        return_series : pd.Series
+            Series containing the target variable for the model.
+        split_location : float, int, or str, optional
+            Determines the location to split the dataset into training
+            and validation sets.
+            - Float: it represents the proportion of
+            the dataset to include in the validation split.
+            - Integer: it specifies the index to split the
+            dataset.
+            - String: it represents the label/index to split
+            the dataset.
+
+            (default: 0.3)
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame containing model returns and validation date.
+
+        Raises:
+        -------
+        ValueError
+            If validation_size is outside the valid range (0.0 to 1.0).
+        """
+        if not isinstance(split_location, (str, float, int)):
+            raise ValueError(
+                "Wrong split_location type: "
+                f"{split_location.__class__.__name__}"
+            )
+        is_percentage_location = 0 < split_location < 1
+
+        if not (isinstance(split_location, float) and is_percentage_location):
+            raise ValueError(
+                "When split_location is a float, "
+                "it should be between 0.0 and 1.0"
+            )
+
+        if is_percentage_location:
+            split_factor = 1 - split_location
+            split_index = int(self.data_frame.shape[0] * split_factor)
+        else:
+            split_index = split_location
+
+        if isinstance(split_index, int):
+            development = self.data_frame.iloc[:split_index].copy()
+            validation = self.data_frame.iloc[split_index:].copy()
+        elif isinstance(split_index, str):
+            development = self.data_frame.loc[:split_index].copy()
+            validation = self.data_frame.loc[split_index:].copy()
+
+        features = development[features_columns]
+        target = development[target_column]
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            features,
+            target,
+            test_size=0.5,
+            shuffle=False
+        )
+
+        estimator.fit(X_train, y_train)
+
+        validation_x_test = validation[features_columns]
+        validation_y_test = validation[target_column]
+
+        x_series = pd.concat([X_test, validation_x_test], axis=0)
+        y_series = pd.concat([y_test, validation_y_test], axis=0)
+
+        model_returns = (
+            ModelHandler(estimator, x_series, y_series)
+            .model_returns(return_series)
+        )
+        model_returns['validation_date'] = str(validation.index[0])
+        return model_returns
+
