@@ -555,3 +555,62 @@ class DataHandler:
 
         return upper_bound, lower_bound
 
+    def fill_outlier(
+        self,
+        column: str = None,
+        iqr_scale: float = 1.5,
+        upper_quantile: float = 0.75,
+        down_quantile: float = 0.25,
+    ) -> pd.Series:
+        """
+        Remove outliers from a given target column using the IQR
+        (Interquartile Range) method.
+
+        Parameters:
+        -----------
+        column : str, optional
+            The name of the target column containing the data to be processed.
+            If None, the instance's data_frame will be used as the target.
+        iqr_scale : float, optional
+            The scaling factor to determine the outlier range based on the IQR.
+            (default: 1.5)
+        upper_quantile : float, optional
+            The upper quantile value for calculating the IQR.
+            (default: 0.75 (75th percentile))
+        down_quantile : float, optional
+            The lower quantile value for calculating the IQR.
+            (default: 0.25 (25th percentile))
+
+        Returns:
+        --------
+        pd.Series
+            A Series with outliers removed based on the specified
+            criteria.
+        """
+        if column is None:
+            if isinstance(self.data_frame, pd.Series):
+                outlier_array = self.data_frame.copy()
+            else:
+                raise ValueError(
+                    "column must be provided for DataFrame input."
+                )
+        else:
+            outlier_array = self.data_frame[column].copy()
+
+        outlier_args = [column, iqr_scale, upper_quantile, down_quantile]
+        upper_bound, lower_bound = self.calculate_outlier_values(*outlier_args)
+
+        outlier_array = np.where(
+            outlier_array > upper_bound,
+            upper_bound,
+            outlier_array
+        )
+
+        outlier_array = np.where(
+            outlier_array < lower_bound,
+            lower_bound,
+            outlier_array
+        )
+
+        return pd.Series(outlier_array, index=self.data_frame.index)
+
