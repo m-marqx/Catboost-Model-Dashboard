@@ -271,3 +271,34 @@ class DataHandler:
         model_returns['validation_date'] = str(validation.index[0])
         return model_returns
 
+    def drop_zero_predictions(
+        self,
+        column: str,
+    ) -> pd.Series:
+        """
+        Drop rows where the specified column has all zero values.
+
+        Parameters:
+        -----------
+        column : str
+            The column name in the DataFrame to check for zero values.
+
+        Returns:
+        --------
+        pd.Series
+            The Series with rows dropped where the specified column
+            has all zero values.
+        """
+
+        def _is_all_zero(list_values: list) -> bool:
+            return all(value == 0 for value in list_values)
+
+        if column not in self.data_frame.columns:
+            raise ValueError(
+                f"Column '{column}' does not exist in the DataFrame."
+            )
+
+        mask = self.data_frame[column].apply(_is_all_zero)
+
+        return self.data_frame[~mask]
+
