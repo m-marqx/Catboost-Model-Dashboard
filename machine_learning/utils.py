@@ -614,3 +614,127 @@ class DataHandler:
 
         return pd.Series(outlier_array, index=self.data_frame.index)
 
+    def quantile_split(
+        self,
+        target_input: str | pd.Series | np.ndarray,
+        column: str = None,
+        method: Literal["simple", "ratio", "sum", "prod"] | None = "ratio",
+        quantiles: np.ndarray | pd.Series | int = 10,
+        log_values: bool = False,
+    ) -> pd.DataFrame:
+        """
+        Split data into quantiles based on a specified column and
+        analyze the relationship between these quantiles and a target
+        variable.
+
+        Parameters:
+        -----------
+        target_input : str, pd.Series, or np.ndarray
+            The target variable for the analysis. It can be a column
+            name, a pandas Series, or a numpy array.
+        column : str, optional
+            The name of the column used for quantile splitting.
+        method : Literal["simple", "ratio", "sum", "prod"], optional
+            The method used for calculating class proportions. 'simple'
+            returns the raw class counts, 'ratio' returns the
+            proportions of the target variable within each quantile.
+            (default: "ratio")
+        quantiles : np.ndarray or pd.Series or int, optional
+            The quantile intervals used for splitting the 'feature' into
+            quantiles. If an integer is provided, it represents the
+            number of quantiles to create. If an array or series is
+            provided, it specifies the quantile boundaries.
+            (default: 10).
+        log_values : bool, optional
+            If True and 'method' is 'prod', the resulting values are
+            computed using logarithmic aggregation.
+            (default: False)
+
+        Returns:
+        --------
+        pd.DataFrame
+            A DataFrame representing the quantile split analysis. Rows
+            correspond to quantile intervals based on the specified
+            column, columns correspond to unique values of the target
+            variable, and the values represent either counts or
+            proportions, depending on the chosen method and split type.
+        """
+        if method in ["prod", "sum"]:
+            split_type = 'data'
+        elif method in ["simple","ratio"]:
+            split_type = 'frequency'
+        else:
+            raise ValueError(
+                "method must be prod, sum,"
+                f" simple or ratio instead of {method}"
+            )
+
+        if isinstance(self.data_frame, pd.Series):
+            feature = self.data_frame
+        else:
+            feature = self.data_frame[column]
+
+        if feature.hasnans:
+            feature = feature.dropna()
+
+        if isinstance(quantiles, int):
+            range_step = 1 / quantiles
+            quantiles = np.quantile(
+                feature,
+                np.arange(0, 1.01, range_step)
+            )
+
+            quantiles = np.unique(quantiles)
+
+        if isinstance(target_input, str):
+            target_name = target_input
+            target = self.data_frame[target_input]
+        else:
+            target_name = "target"
+            target = pd.Series(target_input)
+
+        if feature.index.dtype != target.index.dtype:
+            feature = feature.reset_index(drop=True)
+            target = target.reset_index(drop=True)
+
+        if not target.index.equals(feature.index):
+            target = target.reindex(feature.index)
+
+        class_df = pd.cut(
+            feature,
+            quantiles,
+            include_lowest=True,
+        )
+
+        feature_name = column if column else "feature"
+
+        quantile_df = pd.DataFrame(
+            {
+                feature_name: class_df,
+                target_name: target
+            }
+        )
+        if split_type == 'data':
+            quantile_df = quantile_df.groupby(feature_name)[target_name]
+
+            if method == 'sum':
+                quantile_df = quantile_df.sum()
+            if method == 'prod':
+                if log_values:
+                    quantile_df = np.log(quantile_df.prod())
+                else:
+                    quantile_df = quantile_df.prod() - 1
+
+        else:
+            quantile_df = pd.crosstab(
+                index=quantile_df[feature_name],
+                columns=quantile_df[target_name],
+            )
+
+            if method == "ratio":
+                quantile_df = (
+                    quantile_df
+                    .div(quantile_df.sum(axis=1), axis=0)
+                )
+        return quantile_df
+
