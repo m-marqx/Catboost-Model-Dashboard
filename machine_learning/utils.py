@@ -138,3 +138,37 @@ class DataHandler:
             "validation": validation_dataset
         }
 
+    def calculate_targets(self, length=1) -> pd.DataFrame:
+        """
+        Calculate target variables for binary classification.
+
+        Adds target variables to the DataFrame based on the 'close'
+        column:
+        - 'Return': Percentage change in 'close' from the previous day.
+        - 'Target_1': Shifted 'Return', representing the future day's
+        return.
+        - 'Target_1_bin': Binary classification of 'Target_1':
+            - 1 if 'Target_1' > 1 (positive return)
+            - 0 otherwise.
+
+        Returns:
+        --------
+        pd.DataFrame
+            DataFrame with added target variables.
+
+        """
+        if isinstance(self.data_frame, pd.Series):
+            self.data_frame = pd.DataFrame(self.data_frame)
+
+        self.data_frame['Return'] = self.data_frame["close"].pct_change(length) + 1
+        self.data_frame["Target_1"] = self.data_frame["Return"].shift(-length)
+        self.data_frame["Target_1_bin"] = np.where(
+            self.data_frame["Target_1"] > 1,
+            1, 0)
+
+        self.data_frame["Target_1_bin"] = np.where(
+            self.data_frame['Target_1'].isna(),
+            np.nan, self.data_frame['Target_1_bin']
+        )
+        return self.data_frame
+
