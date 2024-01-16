@@ -27,21 +27,7 @@ app = dash.Dash(
 app.layout = dbc.Container(
     [
         dcc.Location(id="url", refresh=False),
-        dbc.Row(
-            [
-                dbc.Col(
-                    [
-                        navbar_components,
-                    ],
-                    width=True,
-                    style={
-                        "textAlign": "center",
-                        "background-color": "#262626",
-                    },
-                ),
-            ],
-            align="end",
-        ),
+        dbc.Row(navbar_components),
         dbc.Col(id="page-content"),
         dash.page_container,
     ],
