@@ -389,7 +389,7 @@ def add_outlier_lines(
         line_kwargs = dict(
             line_width=1,
             # line_dash="dashdot",
-            line_color="#c9e75d"
+            line_color="#D3F2BB"
         )
 
     for idx, key in enumerate(limits):

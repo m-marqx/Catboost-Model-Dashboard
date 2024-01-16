@@ -63,7 +63,7 @@ class GraphLayout:
         self.tranp_color = "rgba(0,0,0,0)"
         self.title_color = "rgba(255,255,255,0.85)"
         self.label_color = "rgba(255,255,255,0.65)"
-        self.primary_color = "#8bbb11"
+        self.primary_color = "#D3F2BB"
         self.grid_color = "#595959"
         self.symbol = symbol
         self.interval = interval
