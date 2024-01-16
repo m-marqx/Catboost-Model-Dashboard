@@ -30,7 +30,7 @@ lang_menu = dbc.Col(
                 "PT",
                 href="?lang=pt_BR",
                 id="pt_BR_lang",
-                class_name="nav-link-lang",
+                class_name="nav-link-lang last",
                 n_clicks_timestamp=0,
             )
         ),
