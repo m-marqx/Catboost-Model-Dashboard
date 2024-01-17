@@ -390,3 +390,131 @@ class CcxtAPI:
         ]
 
         return date_check_df
+
+    def get_account_result(
+        self,
+        initial_capital: float = 10000.0,
+        period: str = "D",
+    ):
+        try:
+            account_trades = self.exchange.fetch_my_trades(
+                self.symbol, self.since
+            )
+
+        except ccxt.InvalidNonce:
+            return("Please consider update your operating system time.")
+
+        except:
+            return("API ERROR")
+
+        trades = pd.DataFrame(account_trades)
+
+        if trades.empty:
+            return "No trades found"
+
+        trades["amount"] = np.where(
+            trades["side"] == "buy",
+            trades["amount"], -abs(trades["amount"])
+        )
+
+        df_trades_info = pd.DataFrame.from_records(trades["info"])
+
+        df_trades_info["time"] = (
+            df_trades_info["time"]
+            .astype("int64")
+            .astype("datetime64[ms]")
+        )
+
+        df_trades_info = df_trades_info.set_index("time")
+        df_trades_info = (
+            df_trades_info
+            .drop(["maker", "buyer", "id", "orderId", "symbol"], axis=1)
+        )
+
+        df_trades_info["commission"] = (
+            -abs(df_trades_info["commission"].astype("float64"))
+        )
+
+        df_trades_info["liquid_result"] = (
+        df_trades_info[["realizedPnl", "commission"]]
+        .astype(float)
+        .sum(axis=1)
+        )
+
+        df_trades_info["liquid_result_aggr"] = (
+            df_trades_info["liquid_result"]
+            .cumsum()
+        )
+
+        df_trades_info["result"] = (
+            df_trades_info["realizedPnl"]
+            .astype(float)
+            .cumsum()
+        )
+
+        funding_fees = pd.DataFrame(self.exchange.fetch_funding_history())
+
+        funding_fee = (
+            pd.DataFrame.from_records(funding_fees["info"])
+            .set_index(funding_fees["timestamp"].astype("datetime64[ms]"))
+            ["income"].astype("float64")
+            .to_frame()
+        )
+        resampled_funding_fee = funding_fee.resample(period).sum()
+
+        resampled_results = (
+            resampled_funding_fee["income"]
+            .rename("funding_fee")
+            .to_frame()
+        )
+
+        resampled_results["operational_result"] = (
+            df_trades_info["liquid_result"]
+            .resample(period)
+            .sum()
+        )
+
+        resampled_results["operational_result"] = (
+            resampled_results["operational_result"]
+            .fillna(0)
+        )
+
+        resampled_results["liquid_result"] = (
+            resampled_results["operational_result"]
+            + resampled_results["funding_fee"]
+        )
+
+        resampled_results["price"] = (
+            df_trades_info["price"]
+            .resample(period)
+            .last()
+        )
+
+        resampled_results["price"] = resampled_results["price"].ffill()
+        resampled_results = resampled_results.astype(float)
+        resampled_results["liquid_result_aggr"] = (
+            resampled_results["liquid_result"]
+            .cumsum()
+        )
+
+        is_coin_commissionAsset = (
+            (df_trades_info['commissionAsset'] != 'USD').dropna().iloc[0]
+            | (df_trades_info['commissionAsset'] != 'USDT').dropna().iloc[0]
+        )
+
+        if is_coin_commissionAsset:
+            resampled_results["liquid_result_usd_aggr"] = (
+                resampled_results["liquid_result_aggr"]
+                * resampled_results["price"].astype(float)
+            )
+        else:
+            resampled_results["liquid_result_usd_aggr"] = resampled_results["liquid_result_aggr"]
+
+        resampled_results["capital"] = (
+            resampled_results["liquid_result_usd_aggr"]
+            / initial_capital
+        )
+
+        resampled_results = resampled_results.rename_axis("date")
+
+        return resampled_results
