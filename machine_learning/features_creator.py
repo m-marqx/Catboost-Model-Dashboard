@@ -429,3 +429,124 @@ class FeaturesCreator:
 
         return self.data_frame
 
+    def calculate_model_returns(
+        self,
+        value: int,
+        indicator: Literal['RSI', 'rolling_ratio'] = 'RSI',
+        model_params: dict | None = None,
+        fee: float = 0.1,
+        train_end_index: int | None = 1526,
+        results_column: str | list[pd.Index] | None = None,
+        features: list[pd.Index] | None = None
+    ) -> dict:
+        """
+        Run the entire model pipeline and return drawdown results.
+
+        Parameters:
+        -----------
+        value : int
+            Parameter value for the indicator.
+        indicator : Literal['RSI', 'rolling_ratio'], optional
+            Type of indicator to generate.
+            (default: 'RSI')
+        model_params : dict | None, optional
+            Parameters for the XGBoost model.
+            (default: None)
+        fee : float, optional
+            Transaction fee for calculating returns.
+            (default: 0.1)
+        train_end_index : int | None, optional
+            Index for splitting the training and development data.
+            (default: None)
+        results_column : str | None, optional
+            Column to return in the results.
+            (default: None)
+
+        Returns:
+        --------
+        dict
+            Dictionary containing drawdown results.
+        """
+        features = features or []
+
+        train_end_index = (
+            train_end_index
+            or
+            self.train_development_index
+        )
+
+        train_development = (
+            self.data_frame.iloc[:train_end_index]
+            if isinstance(train_end_index, int)
+            else self.data_frame.loc[:train_end_index]
+        )
+
+        self.data_frame['temp_indicator'] = (
+            self.temp_indicator(value, indicator)
+        )
+
+        self.temp_indicator_series = (
+            self.temp_indicator(value, indicator)
+            .reindex(train_development.index)
+        ).dropna()
+
+
+        intervals = (
+            DataHandler(self.temp_indicator_series)
+            .get_split_variable_intervals(**self.split_params)
+        )
+
+        intervalsH = (
+            DataHandler(self.temp_indicator_series)
+            .get_split_variable_intervals(**self.split_paramsH)
+        )
+
+        intervalsL = (
+            DataHandler(self.temp_indicator_series)
+            .get_split_variable_intervals(**self.split_paramsL)
+        )
+
+        self.data_frame['temp_variable'] = (
+            DataHandler(self.data_frame)
+            .calculate_intervals_variables('temp_indicator', intervals)
+        ).astype('int8')
+
+        self.data_frame['temp_variableH'] = (
+            DataHandler(self.data_frame)
+            .calculate_intervals_variables('temp_indicator', intervalsH)
+        ).astype('int8')
+
+        self.data_frame['temp_variableL'] = (
+            DataHandler(self.data_frame)
+            .calculate_intervals_variables('temp_indicator', intervalsL)
+        ).astype('int8')
+
+        temp_variables = (
+            'temp_variable', 'temp_variableH', 'temp_variableL',
+        )
+
+        all_combinations = []
+        for items in range(1, 4):
+            combinations_item = combinations(temp_variables, items)
+            all_combinations.extend(list(combinations_item))
+
+        params = {'model_params': model_params, 'fee': fee}
+
+        if results_column:
+            results = {
+                f"RSI{value}_{combination}"
+                : self.calculate_results(
+                    features_columns=list(combination) + features,
+                    **params
+                )[results_column] for combination in all_combinations
+            }
+            return results
+
+        results = {
+            f"RSI{value}_{combination}"
+            : self.calculate_results(
+                features_columns=list(combination) + features,
+                **params
+            ) for combination in all_combinations
+        }
+        return results
