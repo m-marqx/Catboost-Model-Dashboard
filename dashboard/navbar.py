@@ -49,12 +49,11 @@ ml_buttons = [
             "border-bottom-left-radius": "2svh",
             "border-top-right-radius": "0px",
             "border-bottom-right-radius": "0px",
-            "height": "-webkit-fill-available",
             "margin-left": "auto",
         },
         color="primary",
         outline=False,
-        className="",
+        className="model-btn",
     ),
     dbc.Button(
         "CANCEL_MODEL",
@@ -64,13 +63,12 @@ ml_buttons = [
             "border-bottom-left-radius": "0px",
             "border-top-right-radius": "2svh",
             "border-bottom-right-radius": "2svh",
-            "height": "-webkit-fill-available",
             "margin-right": "auto",
         },
         color="primary",
         disabled=True,
         outline=False,
-        className="",
+        className="model-btn",
     ),
 ]
 
