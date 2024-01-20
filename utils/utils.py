@@ -243,3 +243,53 @@ class Statistics:
 
         return sortino_ratio
 
+def feat_train_qcut(
+    dataset:pd.DataFrame,
+    train_set: pd.DataFrame,
+    feat_name: str,
+    bins: int = 10
+) -> pd.Series:
+    """
+    Compute the quantile-based discretization of a feature in the
+    training set and apply it to the dataset.
+
+    Parameters:
+    -----------
+    dataset : pd.DataFrame
+        The dataset to apply the discretization to.
+    train_set : pd.DataFrame
+        The training set used to compute the quantile intervals.
+    feat_name : str
+        The name of the feature to be discretized.
+    bins : int, optional
+        The number of bins to divide the feature into (default is 10).
+
+    Returns:
+    --------
+    pd.Series
+        The discretized feature values for the dataset.
+    """
+    intervals = (
+        pd.qcut(train_set[feat_name], bins)
+        .value_counts().index
+        .to_list()
+    )
+
+    lows = pd.Series([interval.left for interval in intervals])
+    highs = pd.Series([interval.right for interval in intervals])
+
+    intervals_range = (
+        pd.concat([lows.rename("lowest"), highs.rename("highest")], axis=1)
+        .sort_values("highest")
+        .reset_index(drop=True)
+    )
+
+    intervals_range['lowest'][0] = -999999999999
+    intervals_range['highest'][-1] = 999999999999
+    return (
+        dataset[feat_name].apply(lambda x: intervals_range[
+            (x >= intervals_range["lowest"])
+            & (x <= intervals_range["highest"])
+        ].index[0])
+    )
+
