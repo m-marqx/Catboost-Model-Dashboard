@@ -177,7 +177,7 @@ class DataHandler:
         features_columns: list,
         target_column: str,
         estimator: object,
-        return_series: pd.Series,
+        target_series: pd.Series,
         split_location: float | int | str = 0.3,
     ) -> pd.DataFrame:
         """
@@ -196,7 +196,7 @@ class DataHandler:
         estimator : object
             Machine learning model (estimator) to be trained and
             evaluated.
-        return_series : pd.Series
+        target_series : pd.Series
             Series containing the target variable for the model.
         split_location : float, int, or str, optional
             Determines the location to split the dataset into training
@@ -266,7 +266,7 @@ class DataHandler:
 
         model_returns = (
             ModelHandler(estimator, x_series, y_series)
-            .model_returns(return_series)
+            .model_returns(target_series)
         )
         model_returns['validation_date'] = str(validation.index[0])
         return model_returns
