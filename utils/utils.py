@@ -284,8 +284,8 @@ def feat_train_qcut(
         .reset_index(drop=True)
     )
 
-    intervals_range['lowest'][0] = -999999999999
-    intervals_range['highest'][-1] = 999999999999
+    intervals_range['lowest'].iloc[0] = -999999999999
+    intervals_range['highest'].iloc[-1] = 999999999999
     return (
         dataset[feat_name].apply(lambda x: intervals_range[
             (x >= intervals_range["lowest"])
