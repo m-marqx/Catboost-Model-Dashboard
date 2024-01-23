@@ -1,5 +1,6 @@
 from itertools import combinations
 from typing import Literal
+import pickle
 
 import pandas as pd
 import numpy as np
@@ -8,13 +9,9 @@ import xgboost as xgb
 import catboost
 import tradingview_indicators as ta
 from utils.exceptions import InvalidArgumentError
-from machine_learning.utils import (
-    DataHandler,
-    ModelHandler,
-)
-import pickle
 
-
+from machine_learning.utils import DataHandler
+from machine_learning.model_handler import ModelHandler
 from machine_learning.feature_params import FeaturesParamsComplete
 
 from utils.math_features import MathFeature
