@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
-import shap
 from sklearn import metrics
 from sklearn.model_selection import (
     learning_curve,
@@ -196,7 +195,7 @@ class ModelHandler:
     def roc_curve(
         self,
         output: Literal["DataFrame", "Figure"] = "Figure",
-    ):
+    ) -> go.Figure | pd.DataFrame:
         """
         Plot a Receiver Operating Characteristic (ROC) curve.
 

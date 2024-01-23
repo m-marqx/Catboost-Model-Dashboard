@@ -970,5 +970,3 @@ class DataHandler:
                 if x:
                     variable |= self.data_frame[column] <= x
         return variable
-
-
