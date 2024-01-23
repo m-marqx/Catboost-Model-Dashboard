@@ -193,3 +193,72 @@ class ModelHandler:
         ).cumsum()
         return df_returns
 
+    def roc_curve(
+        self,
+        output: Literal["DataFrame", "Figure"] = "Figure",
+    ):
+        """
+        Plot a Receiver Operating Characteristic (ROC) curve.
+
+        The ROC curve is a graphical representation of the classifier's
+        ability to distinguish between positive and negative classes.
+        It is created by plotting the True Positive Rate (TPR) against
+        the False Positive Rate (FPR) at various threshold settings.
+
+        Parameters:
+        -----------
+        fpr : str, np.ndarray, or pd.Series
+            An array containing the False Positive Rates for different
+            classification thresholds.
+        tpr : str, np.ndarray, or pd.Series
+            An array containing the True Positive Rates for different
+            classification thresholds.
+
+        Returns:
+        --------
+        plotly.graph_objs._figure.Figure
+            A Plotly figure displaying the ROC curve with AUC
+            (Area Under the Curve) score.
+
+        """
+        if output not in ["DataFrame", "Figure"]:
+            raise ValueError("output must be 'DataFrame' or 'Figure'")
+
+        fpr, tpr, thresholds = (
+            metrics.roc_curve(self.y_test, self.y_pred_probs)
+        )
+
+        roc_curve = pd.DataFrame(
+            {
+                "fpr": fpr,
+                "tpr": tpr,
+                "thresholds": thresholds,
+            }
+        )
+
+        if output == "Figure":
+            roc_auc = metrics.auc(fpr, tpr)
+
+            fig = px.line(
+                roc_curve,
+                x=fpr,
+                y=tpr,
+                title=f"ROC Curve (AUC={roc_auc:.4f})",
+                labels=dict(x="False Positive Rate", y="True Positive Rate"),
+                width=700,
+                height=700,
+            )
+
+            fig.add_shape(
+                type="line",
+                line=dict(dash="dash"),
+                x0=0,
+                x1=1,
+                y0=0,
+                y1=1,
+                opacity=0.65,
+            )
+            return fig
+
+        return roc_curve
+
