@@ -244,8 +244,8 @@ class Statistics:
         return sortino_ratio
 
 def feat_train_qcut(
-    dataset:pd.DataFrame,
-    train_set: pd.DataFrame,
+    dataset: pd.DataFrame,
+    test_index: str | int,
     feat_name: str,
     bins: int = 10
 ) -> pd.Series:
@@ -257,8 +257,11 @@ def feat_train_qcut(
     -----------
     dataset : pd.DataFrame
         The dataset to apply the discretization to.
-    train_set : pd.DataFrame
-        The training set used to compute the quantile intervals.
+    test_index : str | int
+        The index or label of the test set. If it's an integer, it
+        represents the number of rows to include in the training set. If
+        it's a string, it represents the label of the last row to
+        include in the training set.
     feat_name : str
         The name of the feature to be discretized.
     bins : int, optional
@@ -269,6 +272,11 @@ def feat_train_qcut(
     pd.Series
         The discretized feature values for the dataset.
     """
+    train_set = (
+        dataset.iloc[:test_index].copy() if isinstance(test_index, int)
+        else dataset.loc[:test_index].copy()
+    )
+
     intervals = (
         pd.qcut(train_set[feat_name], bins)
         .value_counts().index
