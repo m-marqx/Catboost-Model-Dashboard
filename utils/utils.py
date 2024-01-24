@@ -285,6 +285,8 @@ def feat_train_qcut(
 
     lows = pd.Series([interval.left for interval in intervals])
     highs = pd.Series([interval.right for interval in intervals])
+    lows.iloc[0] = -999999999999
+    highs.iloc[-1] = 999999999999
 
     intervals_range = (
         pd.concat([lows.rename("lowest"), highs.rename("highest")], axis=1)
@@ -292,12 +294,9 @@ def feat_train_qcut(
         .reset_index(drop=True)
     )
 
-    intervals_range['lowest'].iloc[0] = -999999999999
-    intervals_range['highest'].iloc[-1] = 999999999999
     return (
         dataset[feat_name].apply(lambda x: intervals_range[
             (x >= intervals_range["lowest"])
             & (x <= intervals_range["highest"])
         ].index[0])
     )
-
