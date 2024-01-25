@@ -147,14 +147,12 @@ class DevRunModel:
 
             predict = result["Predict"].to_frame()
 
-            graph_layout = GraphLayout(
+            model_fig = GraphLayout(
                 result["Liquid_Result"].loc[validation_date:].cumsum().to_frame(),
                 "Model Result",
                 "1D",
                 "spot",
-            )
-
-            model_fig = graph_layout.plot_single_linechart("Liquid_Result")
+            ).plot_single_linechart("Liquid_Result")
 
             api_key = os.getenv('APIKEY')
             secret_key = os.getenv('SECRETKEY')
