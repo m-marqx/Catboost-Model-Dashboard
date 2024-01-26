@@ -300,3 +300,92 @@ def feat_train_qcut(
             & (x <= intervals_range["highest"])
         ].index[0])
     )
+
+def model_metrics(y_pred: pd.Series, target: pd.Series) -> pd.DataFrame:
+    model_metric = y_pred.rename('y_pred').to_frame()
+
+    model_metric['y_true'] = target
+
+    model_metric['true_pos'] = (
+        np.where(
+            (model_metric['y_pred'] == 1) & (model_metric['y_true'] == 1),
+            1, 0
+        ).cumsum()
+    )
+
+    model_metric['true_neg'] = (
+        np.where(
+            (model_metric['y_pred'] == 0) & (model_metric['y_true'] == 0),
+            1, 0
+        ).cumsum()
+    )
+
+    model_metric['false_pos'] = (
+        np.where(
+            (model_metric['y_pred'] == 1) & (model_metric['y_true'] == 0),
+            1, 0
+        ).cumsum()
+    )
+
+    model_metric['false_neg'] = (
+        np.where(
+            (model_metric['y_pred'] == 0) & (model_metric['y_true'] == 1),
+            1, 0
+        ).cumsum()
+    )
+
+    model_metric['real_support_0'] = (
+        np.where(model_metric['y_true'] == 0, 1, 0).cumsum()
+    )
+
+    model_metric['real_support_1'] = (
+        np.where(model_metric['y_true'] == 1, 1, 0).cumsum()
+    )
+
+    model_metric['pred_support_0'] = (
+        np.where(model_metric['y_pred'] == 0, 1, 0).cumsum()
+    )
+
+    model_metric['pred_support_1'] = (
+        np.where(model_metric['y_pred'] == 1, 1, 0).cumsum()
+    )
+
+    model_metric['real_support_ratio'] = (
+        (model_metric['real_support_1'] / model_metric['real_support_0']) - 1
+    )
+
+    model_metric['pred_support_ratio'] = (
+        (model_metric['pred_support_1'] / model_metric['pred_support_0']) - 1
+    )
+
+    model_metric['recall_pos'] = (
+        model_metric['true_pos']
+        / (model_metric['true_pos'] + model_metric['false_neg'])
+    )
+    model_metric['recall_neg'] = (
+        model_metric['true_neg']
+        /  (model_metric['true_neg'] + model_metric['false_pos'])
+    )
+
+    confusion_matrix = (
+        model_metric['true_pos']
+        + model_metric['true_neg']
+        + model_metric['false_pos']
+        + model_metric['false_neg']
+    )
+
+    model_metric['accuracy'] = (
+        (model_metric['true_pos'] + model_metric['true_neg'])
+        / confusion_matrix
+    )
+
+    model_metric['recall_diff'] = (
+        model_metric[['recall_pos', 'recall_neg']]
+        .diff(-1, axis=1)['recall_pos']
+    )
+    model_metric['support_diff'] = (
+        model_metric[['real_support_ratio', 'pred_support_ratio']]
+        .diff(1, axis=1)['pred_support_ratio']
+    )
+
+    return model_metric
