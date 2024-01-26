@@ -77,6 +77,7 @@ class ModelHandler:
         step: float = 0.0,
         long_only: bool = False,
         short_only: bool = False,
+        drawdown_min_window: int = 365
     ) -> tuple[pd.DataFrame, str]:
         """
         Calculate returns and performance metrics for a trading model.
@@ -173,7 +174,7 @@ class ModelHandler:
         df_returns["Liquid_Return"] = df_returns["Liquid_Result"].cumsum() + 1
 
         df_returns["max_Liquid_Return"] = (
-            df_returns["Liquid_Return"].expanding(52).max()
+            df_returns["Liquid_Return"].expanding(drawdown_min_window).max()
         )
 
         df_returns["max_Liquid_Return"] = np.where(
