@@ -76,3 +76,46 @@ class DynamicTimeWarping:
             input_y.name if isinstance(input_y, pd.Series)
             else "input_y"
         )
+
+    @property
+    def get_dtw_df(self) -> pd.DataFrame:
+        """
+        Get the DTW values between the input sequences.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing the DTW values between the input
+            sequences.
+            The DataFrame has the following columns:
+            - <column_x>_path: The path of the input_x sequence in
+            the DTW alignment.
+            - <column_y>_path: The path of the input_y sequence in
+            the DTW alignment.
+            - <column_x>: The values of the input_x sequence.
+            - <column_y>: The values of the input_y sequence.
+        """
+        dtw_df1 = (
+            self.input_x.reset_index(drop=True)
+            .reindex(self.dtw[0])
+            .rename_axis([self.column_x + "_path"])
+            .reset_index()
+        )
+
+        dtw_df2 = (
+            self.input_y.reset_index(drop=True)
+            .reindex(self.dtw[1])
+            .rename_axis([self.column_y + "_path"])
+            .reset_index()
+        )
+
+        dtw_concat = pd.concat([dtw_df1, dtw_df2], axis=1)
+        ordered_columns = [
+            self.column_x + "_path",
+            self.column_y + "_path",
+            self.column_x,
+            self.column_y,
+        ]
+        dtw_concat = dtw_concat[ordered_columns]
+        return dtw_concat
+
