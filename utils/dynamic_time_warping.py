@@ -119,3 +119,38 @@ class DynamicTimeWarping:
         dtw_concat = dtw_concat[ordered_columns]
         return dtw_concat
 
+    def calculate_dtw_distance(
+        self,
+        method=Literal['ratio', 'absolute'] = 'ratio'
+    ) -> pd.Series:
+        """
+        Calculate the DTW distance between the input sequences.
+
+        Parameters
+        ----------
+        method : str, optional
+            The method to calculate the DTW distance.
+            The options are:
+            - 'ratio': The ratio between the input_x and input_y
+            sequences.
+            - 'absolute': The absolute difference between the input_x
+            and input_y sequences.
+            (default: 'ratio')
+
+        Returns
+        -------
+        pd.Series
+            A Series containing the DTW distance between the input
+            sequences.
+        """
+        dtw_df = self.get_dtw_df
+
+        match method:
+            case 'ratio':
+                return dtw_df[self.column_x] / dtw_df[self.column_y]
+            case 'absolute':
+                return dtw_df[self.column_x] - dtw_df[self.column_y]
+            case _:
+                raise InvalidArgumentError(
+                    "method must be either 'ratio' or 'absolute'"
+                )
