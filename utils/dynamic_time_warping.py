@@ -121,7 +121,7 @@ class DynamicTimeWarping:
 
     def calculate_dtw_distance(
         self,
-        method=Literal['ratio', 'absolute'] = 'ratio'
+        method:Literal['ratio', 'absolute'] = 'ratio',
     ) -> pd.Series:
         """
         Calculate the DTW distance between the input sequences.
