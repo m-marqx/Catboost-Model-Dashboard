@@ -158,7 +158,7 @@
 
 .btn {
   position: relative;
-  border-radius: 10px;
+  border-radius: 1vh;
   color: rgba(255, 255, 255, 0.85) !important;
   padding: 1rem 1.5rem;
   border: none;
