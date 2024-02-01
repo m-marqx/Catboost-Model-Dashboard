@@ -168,6 +168,7 @@
   align-items: center !important;
   justify-content: center !important;
   font-weight: 400;
+  font-size: calc(-webkit-fill-available - 8px);
   transition: background 0.15s ease-in-out, border 0.15s ease-in-out,
     box-shadow 0.15s ease-in-out, color 0.15s ease-in-out;
 }
