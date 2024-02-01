@@ -129,6 +129,8 @@ class CcxtAPI:
 
         if verbose == "Text":
             self.logger.setLevel(logging.INFO)
+        else:
+            self.logger.setLevel(logging.WARNING)
 
     def _fetch_klines(self, since, limit: int=None) -> list:
         return self.exchange.fetch_ohlcv(
@@ -158,8 +160,14 @@ class CcxtAPI:
             self.since,
             self.max_multiplier
         )
+        end_times_range = range(0, len(end_times) - 1)
 
-        for index in range(0, len(end_times) - 1):
+        end_times_range = (
+            tqdm(end_times_range) if self.is_progress_bar_verbose
+            else end_times_range
+        )
+
+        for index in end_times_range:
             klines = self._fetch_klines(
                 since=int(end_times[index]),
                 limit=self.max_multiplier,
@@ -224,7 +232,6 @@ class CcxtAPI:
             first_unix_time = self.get_since_value()
             first_call = self._fetch_klines(first_unix_time, self.max_multiplier)
 
-
         last_candle_interval = (
             (
                 time.time() * 1000 - interval_to_milliseconds(self.interval)
@@ -240,8 +247,9 @@ class CcxtAPI:
         time_delta = first_call[-1][0] - first_call[0][0]
         step = time_delta + pd.Timedelta(self.interval).value / 1e+6
         end_times = np.arange(time_value, last_candle_interval, step)
+        ranges = tqdm(end_times) if self.is_progress_bar_verbose else end_times
 
-        for current_start_time in end_times:
+        for current_start_time in ranges:
             klines = self._fetch_klines(
                 int(current_start_time),
                 self.max_multiplier
@@ -256,7 +264,6 @@ class CcxtAPI:
                     "Qty: %d - Total: 100%% complete",
                     len(klines_list)
                 )
-                break
 
             percentage = (
                 (np.where(end_times == current_start_time)[0][0] + 1)
