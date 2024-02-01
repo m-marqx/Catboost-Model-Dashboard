@@ -1,11 +1,13 @@
 import time
 import logging
+from typing import Literal
 import numpy as np
 import pandas as pd
 import ccxt
+from tqdm import tqdm
+
 from utils.time_utils import interval_to_milliseconds
 from api.kline_utils import KlineTimes
-
 
 class CcxtAPI:
     """
@@ -81,7 +83,7 @@ class CcxtAPI:
         interval:str,
         exchange:ccxt.Exchange = ccxt.bitstamp(),
         since:int = 1325296800000,
-        verbose:bool = False,
+        verbose:Literal["Text", "Progress_Bar"] | None = "Progress_Bar" ,
     ) -> None:
         """
         Initialize the CcxtAPI object.
@@ -104,24 +106,29 @@ class CcxtAPI:
         self.interval = interval
         self.since = since
         self.exchange = exchange
-        self.verbose = verbose
+        self.is_progress_bar_verbose = verbose == "Progress_Bar"
         self.max_interval = KlineTimes(symbol, interval).get_max_interval
         self.utils = KlineTimes(self.symbol, self.max_interval)
         self.max_multiplier = int(self.utils.calculate_max_multiplier()) if interval != '1w' else None
         self.data_frame = None
         self.klines_list = None
-        if verbose:
-            logging.basicConfig(
-                format='%(levelname)s %(asctime)s: %(message)s',
-                datefmt='%H:%M:%S',
-                force=True,
-                level=logging.INFO,
-            )
-        else:
-            logging.basicConfig(
-                force=True,
-                level=logging.CRITICAL,
-            )
+
+        self.logger = logging.getLogger("CCXT_API")
+        formatter = logging.Formatter(
+            '%(levelname)s %(asctime)s: %(message)s', datefmt='%H:%M:%S'
+        )
+
+        handler = logging.StreamHandler()
+        handler.setFormatter(formatter)
+
+        if (self.logger.hasHandlers()):
+            self.logger.handlers.clear()
+
+        self.logger.addHandler(handler)
+        self.logger.propagate = False
+
+        if verbose == "Text":
+            self.logger.setLevel(logging.INFO)
 
     def _fetch_klines(self, since, limit: int=None) -> list:
         return self.exchange.fetch_ohlcv(
@@ -157,21 +164,15 @@ class CcxtAPI:
                 since=int(end_times[index]),
                 limit=self.max_multiplier,
             )
-            if self.verbose:
-                load_percentage = (index / (len(end_times) - 1)) * 100
-                logging.info(
-                    "Finding first candle time [%.2f%%]",
-                    load_percentage
-                )
+            load_percentage = (index / (len(end_times) - 1)) * 100
+
+            self.logger.info("Finding first candle time [%.2f%%]", load_percentage)
 
             if len(klines) > 0:
                 first_unix_time = klines[0][0]
-                if self.verbose:
-                    logging.info("Finding first candle time [100%]")
-                    logging.info(
-                        "First candle time found: %s\n",
-                        first_unix_time
-                    )
+
+                self.logger.info("Finding first candle time [100%]")
+                self.logger.info("First candle time found: %s\n", first_unix_time)
                 break
 
         return first_unix_time
@@ -233,9 +234,8 @@ class CcxtAPI:
             )
         )
 
-        if self.verbose:
-            start = time.perf_counter()
-            logging.info("Starting requests")
+        start = time.perf_counter()
+        self.logger.info("Starting requests")
 
         time_value = klines[-1][0] + 1 if klines else first_unix_time
         time_delta = first_call[-1][0] - first_call[0][0]
@@ -253,30 +253,25 @@ class CcxtAPI:
             klines_list.extend(klines)
 
             if klines_list[-1][0] >= last_candle_interval:
-                if self.verbose:
-                    logging.info(
-                        "Qty: %d - Total: 100%% complete",
-                        len(klines_list)
-                    )
+                self.logger.info(
+                    "Qty: %d - Total: 100%% complete",
+                    len(klines_list)
+                )
                 break
 
-            if self.verbose:
-
-                percentage = (
-                    (np.where(end_times == current_start_time)[0][0] + 1)
-                    / end_times.shape[0]
-                ) * 100
-                logging.info(
-                    "Qty: %d - Total: %.2f%% complete",
-                    len(klines_list), percentage
-                )
-
-
-        if self.verbose:
-            logging.info(
-                "Requests elapsed time: %s\n",
-                time.perf_counter() - start
+            percentage = (
+                (np.where(end_times == current_start_time)[0][0] + 1)
+                / end_times.shape[0]
+            ) * 100
+            self.logger.info(
+                "Qty: %d - Total: %.2f%% complete",
+                len(klines_list), percentage
             )
+
+        self.logger.info(
+            "Requests elapsed time: %s\n",
+            time.perf_counter() - start
+        )
         self.klines_list = klines_list
         return self
 
