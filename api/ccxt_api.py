@@ -204,7 +204,6 @@ class CcxtAPI:
             not_supported_types = None
         else:
             not_supported_types = (
-                type(ccxt.bittrex()),
                 type(ccxt.gemini()),
                 type(ccxt.huobi()),
                 type(ccxt.deribit()),
