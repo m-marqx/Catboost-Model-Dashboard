@@ -111,7 +111,9 @@
 
 .bigger-table {
   overflow: hidden !important;
-  height: 27svh !important;
+  height: 38svh !important;
+  width: 15vw !important;
+  margin-top: 1svh !important;
 }
 
 .small-table {
