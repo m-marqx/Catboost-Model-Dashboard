@@ -1,5 +1,5 @@
 :root {
-  --default-height: 40px;
+  --default-height: 4vh;
   --gray-12: #141414;
   --gray-11: #1f1f1f;
   --gray-10: #262626;
@@ -7,6 +7,7 @@
   --gray-8: #595959;
   --gray-7: #8c8c8c;
   --gray-6: #bfbfbf;
+  --glass-1: rgba(43, 83, 84, 0.33):
 }
 
 .center {
