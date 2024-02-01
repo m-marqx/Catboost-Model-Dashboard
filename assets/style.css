@@ -103,6 +103,12 @@
   margin: 1svh auto 0svh !important;
 }
 
+.graph-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(30vw, 100%), 1fr));
+  grid-gap: 1svw;
+}
+
 .bigger-table {
   overflow: hidden !important;
   height: 27svh !important;
