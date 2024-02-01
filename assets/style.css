@@ -68,17 +68,39 @@
   margin-top: -1svh !important;
 } */
 
+
 .graph {
   overflow: hidden !important;
   border-radius: 2svh !important;
   height: 38svh !important;
-  background: var(--gray-10) !important;
+  background: var(--gray-10);
+  margin-top: 1svh;
+  width: 100%;
 }
 
 .mini-graph {
   height: 26.5svh !important;
   width: 49% !important;
-  margin: 1svh auto 1svh !important;
+  margin: 1svh auto 0svh !important;
+}
+
+.graph, .mini-graph {
+  background: rgb(1 19 52 / 36%);
+  box-shadow: rgba(31, 38, 135, 0.37) 0px 1px 7px 0px inset;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 0.15svw solid rgb(31 38 135 / 43%);
+}
+
+.graph.mini-graph2 {
+  background: rgba(179, 69, 52, 0.20 );
+  box-shadow: inset 0px 1px 6px 0px rgba(179, 69, 52, 0.37);
+  backdrop-filter: blur( 0.4svh );
+  -webkit-backdrop-filter: blur( 0.4svh );
+  border: 0.15svw solid rgba(179, 69, 52, 0.34);
+  height: 26.5svh !important;
+  width: 49% !important;
+  margin: 1svh auto 0svh !important;
 }
 
 .bigger-table {
