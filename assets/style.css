@@ -368,6 +368,10 @@
   justify-content: center;
 }
 
+.p {
+  font-size: 4rem;
+}
+
 .progress-info {
   margin-top: 1svh;
   color: #c9e75d;
