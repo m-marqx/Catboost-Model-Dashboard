@@ -274,6 +274,28 @@
   transition: background 0.15s ease-in-out;
 }
 
+.ag-row-odd {
+  background-color: var(--ag-odd-row-background-color);
+}
+
+.ag-header {
+  backdrop-filter: blur(0.5vh);
+  --webkit-backdrop-filter: blur(0.5vh);
+}
+
+.ag-center-cols-clipper {
+  background-color: var(--ag-background-color);
+  backdrop-filter: blur(5px);
+}
+
+.ag-theme-alpine-dark {
+    --ag-background-color: rgba(1, 36, 22, 0.205) !important;
+    --ag-odd-row-background-color: rgba(0, 0, 0, 0.329) !important;
+    --ag-header-background-color: rgba(0, 0, 0, 0.445) !important;
+    --ag-secondary-border-color:#07824F !important;
+    --ag-border-color:#07824F !important;
+}
+
 .form-check-label.btn.btn-primary.active {
   background: #8bbb11;
   transition: background 0.15s ease-in-out;
