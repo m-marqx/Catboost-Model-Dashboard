@@ -369,12 +369,12 @@
 }
 
 .progress-info {
-  margin-top: 1vh;
+  margin-top: 1svh;
   color: #c9e75d;
   text-align: center;
   font-weight: 300;
-  height: 28px;
-  font-size: 21px;
+  height: 2.8svh;
+  font-size: 2.1svh;
   background: transparent !important;
 }
 
