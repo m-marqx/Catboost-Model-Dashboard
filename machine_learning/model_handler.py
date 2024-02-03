@@ -193,6 +193,157 @@ class ModelHandler:
         ).cumsum()
         return df_returns
 
+    def model_reports(
+        self,
+        cutoff: float,
+        x_series: pd.Series,
+        y_series: pd.Series,
+        train_set: pd.DataFrame,
+        test_set: pd.DataFrame,
+        metric: Literal['report', 'difference', 'hold'] = 'report',
+    ) -> pd.DataFrame:
+        """
+        Generate model reports based on the specified metric.
+
+        Parameters
+        ----------
+        cutoff : float
+            The closest index value.
+        x_series : pd.Series
+            All X values, including values from train, test, and validation
+            datasets.
+        y_series : pd.Series
+            All Y values, including values from train, test, and validation
+            datasets.
+        train_set : pd.DataFrame
+            The training set (X_train and y_train).
+        test_set : pd.DataFrame
+            The test set (X_test and y_test).
+        metric : {'report', 'difference', 'hold'}, optional
+            The metric to use for generating reports.
+            (default :'report')
+
+        Returns
+        -------
+        pd.DataFrame
+            The generated model reports.
+        """
+        data_frame = pd.concat([x_series, y_series], axis=1)
+
+        x_series = data_frame[self.x_test.columns].loc[train_set.index[0]:]
+        y_series = data_frame[self.y_test.columns].loc[train_set.index[0]:]
+
+        y_pred_rsi = pd.DataFrame(self.estimator.predict_proba(x_series))[1]
+        y_pred_model = np.where(y_pred_rsi > round(cutoff, 6), 1., 0.)
+        y_pred_series = pd.Series(y_pred_model, index=data_frame.index)
+
+        if metric == 'classification_report':
+            print("----------------------- treino -----------------------")
+            print(
+                metrics.classification_report(
+                    data_frame['Target_1_bin'].reindex(train_set.index),
+                    y_pred_series.reindex(train_set.index)
+                )
+            )
+            print("")
+            print("----------------------- teste -----------------------")
+            print(
+                metrics.classification_report(
+                    data_frame['Target_1_bin'].reindex(test_set.index),
+                    y_pred_series.reindex(test_set.index),
+                )
+            )
+            print("")
+            print("----------------------- validação -----------------------")
+            print(
+                metrics.classification_report(
+                    data_frame['Target_1_bin'].loc[test_set.index[-1]:],
+                    y_pred_series.loc[test_set.index[-1]:],
+                )
+            )
+
+        elif metric == "hold":
+            print("----------------------- treino -----------------------")
+            print(
+                metrics.classification_report(
+                    data_frame['Target_1_bin'].reindex(train_set.index),
+                    np.ones(y_pred_series.reindex(train_set.index).shape)
+                )
+            )
+            print("")
+            print("----------------------- teste -----------------------")
+            print(
+                metrics.classification_report(
+                    data_frame['Target_1_bin'].reindex(test_set.index),
+                    np.ones(y_pred_series.reindex(test_set.index).shape),
+                )
+            )
+            print("")
+            print("----------------------- validação -----------------------")
+            print(
+                metrics.classification_report(
+                    data_frame['Target_1_bin'].loc[test_set.index[-1]:],
+                    np.ones(y_pred_series.loc[test_set.index[-1]:].shape),
+                )
+            )
+
+        else:
+            y_train_true = (
+                data_frame['Target_1_bin']
+                .reindex(train_set.index)
+                .value_counts()
+            )
+
+            y_train_pred = (
+                y_pred_series
+                .reindex(train_set.index)
+                .value_counts()
+            )
+
+            print("----------------------- treino -----------------------")
+            print("real\n")
+            print(y_train_true.sort_index())
+            print("\npred\n")
+            print(y_train_pred.sort_index())
+            print("\n----------------------- diff -----------------------")
+            print(y_train_true - y_train_pred)
+
+            y_test_true = (
+                data_frame['Target_1_bin']
+                .reindex(test_set.index)
+                .value_counts()
+            )
+
+            y_test_pred = y_pred_series.reindex(test_set.index).value_counts()
+
+            print("----------------------- teste -----------------------")
+            print("real\n")
+            print(y_test_true.sort_index())
+            print("\npred\n")
+            print(y_test_pred.sort_index())
+            print("\n----------------------- diff -----------------------")
+            print(y_test_true - y_test_pred)
+
+            y_validation_true = (
+                data_frame['Target_1_bin']
+                .loc[test_set.index[-1]:]
+                .value_counts()
+            )
+
+        y_validation_pred = (
+            y_pred_series
+            .loc[test_set.index[-1]:]
+            .value_counts()
+        )
+
+        print("----------------------- validação -----------------------")
+        print("real\n")
+        print(y_validation_true.sort_index())
+        print("\npred\n")
+        print(y_validation_pred.sort_index())
+        print("\n----------------------- diff -----------------------")
+        print(y_validation_true - y_validation_pred)
+
     def roc_curve(
         self,
         output: Literal["DataFrame", "Figure"] = "Figure",
