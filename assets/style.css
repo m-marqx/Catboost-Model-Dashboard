@@ -627,11 +627,11 @@
 }
 
 .spinner-loader {
-  width: 32px;
-  height: 32px;
+  width: 3.2vh;
+  height: 3.2vh;
   margin-top: auto;
   display: inline-block;
-  border: 5px solid #e4f88b;
+  border: 0.5vh solid #e4f88b;
   border-radius: 50%;
   border-top-color: transparent;
   border-bottom-color: transparent;
@@ -662,7 +662,7 @@
   margin-top: 0px !important;
   margin-right: auto;
   display: inline-block;
-  border: 5px solid #e4f88b;
+  border: 0.5vh solid #e4f88b;
   border-radius: 50%;
   border-top-color: transparent;
   border-bottom-color: transparent;
@@ -674,13 +674,13 @@
 }
 
 .spinner-loader_model {
-  width: 32px;
-  height: 32px;
+  width: 3.2vh;
+  height: 3.2vh;
   margin-top: -39vh !important;
   display: flex !important;
   flex-wrap: wrap !important;
   align-content: flex-start !important;
-  border: 5px solid #e4f88b;
+  border: 0.5vh solid #e4f88b;
   border-radius: 50%;
   border-top-color: transparent;
   border-bottom-color: transparent;
