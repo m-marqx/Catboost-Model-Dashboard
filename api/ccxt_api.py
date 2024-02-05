@@ -83,7 +83,7 @@ class CcxtAPI:
         interval:str,
         exchange:ccxt.Exchange = ccxt.bitstamp(),
         since:int = 1325296800000,
-        verbose:Literal["Text", "Progress_Bar"] | None = "Progress_Bar" ,
+        verbose:Literal["Text", "Progress_Bar"] | None = None,
     ) -> None:
         """
         Initialize the CcxtAPI object.
