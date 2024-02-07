@@ -1,6 +1,6 @@
-import pandas as pd
 from typing import Literal
-from  utils.exceptions import InvalidArgumentError
+import pandas as pd
+from utils.exceptions import InvalidArgumentError
 
 
 class MathFeature:

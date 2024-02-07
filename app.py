@@ -6,7 +6,7 @@ from dashboard.pages.home.collapse_callback import DevMLCollapseCallbacks
 server = app.server
 
 if __name__ == "__main__":
-    #DEV
+    # DEV
     DevRunModel()
     DevMLLabelCallbacks()
     DevMLCollapseCallbacks()

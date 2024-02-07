@@ -16,6 +16,7 @@ from machine_learning.feature_params import FeaturesParamsComplete
 
 from utils.math_features import MathFeature
 
+
 class FeaturesCreator:
     """
     A class for creating features and evaluating machine learning
@@ -486,7 +487,6 @@ class FeaturesCreator:
             self.temp_indicator(value, indicator)
             .reindex(train_development.index)
         ).dropna()
-
 
         intervals = (
             DataHandler(self.temp_indicator_series)

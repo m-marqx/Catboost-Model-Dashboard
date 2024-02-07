@@ -122,8 +122,8 @@ class ModelHandler:
         fee = fee / 100
         df_returns = (
             pd.DataFrame(
-                {'y_pred_probs' : self.y_pred_probs},
-                index=self.x_test.index
+                {'y_pred_probs': self.y_pred_probs},
+                self.x_test.index,
             )
         )
 

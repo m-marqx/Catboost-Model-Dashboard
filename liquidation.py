@@ -4,6 +4,7 @@ Module for calculating liquidation values.
 
 from typing import Literal
 
+
 class Liquidation:
     """
     Class for calculating liquidation values.
