@@ -123,7 +123,8 @@ class DynamicTimeWarping:
 
     def calculate_dtw_distance(
         self,
-        method:Literal['ratio', 'absolute'] = 'ratio',
+        method: Literal["ratio", "absolute"] = "ratio",
+        align_sequences: bool = False
     ) -> pd.Series:
         """
         Calculate the DTW distance between the input sequences.
@@ -133,11 +134,18 @@ class DynamicTimeWarping:
         method : str, optional
             The method to calculate the DTW distance.
             The options are:
-            - 'ratio': The ratio between the input_x and input_y
+            - "ratio": The ratio between the input_x and input_y
             sequences.
-            - 'absolute': The absolute difference between the input_x
+            - "absolute": The absolute difference between the input_x
             and input_y sequences.
-            (default: 'ratio')
+            (default: "ratio")
+
+        align_sequences : bool, optional
+            Whether to align the input sequences based on their lengths.
+            If True, the longer sequence will be aligned to match
+            the length of the shorter sequence.
+            If False, the original sequences will stay intact.
+            (default: False)
 
         Returns
         -------
@@ -145,13 +153,35 @@ class DynamicTimeWarping:
             A Series containing the DTW distance between the input
             sequences.
         """
-        dtw_df = self.get_dtw_df
+        if align_sequences:
+            x_source = self.input_x.copy()
+            y_source = self.input_y.copy()
+
+            if len(self.input_x) > len(self.input_y):
+                x_source = x_source.reindex(self.input_y.index)
+            elif len(self.input_x) < len(self.input_y):
+                y_source = y_source.reindex(x_source.index)
+
+            x_series = self.dtw_df[self.column_x].reindex(
+                self.dtw_df[self.column_x + "_path"]
+                .drop_duplicates()
+            )
+
+            y_series = self.dtw_df[self.column_y].reindex(
+                self.dtw_df[self.column_y + "_path"]
+                .drop_duplicates()
+            )
+            x_series.index = x_source.dropna().index
+            y_series.index = y_source.dropna().index
+        else:
+            x_series = self.dtw_df[self.column_x]
+            y_series = self.dtw_df[self.column_y]
 
         match method:
-            case 'ratio':
-                return dtw_df[self.column_x] / dtw_df[self.column_y]
-            case 'absolute':
-                return dtw_df[self.column_x] - dtw_df[self.column_y]
+            case "ratio":
+                return x_series / y_series
+            case "absolute":
+                return x_series - y_series
             case _:
                 raise InvalidArgumentError(
                     "method must be either 'ratio' or 'absolute'"
