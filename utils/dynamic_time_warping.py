@@ -37,12 +37,14 @@ class DynamicTimeWarping:
 
     Methods
     -------
-    get_dtw_df()
-        Get the DTW values between the input sequences.
+    __init__(self, input_x, input_y)
+        Initialize the DynamicTimeWarping class with the input sequences.
 
-    calculate_dtw_distance()
+    dtw_df(self)
+        Get the DTW dataframe between the input sequences.
+
+    calculate_dtw_distance(self, method="ratio", align_sequences=False)
         Calculate the DTW distance between the input sequences.
-
     """
 
     def __init__(
