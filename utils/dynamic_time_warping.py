@@ -80,14 +80,14 @@ class DynamicTimeWarping:
         )
 
     @property
-    def get_dtw_df(self) -> pd.DataFrame:
+    def dtw_df(self) -> pd.DataFrame:
         """
-        Get the DTW values between the input sequences.
+        Get the DTW dataframe between the input sequences.
 
         Returns
         -------
         pd.DataFrame
-            A DataFrame containing the DTW values between the input
+            A DataFrame containing the DTW dataframe between the input
             sequences.
             The DataFrame has the following columns:
             - <column_x>_path: The path of the input_x sequence in
