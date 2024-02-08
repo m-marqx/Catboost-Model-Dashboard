@@ -389,3 +389,64 @@ def model_metrics(y_pred: pd.Series, target: pd.Series) -> pd.DataFrame:
     )
 
     return model_metric
+
+def calculate_returns(
+    gross_results: pd.Series,
+    filter_trades: pd.Series,
+    fee: float,
+    drawdown_min_window: int
+) -> pd.DataFrame:
+    """
+    Calculates the returns and drawdown metrics for a trading strategy.
+
+    Parameters
+    ----------
+    gross_results : pd.Series
+        Series containing the gross trading results.
+    filter_trades : pd.Series
+        Series containing the filter trades.
+    fee : float
+        The trading fee applied to each trade.
+    drawdown_min_window : int
+        The minimum window size for calculating drawdown.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing the calculated returns and drawdown metrics.
+    """
+    df_returns = pd.concat([filter_trades.astype(int), gross_results], axis=1)
+    df_returns.columns = ["Filter", "Result"]
+
+    df_returns["Result"] = np.where(
+        (df_returns["Filter"] != 0) & (df_returns["Result"].abs() != 1),
+        df_returns["Result"] - fee, 0
+    )
+
+    df_returns["Liquid_Result"] = np.where(
+        (df_returns["Filter"] != 0) & (df_returns["Result"].abs() != 1),
+        df_returns["Result"] - fee, 0
+    )
+
+    df_returns["Total_Return"] = df_returns["Result"].cumsum() + 1
+    df_returns["Liquid_Return"] = df_returns["Liquid_Result"].cumsum() + 1
+
+    df_returns["max_Liquid_Return"] = (
+        df_returns["Liquid_Return"].expanding(drawdown_min_window).max()
+    )
+
+    df_returns["max_Liquid_Return"] = np.where(
+        df_returns["max_Liquid_Return"].diff(),
+        np.nan, df_returns["max_Liquid_Return"],
+    )
+
+    df_returns["drawdown"] = (
+        1 - df_returns["Liquid_Return"] / df_returns["max_Liquid_Return"]
+    ).fillna(0)
+
+    drawdown_positive = df_returns["drawdown"] > 0
+
+    df_returns["drawdown_duration"] = drawdown_positive.groupby(
+        (~drawdown_positive).cumsum()
+    ).cumsum()
+    return df_returns
