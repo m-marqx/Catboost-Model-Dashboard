@@ -450,3 +450,31 @@ def calculate_returns(
         (~drawdown_positive).cumsum()
     ).cumsum()
     return df_returns
+
+def dict_to_classification_report(report_dict: dict) -> str:
+    """
+    Convert a dictionary to a classification report string.
+
+    Parameters
+    ----------
+    report_dict : dict
+        The input dictionary containing the classification report.
+
+    Returns
+    -------
+    str
+        The classification report string.
+
+    """
+    header = f"{'':<18} {'precision':<10} {'recall':<10} {'f1-score':<10}"
+    header += f" {'support':<10}\n"
+    header += "-" * 60 + "\n"
+    rows = ""
+    for key, value in report_dict.items():
+        if isinstance(value, dict):
+            rows += f"{key:<18} {value['precision']:<10.4f}"
+            rows += f" {value['recall']:<10.4f} {value['f1-score']:<10.4f}"
+            rows += f" {value['support']:<10.0f}\n"
+        else:
+            rows += f"\n{key:<40} {value:<10.4f} {'':<10} {'':<10} {'':<10}\n"
+    return header + rows
