@@ -302,6 +302,23 @@ def feat_train_qcut(
     )
 
 def model_metrics(y_pred: pd.Series, target: pd.Series) -> pd.DataFrame:
+    """
+    Calculate various model evaluation metrics based on predicted and
+    target values.
+
+    Parameters
+    ----------
+    y_pred : pd.Series
+        The predicted values.
+
+    target : pd.Series
+        The target values.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame containing the calculated model evaluation metrics.
+    """
     model_metric = y_pred.rename('y_pred').to_frame()
 
     model_metric['y_true'] = target
