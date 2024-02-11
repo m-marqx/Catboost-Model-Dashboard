@@ -495,3 +495,79 @@ def dict_to_classification_report(report_dict: dict) -> str:
         else:
             rows += f"\n{key:<40} {value:<10.4f} {'':<10} {'':<10} {'':<10}\n"
     return header + rows
+
+def dataset_classification_report(
+    predict_all: pd.Series | pd.DataFrame,
+    y_train: pd.Series | pd.DataFrame,
+    y_test: pd.Series | pd.DataFrame,
+    y_val: pd.Series | pd.DataFrame | None = None,
+    ignore_value: int = 0,
+    output: Literal["string", "print"] = "print",
+    ) -> str | None:
+    """
+    Calculate the classification report for a dataset.
+
+    Parameters
+    ----------
+    predict_all : pd.Series or pd.DataFrame
+        The predicted values for the entire dataset.
+    y_train : pd.Series or pd.DataFrame
+        The true values for the training set.
+    y_test : pd.Series or pd.DataFrame
+        The true values for the test set.
+    y_val : pd.Series or pd.DataFrame
+        The true values for the validation set.
+    ignore_value : int, optional
+        The value to ignore in the classification report.
+        (default : 0)
+    output : {"string", "print"}, optional
+        The output format of the classification report.
+        (default :"print")
+
+    Returns
+    -------
+    str or None
+        The classification report string if output is "string", None
+        otherwise.
+    """
+    data_frame = (
+        pd.DataFrame(predict_all, columns=['Predict'])
+        .query(f"Predict != {ignore_value}")
+    )
+
+    y_pred_values_train = (
+        data_frame.where(data_frame["Predict"] == 1, 0)
+        .loc[:y_train.index[-1]]["Predict"]
+    )
+
+    y_pred_values_test = (
+        data_frame.where(data_frame["Predict"] == 1, 0)
+        .loc[y_test.index[0]:y_test.index[-1]]["Predict"]
+    )
+
+    y_train_reindexed = y_train.reindex(y_pred_values_train.index)
+    y_test_reindexed = y_test.reindex(y_pred_values_test.index)
+    train_args = (y_train_reindexed, y_pred_values_train)
+    test_args = (y_test_reindexed, y_pred_values_test)
+
+    string = f"{'-' * 25} Train {'-' * 25}\n\n"
+    string += (metrics.classification_report(*train_args))
+    string += f"\n\n{'-' * 25} Test {'-' * 25}\n\n"
+    string += (metrics.classification_report(*test_args))
+
+    if y_val is not None:
+        y_pred_values_val = (
+            data_frame.where(data_frame["Predict"] == 1, 0)
+            .loc[y_val.index[0]:]["Predict"]
+        )
+
+        y_val_reindexed = y_val.reindex(y_pred_values_val.index)
+        val_args = (y_val_reindexed, y_pred_values_val)
+
+        string += f"\n\n{'-' * 22} Validation {'-' * 23}\n\n"
+        string += (metrics.classification_report(*val_args))
+
+    if output == "string":
+        return string
+
+    print(string)
