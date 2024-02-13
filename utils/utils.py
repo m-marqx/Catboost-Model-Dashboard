@@ -644,7 +644,7 @@ def model_reports(
     validation_str = " Validation "
 
     if metric == 'report':
-        print(f"{train_str:=^55}\n")
+        print(f"{train_str:=^55}")
         print(
             metrics.classification_report(
                 y_true_train,
@@ -652,7 +652,7 @@ def model_reports(
                 digits=4,
             )
         )
-        print(f"{test_str:=^55}\n")
+        print(f"{test_str:=^55}")
         print(
             metrics.classification_report(
                 y_true_test,
@@ -661,7 +661,7 @@ def model_reports(
             )
         )
         if y_true_validation is not None:
-            print(f"{validation_str:=^55}\n")
+            print(f"{validation_str:=^55}")
             print(
                 metrics.classification_report(
                     y_true_validation,
@@ -671,7 +671,7 @@ def model_reports(
             )
 
     elif metric == "all_1":
-        print(f"\n{train_str:█^55}")
+        print(f"{train_str:=^55}")
         print(
             metrics.classification_report(
                 y_true_train,
@@ -680,7 +680,7 @@ def model_reports(
                 digits=4,
             )
         )
-        print(f"\n{test_str:█^55}")
+        print(f"{test_str:=^55}")
         print(
             metrics.classification_report(
                 y_true_test,
@@ -690,7 +690,7 @@ def model_reports(
             )
         )
         if y_true_validation is not None:
-            print(f"\n{validation_str:█^55}")
+            print(f"{validation_str:=^55}")
             print(
                 metrics.classification_report(
                     y_true_validation,
@@ -701,7 +701,7 @@ def model_reports(
             )
 
     elif metric == "all_0":
-        print(f"\n{train_str:█^55}")
+        print(f"{train_str:=^55}")
         print(
             metrics.classification_report(
                 y_true_train,
@@ -710,7 +710,7 @@ def model_reports(
                 digits=4,
             )
         )
-        print(f"\n{test_str:█^55}")
+        print(f"{test_str:=^55}")
         print(
             metrics.classification_report(
                 y_true_test,
@@ -720,7 +720,7 @@ def model_reports(
             )
         )
         if y_true_validation is not None:
-            print(f"\n{validation_str:█^55}")
+            print(f"{validation_str:=^55}")
             print(
                 metrics.classification_report(
                     y_true_validation,
@@ -735,6 +735,7 @@ def model_reports(
         pred_str = " Predict "
         diff_str = " Difference "
 
+
         y_train_pred = (
             y_pred_all
             .reindex(y_true_train.index)
@@ -743,7 +744,7 @@ def model_reports(
 
         y_true_train_counts = y_true_train.value_counts()
 
-        print(f"{train_str:█^55}")
+        print(f"{train_str:=^55}")
         print(f"{real_str:-^55}")
         print(y_true_train_counts.sort_index())
         print(f"\n{pred_str:-^55}")
@@ -754,7 +755,7 @@ def model_reports(
         y_true_test_counts = y_true_test.value_counts()
         y_test_pred = y_pred_all.reindex(y_true_test.index).value_counts()
 
-        print(f"\n{test_str:█^55}")
+        print(f"\n{test_str:=^55}")
         print(f"{real_str:-^55}")
         print(y_true_test_counts.sort_index())
         print(f"\n{pred_str:-^55}")
@@ -770,7 +771,7 @@ def model_reports(
                 .value_counts()
             )
 
-            print(f"\n{validation_str:█^55}")
+            print(f"\n{validation_str:=^55}")
             print(f"{real_str:-^55}")
             print(y_true_validation_counts.sort_index())
             print(f"\n{pred_str:-^55}")
