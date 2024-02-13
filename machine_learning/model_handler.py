@@ -330,19 +330,19 @@ class ModelHandler:
                 .value_counts()
             )
 
-        y_validation_pred = (
-            y_pred_series
-            .loc[test_set.index[-1]:]
-            .value_counts()
-        )
+            y_validation_pred = (
+                y_pred_series
+                .loc[test_set.index[-1]:]
+                .value_counts()
+            )
 
-        print("----------------------- validação -----------------------")
-        print("real\n")
-        print(y_validation_true.sort_index())
-        print("\npred\n")
-        print(y_validation_pred.sort_index())
-        print("\n----------------------- diff -----------------------")
-        print(y_validation_true - y_validation_pred)
+            print(f"{validation_str:-^55}")
+            print(f"{real_str:-^35}\n")
+            print(y_validation_true.sort_index())
+            print(f"\n{pred_str:-^35}\n")
+            print(y_validation_pred.sort_index())
+            print(f"\n{diff_str:-^55}")
+            print(y_validation_true - y_validation_pred)
 
     def roc_curve(
         self,
