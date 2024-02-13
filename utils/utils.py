@@ -576,10 +576,9 @@ def dataset_classification_report(
 
 def model_reports(
     y_pred_all: pd.Series,
-    target_series: pd.Series,
-    train_set: pd.DataFrame | pd.Series,
-    test_set: pd.DataFrame | pd.Series,
-    validation_set: pd.DataFrame | pd.Series | None = None,
+    y_true_train: pd.Series,
+    y_true_test: pd.Series,
+    y_true_validation: pd.Series | None = None,
     metric: Literal[
         'report',
         'all_1',
@@ -594,24 +593,28 @@ def model_reports(
     ----------
     y_pred_all : pd.Series
         Predicted target values for all samples.
-    target_series : pd.Series
-        True target values for all samples.
-    train_set : pd.DataFrame or pd.Series
-        The training set (X_train and y_train).
-    test_set : pd.DataFrame or pd.Series
-        The test set (X_test and y_test).
-    validation_set : pd.DataFrame or pd.Series or None
-        The validation set (X_val and y_val).
+    y_true_train : pd.Series
+        True target values for the training set.
+    y_true_test : pd.Series
+        True target values for the test set.
+    y_true_validation : pd.Series, optional
+        True target values for the validation set.
+        (default: None)
     metric : {'report', 'all_1', 'all_0', 'difference'}, optional
         The metric to use for generating reports.
-        (default :'report')
+        (default: 'report')
 
     Returns
     -------
     pd.DataFrame
         The generated model reports.
     """
-    datasets_length = len(train_set) + len(test_set) + len(validation_set)
+    datasets_length = (
+        len(y_true_train)
+        + len(y_true_test)
+        + len(y_true_validation)
+    )
+
     metric_list = [
         'report',
         'difference',
@@ -623,17 +626,17 @@ def model_reports(
 
     if isinstance(y_pred_all, pd.DataFrame):
         raise TypeError("y_pred_all should be a pd.Series")
-    if isinstance(target_series, pd.DataFrame):
-        raise TypeError("target_series should be a pd.Series")
+    if isinstance(y_true_train, pd.DataFrame):
+        raise TypeError("y_true_train should be a pd.Series")
+    if isinstance(y_true_test, pd.DataFrame):
+        raise TypeError("y_true_test should be a pd.Series")
+    if isinstance(y_true_validation, pd.DataFrame):
+        raise TypeError("y_true_validation should be a pd.Series")
     if metric not in metric_list:
         raise ValueError(f"metric should be one of {all_metrics}")
-    if y_pred_all.shape[0] != target_series.shape[0]:
-        raise ValueError(
-            "y_pred_all and target_series should have the same length"
-        )
     if y_pred_all.shape[0] != datasets_length:
         raise ValueError(
-            "The sum of train_set, test_set, and validation_set should be "
+            "The sum of y_true_train, y_true_test, and y_true_validation should be "
             + "equal to y_pred_all")
 
     train_str = " Train "
@@ -644,25 +647,25 @@ def model_reports(
         print(f"{train_str:=^55}\n")
         print(
             metrics.classification_report(
-                target_series.reindex(train_set.index),
-                y_pred_all.reindex(train_set.index),
+                y_true_train,
+                y_pred_all.reindex(y_true_train.index),
                 digits=4,
             )
         )
         print(f"{test_str:=^55}\n")
         print(
             metrics.classification_report(
-                target_series.reindex(test_set.index),
-                y_pred_all.reindex(test_set.index),
+                y_true_test,
+                y_pred_all.reindex(y_true_test.index),
                 digits=4,
             )
         )
-        if validation_set is not None:
+        if y_true_validation is not None:
             print(f"{validation_str:=^55}\n")
             print(
                 metrics.classification_report(
-                    target_series.reindex(validation_set.index),
-                    y_pred_all.reindex(validation_set.index),
+                    y_true_validation,
+                    y_pred_all.reindex(y_true_validation.index),
                     digits=4,
                 )
             )
@@ -671,8 +674,8 @@ def model_reports(
         print(f"\n{train_str:█^55}")
         print(
             metrics.classification_report(
-                target_series.reindex(train_set.index),
-                np.ones(y_pred_all.reindex(train_set.index).shape),
+                y_true_train,
+                np.ones(y_pred_all.reindex(y_true_train.index).shape),
                 zero_division=0,
                 digits=4,
             )
@@ -680,18 +683,18 @@ def model_reports(
         print(f"\n{test_str:█^55}")
         print(
             metrics.classification_report(
-                target_series.reindex(test_set.index),
-                np.ones(y_pred_all.reindex(test_set.index).shape),
+                y_true_test,
+                np.ones(y_pred_all.reindex(y_true_test.index).shape),
                 zero_division=0,
                 digits=4,
             )
         )
-        if validation_set is not None:
+        if y_true_validation is not None:
             print(f"\n{validation_str:█^55}")
             print(
                 metrics.classification_report(
-                    target_series.reindex(validation_set.index),
-                    np.ones(y_pred_all.reindex(validation_set.index).shape),
+                    y_true_validation,
+                    np.ones(y_pred_all.reindex(y_true_validation.index).shape),
                     zero_division=0,
                     digits=4,
                 )
@@ -701,8 +704,8 @@ def model_reports(
         print(f"\n{train_str:█^55}")
         print(
             metrics.classification_report(
-                target_series.reindex(train_set.index),
-                np.zeros(y_pred_all.reindex(train_set.index).shape),
+                y_true_train,
+                np.zeros(y_pred_all.reindex(y_true_train.index).shape),
                 zero_division=0,
                 digits=4,
             )
@@ -710,18 +713,18 @@ def model_reports(
         print(f"\n{test_str:█^55}")
         print(
             metrics.classification_report(
-                target_series.reindex(test_set.index),
-                np.zeros(y_pred_all.reindex(test_set.index).shape),
+                y_true_test,
+                np.zeros(y_pred_all.reindex(y_true_test.index).shape),
                 zero_division=0,
                 digits=4,
             )
         )
-        if validation_set is not None:
+        if y_true_validation is not None:
             print(f"\n{validation_str:█^55}")
             print(
                 metrics.classification_report(
-                    target_series.reindex(validation_set.index),
-                    np.zeros(y_pred_all.reindex(validation_set.index).shape),
+                    y_true_validation,
+                    np.zeros(y_pred_all.reindex(y_true_validation.index).shape),
                     zero_division=0,
                     digits=4,
                 )
@@ -732,59 +735,45 @@ def model_reports(
         pred_str = " Predict "
         diff_str = " Difference "
 
-        y_train_true = (
-            target_series
-            .reindex(train_set.index)
+        y_train_pred = (
+            y_pred_all
+            .reindex(y_true_train.index)
             .value_counts()
         )
 
-        y_train_pred = (
-            y_pred_all
-            .reindex(train_set.index)
-            .value_counts()
-        )
+        y_true_train_counts = y_true_train.value_counts()
 
         print(f"{train_str:█^55}")
         print(f"{real_str:-^55}")
-        print(y_train_true.sort_index())
+        print(y_true_train_counts.sort_index())
         print(f"\n{pred_str:-^55}")
         print(y_train_pred.sort_index())
         print(f"\n{diff_str:-^55}")
-        print(y_train_true - y_train_pred)
+        print(y_true_train_counts - y_train_pred)
 
-        y_test_true = (
-            target_series
-            .reindex(test_set.index)
-            .value_counts()
-        )
-
-        y_test_pred = y_pred_all.reindex(test_set.index).value_counts()
+        y_true_test_counts = y_true_test.value_counts()
+        y_test_pred = y_pred_all.reindex(y_true_test.index).value_counts()
 
         print(f"\n{test_str:█^55}")
         print(f"{real_str:-^55}")
-        print(y_test_true.sort_index())
+        print(y_true_test_counts.sort_index())
         print(f"\n{pred_str:-^55}")
         print(y_test_pred.sort_index())
         print(f"\n{diff_str:-^55}")
-        print(y_test_true - y_test_pred)
+        print(y_true_test_counts - y_test_pred)
 
-        if validation_set is not None:
-            y_validation_true = (
-                target_series
-                .reindex(validation_set.index)
-                .value_counts()
-            )
-
+        if y_true_validation is not None:
+            y_true_validation_counts = y_true_validation.value_counts()
             y_validation_pred = (
                 y_pred_all
-                .reindex(validation_set.index)
+                .reindex(y_true_validation.index)
                 .value_counts()
             )
 
             print(f"\n{validation_str:█^55}")
             print(f"{real_str:-^55}")
-            print(y_validation_true.sort_index())
+            print(y_true_validation_counts.sort_index())
             print(f"\n{pred_str:-^55}")
             print(y_validation_pred.sort_index())
             print(f"\n{diff_str:-^55}")
-            print(y_validation_true - y_validation_pred)
+            print(y_true_validation_counts - y_validation_pred)
