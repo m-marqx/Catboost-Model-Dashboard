@@ -297,7 +297,7 @@ def feat_train_qcut(
     )
 
     return (
-        dataset[feat_name].apply(lambda x: intervals_range[
+        dataset[feat_name].dropna().apply(lambda x: intervals_range[
             (x >= intervals_range["lowest"])
             & (x <= intervals_range["highest"])
         ].index[0])
