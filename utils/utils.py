@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+from sklearn import metrics
+from typing import Literal
 
 
 class Statistics:
@@ -575,3 +577,168 @@ def dataset_classification_report(
         return string
 
     print(string)
+
+def model_reports(
+    y_pred_all: pd.Series,
+    target_series: pd.Series,
+    train_set: pd.DataFrame | pd.Series,
+    test_set: pd.DataFrame | pd.Series,
+    validation_set: pd.DataFrame | pd.Series,
+    metric: Literal['report', 'difference', 'hold'] = 'report',
+) -> pd.DataFrame:
+    """
+    Generate model reports based on the specified metric.
+
+    Parameters
+    ----------
+    y_pred_all : pd.Series
+        Predicted target values for all samples.
+    target_series : pd.Series
+        True target values for all samples.
+    train_set : pd.DataFrame or pd.Series
+        The training set (X_train and y_train).
+    test_set : pd.DataFrame or pd.Series
+        The test set (X_test and y_test).
+    validation_set : pd.DataFrame or pd.Series
+        The validation set (X_val and y_val).
+    metric : {'report', 'difference', 'hold'}, optional
+        The metric to use for generating reports.
+        (default :'report')
+
+    Returns
+    -------
+    pd.DataFrame
+        The generated model reports.
+    """
+    if isinstance(y_pred_all, pd.DataFrame):
+        raise TypeError("y_pred_all should be a pd.Series")
+    if isinstance(target_series, pd.DataFrame):
+        raise TypeError("target_series should be a pd.Series")
+    if metric not in ["report", "difference", "hold"]:
+        raise ValueError("metric should be 'report', 'difference', or 'hold'")
+    if y_pred_all.shape[0] != target_series.shape[0]:
+        raise ValueError(
+            "y_pred_all and target_series should have the same length"
+        )
+
+    datasets_length = (
+        train_set.shape[0] + test_set.shape[0] + validation_set.shape[0]
+    )
+
+    if y_pred_all.shape[0] != datasets_length:
+        raise ValueError(
+            "The sum of train_set, test_set, and validation_set should be "
+            + "equal to y_pred_all")
+
+    train_str = " Train "
+    test_str = " Test "
+    validation_str = " Validation "
+    real_str = " Real "
+    pred_str = " Predict "
+    diff_str = " difference "
+
+    if metric == 'report':
+        print(f"{train_str:-^55}")
+        print(
+            metrics.classification_report(
+                target_series.reindex(train_set.index),
+                y_pred_all.reindex(train_set.index)
+            )
+        )
+        print(f"{test_str:-^55}\n")
+        print(
+            metrics.classification_report(
+                target_series.reindex(test_set.index),
+                y_pred_all.reindex(test_set.index),
+            )
+        )
+        if validation_set:
+            print(f"{validation_str:-^55}\n")
+            print(
+                metrics.classification_report(
+                    target_series.reindex(validation_set.index),
+                    y_pred_all.reindex(validation_set.index),
+                )
+            )
+
+    elif metric == "hold":
+        print(f"\n{train_str:-^55}")
+        print(
+            metrics.classification_report(
+                target_series.reindex(train_set.index),
+                np.ones(y_pred_all.reindex(train_set.index).shape)
+            )
+        )
+        print(f"\n{test_str:-^55}")
+        print(
+            metrics.classification_report(
+                target_series.reindex(test_set.index),
+                np.ones(y_pred_all.reindex(test_set.index).shape),
+            )
+        )
+        if validation_set:
+            print(f"\n{validation_str:-^55}")
+            print(
+                metrics.classification_report(
+                    target_series.reindex(validation_set.index),
+                    np.ones(y_pred_all.reindex(validation_set.index).shape),
+                )
+            )
+
+    elif metric == "difference":
+        y_train_true = (
+            target_series
+            .reindex(train_set.index)
+            .value_counts()
+        )
+
+        y_train_pred = (
+            y_pred_all
+            .reindex(train_set.index)
+            .value_counts()
+        )
+
+        print(f"{train_str:-^55}")
+        print(f"{real_str:-^35}")
+        print(y_train_true.sort_index())
+        print(f"\n{pred_str:-^35}")
+        print(y_train_pred.sort_index())
+        print(f"\n{diff_str:-^35}")
+        print(y_train_true - y_train_pred)
+
+        y_test_true = (
+            target_series
+            .reindex(test_set.index)
+            .value_counts()
+        )
+
+        y_test_pred = y_pred_all.reindex(test_set.index).value_counts()
+
+        print(f"\n{test_str:-^55}")
+        print(f"{real_str:-^35}")
+        print(y_test_true.sort_index())
+        print(f"\n{pred_str:-^35}")
+        print(y_test_pred.sort_index())
+        print(f"\n{diff_str:-^35}")
+        print(y_test_true - y_test_pred)
+
+        if validation_set:
+            y_validation_true = (
+                target_series
+                .reindex(validation_set.index)
+                .value_counts()
+            )
+
+            y_validation_pred = (
+                y_pred_all
+                .reindex(validation_set.index)
+                .value_counts()
+            )
+
+            print(f"\n{validation_str:-^55}")
+            print(f"{real_str:-^35}")
+            print(y_validation_true.sort_index())
+            print(f"\n{pred_str:-^35}")
+            print(y_validation_pred.sort_index())
+            print(f"\n{diff_str:-^35}")
+            print(y_validation_true - y_validation_pred)
