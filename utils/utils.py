@@ -639,31 +639,31 @@ def model_reports(
     train_str = " Train "
     test_str = " Test "
     validation_str = " Validation "
-    real_str = " Real "
-    pred_str = " Predict "
-    diff_str = " difference "
 
     if metric == 'report':
-        print(f"{train_str:-^55}")
+        print(f"{train_str:=^55}\n")
         print(
             metrics.classification_report(
                 target_series.reindex(train_set.index),
-                y_pred_all.reindex(train_set.index)
+                y_pred_all.reindex(train_set.index),
+                digits=4,
             )
         )
-        print(f"{test_str:-^55}\n")
+        print(f"{test_str:=^55}\n")
         print(
             metrics.classification_report(
                 target_series.reindex(test_set.index),
                 y_pred_all.reindex(test_set.index),
+                digits=4,
             )
         )
-        if validation_set:
-            print(f"{validation_str:-^55}\n")
+        if validation_set is not None:
+            print(f"{validation_str:=^55}\n")
             print(
                 metrics.classification_report(
                     target_series.reindex(validation_set.index),
                     y_pred_all.reindex(validation_set.index),
+                    digits=4,
                 )
             )
 
@@ -728,6 +728,10 @@ def model_reports(
             )
 
     elif metric == "difference":
+        real_str = " Real "
+        pred_str = " Predict "
+        diff_str = " Difference "
+
         y_train_true = (
             target_series
             .reindex(train_set.index)
@@ -740,12 +744,12 @@ def model_reports(
             .value_counts()
         )
 
-        print(f"{train_str:-^55}")
-        print(f"{real_str:-^35}")
+        print(f"{train_str:█^55}")
+        print(f"{real_str:-^55}")
         print(y_train_true.sort_index())
-        print(f"\n{pred_str:-^35}")
+        print(f"\n{pred_str:-^55}")
         print(y_train_pred.sort_index())
-        print(f"\n{diff_str:-^35}")
+        print(f"\n{diff_str:-^55}")
         print(y_train_true - y_train_pred)
 
         y_test_true = (
@@ -756,15 +760,15 @@ def model_reports(
 
         y_test_pred = y_pred_all.reindex(test_set.index).value_counts()
 
-        print(f"\n{test_str:-^55}")
-        print(f"{real_str:-^35}")
+        print(f"\n{test_str:█^55}")
+        print(f"{real_str:-^55}")
         print(y_test_true.sort_index())
-        print(f"\n{pred_str:-^35}")
+        print(f"\n{pred_str:-^55}")
         print(y_test_pred.sort_index())
-        print(f"\n{diff_str:-^35}")
+        print(f"\n{diff_str:-^55}")
         print(y_test_true - y_test_pred)
 
-        if validation_set:
+        if validation_set is not None:
             y_validation_true = (
                 target_series
                 .reindex(validation_set.index)
@@ -777,10 +781,10 @@ def model_reports(
                 .value_counts()
             )
 
-            print(f"\n{validation_str:-^55}")
-            print(f"{real_str:-^35}")
+            print(f"\n{validation_str:█^55}")
+            print(f"{real_str:-^55}")
             print(y_validation_true.sort_index())
-            print(f"\n{pred_str:-^35}")
+            print(f"\n{pred_str:-^55}")
             print(y_validation_pred.sort_index())
-            print(f"\n{diff_str:-^35}")
+            print(f"\n{diff_str:-^55}")
             print(y_validation_true - y_validation_pred)
