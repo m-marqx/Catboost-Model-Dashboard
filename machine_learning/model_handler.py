@@ -236,8 +236,7 @@ class ModelHandler:
         y_pred_rsi = pd.DataFrame(self.estimator.predict_proba(x_series))[1]
         y_pred_model = np.where(y_pred_rsi > round(cutoff, 6), 1., 0.)
         y_pred_series = pd.Series(y_pred_model, index=data_frame.index)
-
-        if metric == 'classification_report':
+        if metric == 'report':
             print("----------------------- treino -----------------------")
             print(
                 metrics.classification_report(
