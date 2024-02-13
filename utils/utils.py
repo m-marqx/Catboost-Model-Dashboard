@@ -579,8 +579,13 @@ def model_reports(
     target_series: pd.Series,
     train_set: pd.DataFrame | pd.Series,
     test_set: pd.DataFrame | pd.Series,
-    validation_set: pd.DataFrame | pd.Series,
-    metric: Literal['report', 'difference', 'hold'] = 'report',
+    validation_set: pd.DataFrame | pd.Series | None = None,
+    metric: Literal[
+        'report',
+        'all_1',
+        'all_0',
+        'difference',
+    ] = 'report',
 ) -> pd.DataFrame:
     """
     Generate model reports based on the specified metric.
@@ -595,9 +600,9 @@ def model_reports(
         The training set (X_train and y_train).
     test_set : pd.DataFrame or pd.Series
         The test set (X_test and y_test).
-    validation_set : pd.DataFrame or pd.Series
+    validation_set : pd.DataFrame or pd.Series or None
         The validation set (X_val and y_val).
-    metric : {'report', 'difference', 'hold'}, optional
+    metric : {'report', 'all_1', 'all_0', 'difference'}, optional
         The metric to use for generating reports.
         (default :'report')
 
@@ -606,21 +611,26 @@ def model_reports(
     pd.DataFrame
         The generated model reports.
     """
+    datasets_length = len(train_set) + len(test_set) + len(validation_set)
+    metric_list = [
+        'report',
+        'difference',
+        'all_1',
+        'all_0',
+    ]
+
+    all_metrics = ', '.join(metric_list)
+
     if isinstance(y_pred_all, pd.DataFrame):
         raise TypeError("y_pred_all should be a pd.Series")
     if isinstance(target_series, pd.DataFrame):
         raise TypeError("target_series should be a pd.Series")
-    if metric not in ["report", "difference", "hold"]:
-        raise ValueError("metric should be 'report', 'difference', or 'hold'")
+    if metric not in metric_list:
+        raise ValueError(f"metric should be one of {all_metrics}")
     if y_pred_all.shape[0] != target_series.shape[0]:
         raise ValueError(
             "y_pred_all and target_series should have the same length"
         )
-
-    datasets_length = (
-        train_set.shape[0] + test_set.shape[0] + validation_set.shape[0]
-    )
-
     if y_pred_all.shape[0] != datasets_length:
         raise ValueError(
             "The sum of train_set, test_set, and validation_set should be "
@@ -657,27 +667,63 @@ def model_reports(
                 )
             )
 
-    elif metric == "hold":
-        print(f"\n{train_str:-^55}")
+    elif metric == "all_1":
+        print(f"\n{train_str:█^55}")
         print(
             metrics.classification_report(
                 target_series.reindex(train_set.index),
-                np.ones(y_pred_all.reindex(train_set.index).shape)
+                np.ones(y_pred_all.reindex(train_set.index).shape),
+                zero_division=0,
+                digits=4,
             )
         )
-        print(f"\n{test_str:-^55}")
+        print(f"\n{test_str:█^55}")
         print(
             metrics.classification_report(
                 target_series.reindex(test_set.index),
                 np.ones(y_pred_all.reindex(test_set.index).shape),
+                zero_division=0,
+                digits=4,
             )
         )
-        if validation_set:
-            print(f"\n{validation_str:-^55}")
+        if validation_set is not None:
+            print(f"\n{validation_str:█^55}")
             print(
                 metrics.classification_report(
                     target_series.reindex(validation_set.index),
                     np.ones(y_pred_all.reindex(validation_set.index).shape),
+                    zero_division=0,
+                    digits=4,
+                )
+            )
+
+    elif metric == "all_0":
+        print(f"\n{train_str:█^55}")
+        print(
+            metrics.classification_report(
+                target_series.reindex(train_set.index),
+                np.zeros(y_pred_all.reindex(train_set.index).shape),
+                zero_division=0,
+                digits=4,
+            )
+        )
+        print(f"\n{test_str:█^55}")
+        print(
+            metrics.classification_report(
+                target_series.reindex(test_set.index),
+                np.zeros(y_pred_all.reindex(test_set.index).shape),
+                zero_division=0,
+                digits=4,
+            )
+        )
+        if validation_set is not None:
+            print(f"\n{validation_str:█^55}")
+            print(
+                metrics.classification_report(
+                    target_series.reindex(validation_set.index),
+                    np.zeros(y_pred_all.reindex(validation_set.index).shape),
+                    zero_division=0,
+                    digits=4,
                 )
             )
 
