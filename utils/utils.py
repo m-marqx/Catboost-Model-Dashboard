@@ -552,16 +552,12 @@ def dataset_classification_report(
     train_args = (y_train_reindexed, y_pred_values_train)
     test_args = (y_test_reindexed, y_pred_values_test)
 
-    train_str = " Train "
-    test_str = " Test "
-
-    string = f"{train_str:-^55}\n\n"
+    string = f"{' Train ':-^55}\n"
     string += (metrics.classification_report(*train_args))
-    string += f"\n\n{test_str:-^55}\n\n"
+    string += f"\n{' Test ':-^55}\n"
     string += (metrics.classification_report(*test_args))
 
     if y_val is not None:
-        validation_str = " Validation "
         y_pred_values_val = (
             data_frame.where(data_frame["Predict"] == 1, 0)
             .loc[y_val.index[0]:]["Predict"]
@@ -570,7 +566,7 @@ def dataset_classification_report(
         y_val_reindexed = y_val.reindex(y_pred_values_val.index)
         val_args = (y_val_reindexed, y_pred_values_val)
 
-        string += f"\n\n{validation_str:-^55}\n\n"
+        string += f"\n{' Validation ':-^55}\n"
         string += (metrics.classification_report(*val_args))
 
     if output == "string":
