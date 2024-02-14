@@ -585,6 +585,7 @@ def model_reports(
         'all_0',
         'difference',
     ] = 'report',
+    precision: int = 4,
 ) -> pd.DataFrame:
     """
     Generate model reports based on the specified metric.
@@ -649,7 +650,7 @@ def model_reports(
             metrics.classification_report(
                 y_true_train,
                 y_pred_all.reindex(y_true_train.index),
-                digits=4,
+                digits=precision,
             )
         )
         print(f"{test_str:=^55}")
@@ -657,7 +658,7 @@ def model_reports(
             metrics.classification_report(
                 y_true_test,
                 y_pred_all.reindex(y_true_test.index),
-                digits=4,
+                digits=precision,
             )
         )
         if y_true_validation is not None:
@@ -666,7 +667,7 @@ def model_reports(
                 metrics.classification_report(
                     y_true_validation,
                     y_pred_all.reindex(y_true_validation.index),
-                    digits=4,
+                    digits=precision,
                 )
             )
 
@@ -677,7 +678,7 @@ def model_reports(
                 y_true_train,
                 np.ones(y_pred_all.reindex(y_true_train.index).shape),
                 zero_division=0,
-                digits=4,
+                digits=precision,
             )
         )
         print(f"{test_str:=^55}")
@@ -686,7 +687,7 @@ def model_reports(
                 y_true_test,
                 np.ones(y_pred_all.reindex(y_true_test.index).shape),
                 zero_division=0,
-                digits=4,
+                digits=precision,
             )
         )
         if y_true_validation is not None:
@@ -696,7 +697,7 @@ def model_reports(
                     y_true_validation,
                     np.ones(y_pred_all.reindex(y_true_validation.index).shape),
                     zero_division=0,
-                    digits=4,
+                    digits=precision,
                 )
             )
 
