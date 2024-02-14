@@ -154,25 +154,7 @@ class DynamicTimeWarping:
             sequences.
         """
         if align_sequences:
-            x_source = self.input_x.copy()
-            y_source = self.input_y.copy()
-
-            if len(self.input_x) > len(self.input_y):
-                x_source = x_source.reindex(self.input_y.index)
-            elif len(self.input_x) < len(self.input_y):
-                y_source = y_source.reindex(x_source.index)
-
-            x_series = self.dtw_df[self.column_x].reindex(
-                self.dtw_df[self.column_x + "_path"]
-                .drop_duplicates()
-            )
-
-            y_series = self.dtw_df[self.column_y].reindex(
-                self.dtw_df[self.column_y + "_path"]
-                .drop_duplicates()
-            )
-            x_series.index = x_source.dropna().index
-            y_series.index = y_source.dropna().index
+            x_series, y_series = self.align_dtw_distance()
         else:
             x_series = self.dtw_df[self.column_x]
             y_series = self.dtw_df[self.column_y]
@@ -186,3 +168,37 @@ class DynamicTimeWarping:
                 raise InvalidArgumentError(
                     "method must be either 'ratio' or 'absolute'"
                 )
+
+    def align_dtw_distance(self):
+        """
+        Aligns two time series using Dynamic Time Warping (DTW)
+        algorithm and returns the aligned series.
+
+        Returns:
+            x_series (pandas.Series): Aligned x series.
+            y_series (pandas.Series): Aligned y series.
+        """
+        x_source = self.input_x.copy().rename('x')
+        y_source = self.input_y.copy().rename('y')
+
+        if len(self.input_x) > len(self.input_y):
+            x_source = x_source.reindex(self.input_y.index)
+        elif len(self.input_x) < len(self.input_y):
+            y_source = y_source.reindex(x_source.index)
+
+        dtw_df = DynamicTimeWarping(x_source, y_source).dtw_df
+
+        x_name = "x"
+        y_name = "y"
+
+        x_series = dtw_df[x_name].reindex(
+            dtw_df[x_name + '_path'].drop_duplicates()
+        )
+
+        y_series = dtw_df[y_name].reindex(
+            dtw_df[y_name + '_path'].drop_duplicates()
+        )
+
+        x_series.index = x_source.dropna().index
+        y_series.index = self.input_y.dropna().index
+        return x_series, y_series
