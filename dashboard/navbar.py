@@ -72,6 +72,17 @@ ml_buttons = [
     ),
 ]
 
+model_upload = dcc.Upload(
+    id="upload-data",
+    children="Upload Model",
+    style={
+        "margin": "0 0.5svh 0 0.5svh",
+        "display": "grid",
+        "align-content": "center",
+    },
+    className="model-btn btn btn-outline-secondary",
+)
+
 navbar_components = dbc.Navbar(
     [
         dbc.Collapse([menu] + ml_buttons, id="navbar-collapse", navbar=True),
@@ -82,5 +93,6 @@ navbar_components = dbc.Navbar(
             align_end=True,
             label="文/A",
         ),
+        model_upload,
     ],
 )
