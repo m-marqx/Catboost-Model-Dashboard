@@ -1,7 +1,8 @@
+from typing import Literal
+
 import numpy as np
 import pandas as pd
 from sklearn import metrics
-from typing import Literal
 
 
 class Statistics:
