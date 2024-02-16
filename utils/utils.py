@@ -246,64 +246,6 @@ class Statistics:
 
         return sortino_ratio
 
-def feat_train_qcut(
-    dataset: pd.DataFrame,
-    test_index: str | int,
-    feat_name: str,
-    bins: int = 10
-) -> pd.Series:
-    """
-    Compute the quantile-based discretization of a feature in the
-    training set and apply it to the dataset.
-
-    Parameters:
-    -----------
-    dataset : pd.DataFrame
-        The dataset to apply the discretization to.
-    test_index : str | int
-        The index or label of the test set. If it's an integer, it
-        represents the number of rows to include in the training set. If
-        it's a string, it represents the label of the last row to
-        include in the training set.
-    feat_name : str
-        The name of the feature to be discretized.
-    bins : int, optional
-        The number of bins to divide the feature into (default is 10).
-
-    Returns:
-    --------
-    pd.Series
-        The discretized feature values for the dataset.
-    """
-    train_set = (
-        dataset.iloc[:test_index].copy() if isinstance(test_index, int)
-        else dataset.loc[:test_index].copy()
-    )
-
-    intervals = (
-        pd.qcut(train_set[feat_name], bins)
-        .value_counts().index
-        .to_list()
-    )
-
-    lows = pd.Series([interval.left for interval in intervals])
-    highs = pd.Series([interval.right for interval in intervals])
-    lows.iloc[0] = -999999999999
-    highs.iloc[-1] = 999999999999
-
-    intervals_range = (
-        pd.concat([lows.rename("lowest"), highs.rename("highest")], axis=1)
-        .sort_values("highest")
-        .reset_index(drop=True)
-    )
-
-    return (
-        dataset[feat_name].dropna().apply(lambda x: intervals_range[
-            (x >= intervals_range["lowest"])
-            & (x <= intervals_range["highest"])
-        ].index[0])
-    )
-
 def model_metrics(y_pred: pd.Series, target: pd.Series) -> pd.DataFrame:
     """
     Calculate various model evaluation metrics based on predicted and
