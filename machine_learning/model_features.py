@@ -121,3 +121,50 @@ class ModelFeatures:
 
         return self.dataset
 
+    def create_slow_stoch_feature(
+        self,
+        source_column: str,
+        k_length: int = 14,
+        k_smoothing: int = 1,
+        d_smoothing: int = 3,
+    ):
+        """
+        Create the slow stochastic feature.
+
+        Parameters:
+        -----------
+        source_column : str
+            The column name of the source data.
+        k_length : int, optional
+            The length of the %K calculation. (default: 14)
+        k_smoothing : int, optional
+            The smoothing factor for %K. (default: 1)
+        d_smoothing : int, optional
+            The smoothing factor for %D. (default: 3)
+
+        Returns:
+        --------
+        pd.DataFrame
+            The dataset with the slow stochastic feature added.
+        """
+        stoch_k, stoch_d = (
+            ta.SlowStochastic(self.dataset, source_column)
+            .slow_stoch(k_length, k_smoothing, d_smoothing)
+        )
+
+        self.dataset["stoch_k"] = stoch_k
+        self.dataset.loc[:, "stoch_k_feat"] = feature_binning(
+            self.dataset["stoch_k"],
+            self.test_index,
+            self.bins,
+        )
+
+        self.dataset["stoch_d"] = stoch_d
+        self.dataset.loc[:, "stoch_d_feat"] = feature_binning(
+            self.dataset["stoch_d"],
+            self.test_index,
+            self.bins,
+        )
+
+        return self.dataset
+
