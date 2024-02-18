@@ -95,3 +95,29 @@ class ModelFeatures:
         self.dataset = dataset.copy()
         self.test_index = test_index
         self.bins = bins
+
+    def create_rsi_feature(self, source: pd.Series, length: int):
+        """
+        Create the RSI (Relative Strength Index) feature.
+
+        Parameters:
+        -----------
+        source : pd.Series
+            The source series for calculating RSI.
+        length : int
+            The length of the RSI calculation.
+
+        Returns:
+        --------
+        pd.DataFrame
+            The dataset with the RSI feature added.
+        """
+        self.dataset["RSI"] = ta.RSI(source, length)
+        self.dataset.loc[:, "RSI_feat"] = feature_binning(
+            self.dataset["RSI"],
+            self.test_index,
+            self.bins,
+        )
+
+        return self.dataset
+
