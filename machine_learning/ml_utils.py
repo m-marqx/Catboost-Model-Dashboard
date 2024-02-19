@@ -115,7 +115,7 @@ class DataHandler:
         validation_df = self.data_frame.iloc[split_index:].copy()
 
         features = development_df[feature_columns]
-        target = development_df["Target_1_bin"]
+        target = development_df["Target_bin"]
 
         X_train, X_test, y_train, y_test = train_test_split(
             features,
@@ -130,7 +130,7 @@ class DataHandler:
         }
         validation_dataset = {
             "X_validation": validation_df[feature_columns],
-            "y_validation": validation_df["Target_1_bin"]
+            "y_validation": validation_df["Target_bin"]
         }
 
         return {
@@ -145,10 +145,10 @@ class DataHandler:
         Adds target variables to the DataFrame based on the 'close'
         column:
         - 'Return': Percentage change in 'close' from the previous day.
-        - 'Target_1': Shifted 'Return', representing the future day's
+        - 'Target': Shifted 'Return', representing the future day's
         return.
-        - 'Target_1_bin': Binary classification of 'Target_1':
-            - 1 if 'Target_1' > 1 (positive return)
+        - 'Target_bin': Binary classification of 'Target':
+            - 1 if 'Target' > 1 (positive return)
             - 0 otherwise.
 
         Returns:
@@ -161,14 +161,14 @@ class DataHandler:
             self.data_frame = pd.DataFrame(self.data_frame)
 
         self.data_frame['Return'] = self.data_frame["close"].pct_change(length) + 1
-        self.data_frame["Target_1"] = self.data_frame["Return"].shift(-length)
-        self.data_frame["Target_1_bin"] = np.where(
-            self.data_frame["Target_1"] > 1,
+        self.data_frame["Target"] = self.data_frame["Return"].shift(-length)
+        self.data_frame["Target_bin"] = np.where(
+            self.data_frame["Target"] > 1,
             1, 0)
 
-        self.data_frame["Target_1_bin"] = np.where(
-            self.data_frame['Target_1'].isna(),
-            np.nan, self.data_frame['Target_1_bin']
+        self.data_frame["Target_bin"] = np.where(
+            self.data_frame['Target'].isna(),
+            np.nan, self.data_frame['Target_bin']
         )
         return self.data_frame
 

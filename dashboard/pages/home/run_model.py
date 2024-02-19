@@ -11,7 +11,7 @@ import pandas as pd
 
 from api.ccxt_api import CcxtAPI
 
-from machine_learning.utils import DataHandler
+from machine_learning.ml_utils import DataHandler
 from machine_learning.feature_params import FeaturesParams, FeaturesParamsComplete
 from machine_learning.features_creator import FeaturesCreator
 

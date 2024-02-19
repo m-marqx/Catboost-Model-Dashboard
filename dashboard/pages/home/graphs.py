@@ -1,7 +1,7 @@
 from typing import Literal
 import pandas as pd
 import plotly.express as px
-from machine_learning.utils import DataHandler
+from machine_learning.ml_utils import DataHandler
 
 def resample_calculate_drawdown(
     series: pd.Series,

@@ -10,7 +10,7 @@ import catboost
 import tradingview_indicators as ta
 from utils.exceptions import InvalidArgumentError
 
-from machine_learning.utils import DataHandler
+from machine_learning.ml_utils import DataHandler
 from machine_learning.model_handler import ModelHandler
 from machine_learning.feature_params import FeaturesParamsComplete
 
