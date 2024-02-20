@@ -1,6 +1,7 @@
 import pandas as pd
 import tradingview_indicators as ta
-from utils.dynamic_time_warping import DynamicTimeWarping
+from utils import DynamicTimeWarping
+from typing import Literal
 
 def feature_binning(
     feature: pd.Series,
