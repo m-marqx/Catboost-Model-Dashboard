@@ -651,7 +651,7 @@ def model_reports(
                 y_true_train,
                 np.zeros(y_pred_all.reindex(y_true_train.index).shape),
                 zero_division=0,
-                digits=4,
+                digits=precision,
             )
         )
         print(f"{test_str:=^55}")
@@ -660,7 +660,7 @@ def model_reports(
                 y_true_test,
                 np.zeros(y_pred_all.reindex(y_true_test.index).shape),
                 zero_division=0,
-                digits=4,
+                digits=precision,
             )
         )
         if y_true_validation is not None:
