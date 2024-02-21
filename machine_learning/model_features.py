@@ -172,7 +172,7 @@ class ModelFeatures:
     def create_dtw_distance_feature(
         self,
         source: pd.Series,
-        feats: list,
+        feats: Literal["sma", "ema", "dema", "tema", "rma", "all"] | list,
         length: int,
     ) -> pd.DataFrame:
         """
@@ -182,7 +182,8 @@ class ModelFeatures:
         -----------
         source : pd.Series
             The source series for calculating the DTW distance.
-        feats : list
+        feats : Literal["sma", "ema", "dema", "tema", "rma", "all"]
+        | list
             The list of features to calculate the DTW distance for.
         length : int
             The length of the moving average calculation.
@@ -192,12 +193,14 @@ class ModelFeatures:
         pd.DataFrame
             The dataset with the DTW distance features added.
         """
-        if any(feat.lower().startswith("sma") for feat in feats):
+        all_mas = feats == "all"
+
+        if any(feat.lower().startswith("sma") for feat in feats) or all_mas:
             sma = ta.sma(source, length).dropna()
 
             self.dataset["SMA_DTW"] = (
                 DynamicTimeWarping(source, sma)
-                .calculate_dtw_distance("absolute", "True")
+                .calculate_dtw_distance("absolute", True)
             )
 
             self.dataset.loc[:, "SMA_DTW_feat"] = feature_binning(
@@ -206,12 +209,12 @@ class ModelFeatures:
                 self.bins,
             )
 
-        if any(feat.lower().startswith("ema") for feat in feats):
+        if any(feat.lower().startswith("ema") for feat in feats) or all_mas:
             ema = ta.ema(source, length).dropna()
 
             self.dataset["EMA_DTW"] = (
                 DynamicTimeWarping(source, ema)
-                .calculate_dtw_distance("absolute", "True")
+                .calculate_dtw_distance("absolute", True)
             )
 
             self.dataset.loc[:, "EMA_DTW_feat"] = feature_binning(
@@ -220,12 +223,12 @@ class ModelFeatures:
                 self.bins,
             )
 
-        if any(feat.lower().startswith("rma") for feat in feats):
+        if any(feat.lower().startswith("rma") for feat in feats) or all_mas:
             rma = ta.rma(source, length).dropna()
 
             self.dataset["RMA_DTW"] = (
                 DynamicTimeWarping(source, rma)
-                .calculate_dtw_distance("absolute", "True")
+                .calculate_dtw_distance("absolute", True)
             )
 
             self.dataset.loc[:, "RMA_DTW_feat"] = feature_binning(
@@ -234,11 +237,11 @@ class ModelFeatures:
                 self.bins,
             )
 
-        if any(feat.lower().startswith("dema") for feat in feats):
+        if any(feat.lower().startswith("dema") for feat in feats) or all_mas:
             dema = ta.sema(source, length, 2).dropna()
             self.dataset["DEMA_DTW"] = (
                 DynamicTimeWarping(source, dema)
-                .calculate_dtw_distance("absolute", "True")
+                .calculate_dtw_distance("absolute", True)
             )
 
             self.dataset.loc[:, "DEMA_DTW_feat"] = feature_binning(
@@ -247,11 +250,11 @@ class ModelFeatures:
                 self.bins,
             )
 
-        if any(feat.lower().startswith("tema") for feat in feats):
+        if any(feat.lower().startswith("tema") for feat in feats) or all_mas:
             tema = ta.sema(source, length, 3).dropna()
             self.dataset["TEMA_DTW"] = (
                 DynamicTimeWarping(source, tema)
-                .calculate_dtw_distance("absolute", "True")
+                .calculate_dtw_distance("absolute", True)
             )
 
             self.dataset.loc[:, "TEMA_DTW_feat"] = feature_binning(
