@@ -238,3 +238,296 @@ def adjust_max_trades(
 
     return data_frame
 
+def perform_general_random_search(
+    dataframe: pd.DataFrame,
+    test_index: int,
+    max_trades:int = 3,
+    off_days:int = 4,
+    pct_adj:float = 0.5,
+) -> dict:
+    """
+    Perform a general random search for model creation.
+
+    Parameters:
+    ----------
+    dataframe : pd.DataFrame
+        The input dataframe containing the data for model creation.
+    test_index : int
+        The index of the test data.
+    max_trades : int, optional
+        The maximum number of trades, by default 3.
+    off_days : int, optional
+        The number of off days, by default 4.
+    pct_adj : float, optional
+        The percentage adjustment, by default 0.5.
+
+    Returns:
+    -------
+    dict
+        A dictionary containing the model creation results.
+    """
+    random_seed = np.random.seed(np.random.choice(range(1, 50_001, 1)))
+    # DTW
+    ma_types = ["sma", "ema", "dema", "tema", "rma"]
+
+    combinations_list = []
+    for r in range(1, len(ma_types) + 1):
+        combinations_list.extend(itertools.combinations(ma_types, r))
+
+    ma_type_combinations = np.array(
+        list(combinations_list) + ["all"], dtype="object"
+    )
+    random_variables = {
+        # DTW
+        "random_source_price_dtw": np.random.choice(["open", "high", "low"]),
+        "random_binnings_qty_dtw": np.random.choice(range(10, 30)),
+        "random_moving_averages": np.random.choice(ma_type_combinations),
+        "random_moving_averages_length": np.random.choice(range(2, 300)),
+        # RSI
+        "random_source_price_rsi": np.random.choice(["open", "high", "low"]),
+        "random_binnings_qty_rsi": np.random.choice(range(10, 30)),
+        "random_rsi_length": np.random.choice(range(2, 150)),
+        # STOCH
+        "random_source_price_stoch": np.random.choice(["open", "high", "low"]),
+        "random_binnings_qty_stoch": np.random.choice(range(10, 30)),
+        "random_slow_stoch_length": np.random.choice(range(2, 50)),
+        "random_slow_stoch_k": np.random.choice(range(1, 10)),
+        "random_slow_stoch_d": np.random.choice(range(2, 10)),
+        "random_features": np.random.choice(
+            np.array([["RSI", "Stoch"], ["RSI"], ["Stoch"]], dtype="object")
+        ),
+    }
+
+    hyperparams = {
+        "iterations": 1000,
+        "learning_rate": np.random.choice(np.arange(0.01, 1.01, 0.01)),
+        "depth": np.random.choice(range(1, 17, 1)),
+        "min_child_samples": np.random.choice(range(1, 21, 1)),
+        "colsample_bylevel": np.random.choice(np.arange(0.1, 1.01, 0.01)),
+        "subsample": np.random.choice(np.arange(0.1, 1.01, 0.01)),
+        "reg_lambda": np.random.choice(range(1, 206, 1)),
+        "use_best_model": True,
+        "eval_metric": np.random.choice(
+            ["Logloss", "AUC", "F1", "Precision", "Recall", "PRAUC"]
+        ),
+        "random_seed": random_seed,
+        "silent": True,
+    }
+
+    kraken_df2 = dataframe.copy()
+    kraken_df2["slow_stoch_source"] = kraken_df2[
+        random_variables["random_source_price_stoch"]
+    ].pct_change(1)
+
+    dtw_source = (
+        kraken_df2[random_variables["random_source_price_dtw"]]
+        .pct_change(1)
+        .iloc[1:]
+    )
+
+    rsi_source = (
+        kraken_df2[random_variables["random_source_price_rsi"]]
+        .pct_change(1)
+        .iloc[1:]
+    )
+
+    kraken_df2 = ModelFeatures(
+        kraken_df2, test_index, random_variables["random_binnings_qty_dtw"]
+    ).create_dtw_distance_feature(
+        dtw_source,
+        random_variables["random_moving_averages"],
+        random_variables["random_moving_averages_length"],
+    )
+
+    if "RSI" in random_variables["random_features"]:
+        kraken_df2 = ModelFeatures(
+            kraken_df2, test_index, random_variables["random_binnings_qty_rsi"]
+        ).create_rsi_feature(rsi_source, random_variables["random_rsi_length"])
+
+    if "Stoch" in random_variables["random_features"]:
+        kraken_df2 = ModelFeatures(
+            kraken_df2, test_index, random_variables["random_binnings_qty_stoch"]
+        ).create_slow_stoch_feature(
+            random_variables["random_source_price_stoch"],
+            random_variables["random_slow_stoch_length"],
+            random_variables["random_slow_stoch_k"],
+            random_variables["random_slow_stoch_d"],
+        )
+
+    dtw_features = [
+        feature
+        for feature in kraken_df2.columns[9:]
+        if feature.endswith("feat") and "DTW" in feature
+    ]
+
+    other_features = [
+        feature
+        for feature in kraken_df2.columns[9:]
+        if feature.endswith("feat") and "DTW" not in feature
+    ]
+
+    other_features_list = []
+    for r in range(1, len(other_features) + 1):
+        other_features_list.extend(itertools.combinations(other_features, r))
+
+    other_features_array = np.array(list(other_features_list), dtype="object")
+
+    if len(other_features_array) == 1:
+        features = np.random.choice(other_features_array[0])
+        features = list((features,) + tuple(dtw_features))
+    else:
+        features = np.random.choice(other_features_array)
+        features = list(features + tuple(dtw_features))
+
+    (
+        mh2,
+        _,_,_,
+        y_train, y_test,
+        y_pred_train, y_pred_test,
+        _, all_y,
+        index_splits,
+    ) = calculate_model(
+        kraken_df2,
+        features,
+        plot=False,
+        output="All",
+        **hyperparams
+    )
+
+    data_set = mh2.copy()
+
+    mta = max_trade_adj(data_set, off_days, max_trades, pct_adj)
+    drawdowns = mta[["Drawdown", "Drawdown_pct_adj"]].quantile(0.95).to_list()
+
+    y_train = all_y.loc[
+        index_splits["train"].left : index_splits["train"].right
+    ]
+
+    y_test = all_y.loc[
+        index_splits["test"].left : index_splits["test"].right
+    ]
+
+    y_val = all_y.loc[
+        index_splits["validation"].left : index_splits["validation"].right
+    ][:-7]
+
+    y_pred_train = (
+        mta[["Predict"]]
+        .loc[index_splits["train"].left : index_splits["train"].right]
+        .query("Predict != 0")
+        .where(mta["Predict"] == 1, 0)
+    )
+    y_pred_test = (
+        mta[["Predict"]]
+        .loc[index_splits["test"].left : index_splits["test"].right]
+        .query("Predict != 0")
+        .where(mta["Predict"] == 1, 0)
+    )
+    y_pred_val = (
+        mta[["Predict"]]
+        .loc[
+            index_splits["validation"].left : index_splits["validation"].right
+        ][:-7]
+        .query("Predict != 0")
+        .where(mta["Predict"] == 1, 0)
+    )
+
+    y_train_adj = y_train.reindex(y_pred_train.index)
+    y_test_adj = y_test.reindex(y_pred_test.index)
+    y_val_adj = y_val.reindex(y_pred_val.index)
+
+    report_train = metrics.classification_report(
+        y_train_adj, y_pred_train, output_dict=True, zero_division=0
+    )
+    report_test = metrics.classification_report(
+        y_test_adj, y_pred_test, output_dict=True, zero_division=0
+    )
+
+    report_val = metrics.classification_report(
+        y_val_adj, y_pred_val, output_dict=True, zero_division=0
+    )
+
+    model_metrics_test = model_metrics(
+        y_pred_test.iloc[:, -1],
+        y_test_adj.iloc[:, -1],
+    )
+
+    model_metrics_val = model_metrics(
+        y_pred_val.iloc[:, -1],
+        y_val_adj.iloc[:, -1],
+    )
+
+    support_diff_test = model_metrics_test["support_diff"][-1]
+    support_diff_val = model_metrics_val["support_diff"][-1]
+    support_diffs = support_diff_test, support_diff_val
+
+    accuracys = report_test["accuracy"], report_val["accuracy"]
+
+    precisions_test = (
+        report_test["0.0"]["precision"], report_test["1.0"]["precision"]
+    )
+
+    precisions_val = (
+        report_val["0.0"]["precision"], report_val["1.0"]["precision"]
+    )
+
+    precisions = precisions_test + precisions_val
+
+    metrics_results = {
+        "accuracy_test": report_test["accuracy"],
+        "accuracy_val": report_val["accuracy"],
+        "precisions_test": precisions_test,
+        "precisions_val": precisions_val,
+        "precisions": precisions,
+        "support_diff_test": support_diff_test,
+        "support_diff_val": support_diff_val,
+    }
+
+    reports = {
+        "report_train": report_train,
+        "report_test": report_test,
+        "report_val": report_val,
+    }
+
+    metrics_reports = {
+        "metrics_reports_test" : model_metrics_test.iloc[-1].to_dict(),
+        "metrics_reports_val" : model_metrics_val.iloc[-1].to_dict(),
+    }
+
+    has_any_low_precision = min(precisions) <= 0.5
+
+    has_any_low_accuracy = min(accuracys) <= 0.5
+
+    has_big_drawdown = max(drawdowns) >= 0.5
+
+    has_high_support_diff = (
+        max(support_diffs) >= 0.35
+        and min(support_diffs) <= -0.35
+    )
+
+    if (
+        has_any_low_precision
+        or has_any_low_accuracy
+        or has_big_drawdown
+        or has_high_support_diff
+    ):
+        return {
+            "features_selected": None,
+            "feat_parameters": None,
+            "hyperparameters": None,
+            "metrics_results": None,
+            "drawdown_full": None,
+            "drawdown_adj": None,
+            "reports": None,
+        }
+
+    return {
+        "features_selected": [features],
+        "feat_parameters": [random_variables],
+        "hyperparameters": [hyperparams],
+        "metrics_results": [metrics_results],
+        "drawdown_full": drawdowns[0],
+        "drawdown_adj": drawdowns[1],
+        "reports": [reports],
+        "model_reports": [metrics_reports],
+    }
