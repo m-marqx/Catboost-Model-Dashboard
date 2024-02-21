@@ -165,3 +165,76 @@ def create_catboost_model(
 
     raise ValueError("Invalid output parameter")
 
+def adjust_max_trades(
+    dataframe: pd.DataFrame,
+    off_days: int,
+    max_trades: int,
+    pct_adj: float,
+) -> pd.DataFrame:
+    """
+    Adjust the dataframe based on maximum trades.
+
+    Parameters:
+    -----------
+    dataframe : pd.DataFrame
+        The input dataframe.
+    off_days : int
+        Number of days to set the predictions to zero after reaching
+        maximum trades.
+    max_trades : int
+        Maximum number of trades allowed.
+    pct_adj : float
+        Percentage adjustment to apply to the liquid result.
+
+    Returns:
+    --------
+    pd.DataFrame
+        The adjusted dataframe.
+    """
+    original_datafrane = dataframe.copy()
+    data_frame = dataframe.copy()
+    for idx, row in data_frame.iloc[max_trades:].iterrows():
+        if row["Predict"] != 0:
+            three_lag_days = data_frame.loc[:idx].iloc[-(max_trades + 1) : -1]
+            three_lag_days_trades = three_lag_days["Predict"].abs().sum()
+            if three_lag_days_trades >= max_trades:
+                data_frame.loc[idx:, "Predict"].iloc[0:off_days] = 0
+
+    data_frame["y_pred_probs"] = np.where(
+        data_frame["Predict"] == 0, 0, data_frame["y_pred_probs"]
+    )
+    data_frame["Position"] = data_frame["Predict"].shift().fillna(0)
+
+    data_frame = data_frame.iloc[:, :6]
+
+    data_frame["Liquid_Result"] = np.where(
+        data_frame["Predict"] == 0, 0, original_datafrane["Liquid_Result"]
+    ) / max_trades + 1
+
+    data_frame["Liquid_Result_pct_adj"] = np.where(
+        data_frame["Predict"] == 0, 0, original_datafrane["Liquid_Result"]
+    ) / max_trades * pct_adj + 1
+
+    data_frame["Liquid_Return"] = data_frame["Liquid_Result"].cumprod().ffill()
+
+    data_frame["Liquid_Return_simple"] = (
+        (data_frame["Liquid_Result"] - 1)
+        .cumsum()
+        .ffill()
+    )
+
+    data_frame["Liquid_Return_pct_adj"] = (
+        data_frame["Liquid_Result_pct_adj"].cumprod().ffill()
+    )
+
+    data_frame["Drawdown"] = (
+        1 - data_frame["Liquid_Return"] / data_frame["Liquid_Return"].cummax()
+    )
+
+    data_frame["Drawdown_pct_adj"] = (
+        1 - data_frame["Liquid_Return_pct_adj"]
+        / data_frame["Liquid_Return_pct_adj"].cummax()
+    )
+
+    return data_frame
+
