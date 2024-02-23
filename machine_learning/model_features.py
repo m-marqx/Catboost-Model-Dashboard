@@ -31,7 +31,7 @@ def feature_binning(
         else feature.loc[:test_index].copy()
     )
 
-    intervals = pd.qcut(train_series, bins).value_counts().index.to_list()
+    intervals = pd.qcut(train_series, bins, duplicates='drop').value_counts().index.to_list()
 
     lows = pd.Series([interval.left for interval in intervals])
     highs = pd.Series([interval.right for interval in intervals])
