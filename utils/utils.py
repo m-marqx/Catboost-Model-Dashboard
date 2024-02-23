@@ -131,12 +131,15 @@ class Statistics:
         stats_df["Sharpe_Ratio"] = self.calculate_estimed_sharpe_ratio()
         stats_df["Sortino_Ratio"] = self.calculate_estimed_sortino_ratio()
 
-        if self.time_span == "A":
+        if self.time_span.endswith(("A", "Y")) :
             stats_df["Date"] = stats_df.index.year
-        if self.time_span == "M":
+        elif self.time_span.endswith(("M")):
             stats_df["Date"] = stats_df.index.strftime('%m/%Y')
-        if self.time_span in ["A", "M"]:
-            stats_df = stats_df.reindex(columns=["Date"] + list(stats_df.columns[:-1]))
+
+        if self.time_span.endswith(("A", "Y", "M")):
+            indexes_name = ["Date"] + list(stats_df.columns[:-1])
+            stats_df = stats_df.reindex(columns=indexes_name)
+
         return round(stats_df, precision)
 
     def calculate_expected_value(self):
