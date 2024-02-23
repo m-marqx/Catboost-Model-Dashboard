@@ -266,7 +266,6 @@ def perform_general_random_search(
     dict
         A dictionary containing the model creation results.
     """
-    random_seed = np.random.seed(np.random.choice(range(1, 50_001, 1)))
     # DTW
     ma_types = ["sma", "ema", "dema", "tema", "rma"]
 
@@ -310,7 +309,7 @@ def perform_general_random_search(
         "eval_metric": np.random.choice(
             ["Logloss", "AUC", "F1", "Precision", "Recall", "PRAUC"]
         ),
-        "random_seed": random_seed,
+        "random_seed": np.random.choice(range(1, 50_001, 1)),
         "silent": True,
     }
 
@@ -386,7 +385,7 @@ def perform_general_random_search(
         y_pred_train, y_pred_test,
         _, all_y,
         index_splits,
-    ) = calculate_model(
+    ) = create_catboost_model(
         kraken_df2,
         features,
         plot=False,
@@ -396,7 +395,7 @@ def perform_general_random_search(
 
     data_set = mh2.copy()
 
-    mta = max_trade_adj(data_set, off_days, max_trades, pct_adj)
+    mta = adjust_max_trades(data_set, off_days, max_trades, pct_adj)
     drawdowns = mta[["Drawdown", "Drawdown_pct_adj"]].quantile(0.95).to_list()
 
     y_train = all_y.loc[
