@@ -8,6 +8,7 @@ from sklearn.model_selection import (
     learning_curve,
 )
 
+
 class ModelHandler:
     """
     A class for handling machine learning model evaluation.
@@ -78,7 +79,7 @@ class ModelHandler:
         long_only: bool = False,
         short_only: bool = False,
         drawdown_min_window: int = 365
-    ) -> tuple[pd.DataFrame, str]:
+    ) -> pd.DataFrame:
         """
         Calculate returns and performance metrics for a trading model.
 
@@ -98,11 +99,10 @@ class ModelHandler:
 
         Returns:
         --------
-        tuple[pd.DataFrame, str]
+        pd.DataFrame:
             A tuple containing:
             - pd.DataFrame: A DataFrame with various columns
             representing the trading results
-            - str: A message indicating the success of the operation
 
         Raises:
         -------
