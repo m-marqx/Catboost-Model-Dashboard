@@ -193,40 +193,60 @@ class ModelHandler:
         ).cumsum()
         return df_returns
 
-
     def roc_curve(
         self,
+        y_test: pd.Series | np.ndarray | None,
+        y_pred_proba: pd.Series | np.ndarray | None,
         output: Literal["DataFrame", "Figure"] = "Figure",
     ) -> go.Figure | pd.DataFrame:
         """
         Plot a Receiver Operating Characteristic (ROC) curve.
 
         The ROC curve is a graphical representation of the classifier's
-        ability to distinguish between positive and negative classes.
-        It is created by plotting the True Positive Rate (TPR) against
-        the False Positive Rate (FPR) at various threshold settings.
+        ability to distinguish between positive and negative classes. It
+        is created by plotting the True Positive Rate (TPR) against the
+        False Positive Rate (FPR).
 
         Parameters:
         -----------
-        fpr : str, np.ndarray, or pd.Series
-            An array containing the False Positive Rates for different
-            classification thresholds.
-        tpr : str, np.ndarray, or pd.Series
-            An array containing the True Positive Rates for different
-            classification thresholds.
+        y_test : pd.Series, np.ndarray, or None
+            The true labels of the test data. If None, the class object
+            `y_test` will be used.
+        y_pred_proba : pd.Series, np.ndarray, or None
+            The predicted probabilities of the positive class. If None,
+            the class object `y_pred_probs` will be used.
+        output : Literal["DataFrame", "Figure"], optional
+            The desired output format. If "DataFrame", a pandas
+            DataFrame containing the FPR, TPR, and thresholds will be
+            returned. If "Figure", a Plotly figure displaying the ROC
+            curve with AUC (Area Under the Curve) score will be
+            returned.
 
         Returns:
         --------
-        plotly.graph_objs._figure.Figure
-            A Plotly figure displaying the ROC curve with AUC
-            (Area Under the Curve) score.
+        If output is "DataFrame":
+            pd.DataFrame
+                A DataFrame containing the False Positive Rates (FPR),
+                True Positive Rates (TPR), and thresholds.
+        If output is "Figure":
+            plotly.graph_objs._figure.Figure
+                A Plotly figure displaying the ROC curve with AUC
+                (Area Under the Curve) score.
+
+        Raises:
+        -------
+        ValueError
+            If the output parameter is not "DataFrame" or "Figure".
 
         """
         if output not in ["DataFrame", "Figure"]:
             raise ValueError("output must be 'DataFrame' or 'Figure'")
 
+        y_pred_proba = y_pred_proba or self.y_pred_probs
+        y_test = y_test or self.y_test
+
         fpr, tpr, thresholds = (
-            metrics.roc_curve(self.y_test, self.y_pred_probs)
+            metrics.roc_curve(y_test, y_pred_proba)
         )
 
         roc_curve = pd.DataFrame(
