@@ -563,13 +563,13 @@ def model_reports(
     )
 
     metric_list = [
-        'report',
-        'difference',
-        'all_1',
-        'all_0',
+        "report",
+        "difference",
+        "all_1",
+        "all_0",
     ]
 
-    all_metrics = ', '.join(metric_list)
+    all_metrics = ", ".join(metric_list)
 
     if isinstance(y_pred_all, pd.DataFrame):
         raise TypeError("y_pred_all should be a pd.Series")
