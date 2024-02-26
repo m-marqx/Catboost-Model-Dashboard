@@ -673,7 +673,7 @@ def model_reports(
                     y_true_validation,
                     np.zeros(y_pred_all.reindex(y_true_validation.index).shape),
                     zero_division=0,
-                    digits=4,
+                    digits=precision,
                 )
             )
 
