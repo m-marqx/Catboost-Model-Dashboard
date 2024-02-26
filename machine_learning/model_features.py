@@ -92,10 +92,30 @@ class ModelFeatures:
         dataset: pd.DataFrame,
         test_index: int,
         bins: int = 10,
+        verbose: bool = True,
     ):
         self.dataset = dataset.copy()
         self.test_index = test_index
         self.bins = bins
+
+        self.logger = logging.getLogger("Model_Features")
+        formatter = logging.Formatter(
+            '%(levelname)s %(asctime)s: %(message)s', datefmt='%H:%M:%S'
+        )
+
+        handler = logging.StreamHandler()
+        handler.setFormatter(formatter)
+
+        if self.logger.hasHandlers():
+            self.logger.handlers.clear()
+
+        self.logger.addHandler(handler)
+        self.logger.propagate = False
+
+        if verbose:
+            self.logger.setLevel(logging.INFO)
+        else:
+            self.logger.setLevel(logging.WARNING)
 
     def create_rsi_feature(self, source: pd.Series, length: int):
         """
@@ -113,11 +133,17 @@ class ModelFeatures:
         pd.DataFrame
             The dataset with the RSI feature added.
         """
+        self.logger.info("Calculating RSI...")
+        start = time.perf_counter()
+
         self.dataset["RSI"] = ta.RSI(source, length)
         self.dataset.loc[:, "RSI_feat"] = feature_binning(
             self.dataset["RSI"],
             self.test_index,
             self.bins,
+        )
+        self.logger.info(
+            "RSI calculated in %.2f seconds.", time.perf_counter() - start
         )
 
         return self.dataset
@@ -148,6 +174,10 @@ class ModelFeatures:
         pd.DataFrame
             The dataset with the slow stochastic feature added.
         """
+
+        self.logger.info("Calculating slow stochastic...")
+        start = time.perf_counter()
+
         stoch_k, stoch_d = (
             ta.SlowStochastic(self.dataset, source_column)
             .slow_stoch(k_length, k_smoothing, d_smoothing)
@@ -165,6 +195,11 @@ class ModelFeatures:
             self.dataset["stoch_d"],
             self.test_index,
             self.bins,
+        )
+
+        self.logger.info(
+            "Slow stochastic calculated in %.2f seconds.",
+            time.perf_counter() - start,
         )
 
         return self.dataset
@@ -194,8 +229,13 @@ class ModelFeatures:
             The dataset with the DTW distance features added.
         """
         all_mas = feats == "all"
+        self.logger.info("Calculating DTW distance for moving averages...\n")
+        start_time_dtw = time.perf_counter()
 
         if any(feat.lower().startswith("sma") for feat in feats) or all_mas:
+            self.logger.info("Calculating DTW distance for SMA...")
+            start = time.perf_counter()
+
             sma = ta.sma(source, length).dropna()
 
             self.dataset["SMA_DTW"] = (
@@ -208,8 +248,15 @@ class ModelFeatures:
                 self.test_index,
                 self.bins,
             )
+            self.logger.info(
+                "DTW distance for SMA calculated in %.2f seconds.",
+                time.perf_counter() - start,
+            )
 
         if any(feat.lower().startswith("ema") for feat in feats) or all_mas:
+            self.logger.info("Calculating DTW distance for EMA...")
+            start = time.perf_counter()
+
             ema = ta.ema(source, length).dropna()
 
             self.dataset["EMA_DTW"] = (
@@ -223,7 +270,15 @@ class ModelFeatures:
                 self.bins,
             )
 
+            self.logger.info(
+                "DTW distance for EMA calculated in %.2f seconds.",
+                time.perf_counter() - start,
+            )
+
         if any(feat.lower().startswith("rma") for feat in feats) or all_mas:
+            self.logger.info("Calculating DTW distance for RMA...")
+            start = time.perf_counter()
+
             rma = ta.rma(source, length).dropna()
 
             self.dataset["RMA_DTW"] = (
@@ -237,7 +292,15 @@ class ModelFeatures:
                 self.bins,
             )
 
+            self.logger.info(
+                "DTW distance for RMA calculated in %.2f seconds.",
+                time.perf_counter() - start,
+            )
+
         if any(feat.lower().startswith("dema") for feat in feats) or all_mas:
+            self.logger.info("Calculating DTW distance for DEMA...")
+            start = time.perf_counter()
+
             dema = ta.sema(source, length, 2).dropna()
             self.dataset["DEMA_DTW"] = (
                 DynamicTimeWarping(source, dema)
@@ -250,7 +313,15 @@ class ModelFeatures:
                 self.bins,
             )
 
+            self.logger.info(
+                "DTW distance for DEMA calculated in %.2f seconds.",
+                time.perf_counter() - start,
+            )
+
         if any(feat.lower().startswith("tema") for feat in feats) or all_mas:
+            self.logger.info("Calculating DTW distance for TEMA...")
+            start = time.perf_counter()
+
             tema = ta.sema(source, length, 3).dropna()
             self.dataset["TEMA_DTW"] = (
                 DynamicTimeWarping(source, tema)
@@ -262,5 +333,15 @@ class ModelFeatures:
                 self.test_index,
                 self.bins,
             )
+
+            self.logger.info(
+                "DTW distance for TEMA calculated in %.2f seconds.",
+                time.perf_counter() - start,
+            )
+
+        self.logger.info(
+            "\nDTW distance for moving averages calculated in %.2f seconds.\n",
+            time.perf_counter() - start_time_dtw,
+        )
 
         return self.dataset
