@@ -1,7 +1,10 @@
+from typing import Literal
+import logging
+import time
+
 import pandas as pd
 import tradingview_indicators as ta
 from utils import DynamicTimeWarping
-from typing import Literal
 
 def feature_binning(
     feature: pd.Series,
