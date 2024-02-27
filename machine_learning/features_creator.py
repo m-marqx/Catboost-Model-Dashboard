@@ -103,9 +103,9 @@ class FeaturesCreator:
         self.temp_indicator_series = None
 
         self.train_development = (
-            self.data_frame.loc[:self.validation_index]
+            self.data_frame.loc[: self.validation_index]
             if isinstance(self.validation_index, str)
-            else self.data_frame.iloc[:self.validation_index]
+            else self.data_frame.iloc[: self.validation_index]
         )
 
         self.train_development_index = int(
