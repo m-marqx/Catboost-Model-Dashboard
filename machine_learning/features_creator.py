@@ -365,11 +365,7 @@ class FeaturesCreator:
             DataFrame containing the calculated features.
 
         """
-        train_end_index = (
-            train_end_index
-            or
-            self.train_development_index
-        )
+        train_end_index = train_end_index or self.train_development_index
 
         train_development = (
             self.data_frame.iloc[:train_end_index]
@@ -377,10 +373,10 @@ class FeaturesCreator:
             else self.data_frame.loc[:train_end_index]
         )
 
-        self.data_frame['temp_indicator'] = self.data_frame[based_on]
+        self.data_frame["temp_indicator"] = self.data_frame[based_on]
 
         self.temp_indicator_series = (
-            self.data_frame['temp_indicator']
+            self.data_frame["temp_indicator"]
             .reindex(train_development.index)
         ).dropna()
 
@@ -389,32 +385,33 @@ class FeaturesCreator:
             .get_split_variable_intervals(**self.split_params)
         )
 
-        intervalsH = (
+        intervals_highs = (
             DataHandler(self.temp_indicator_series)
             .get_split_variable_intervals(**self.split_paramsH)
         )
 
-        intervalsL = (
+        intervals_lows = (
             DataHandler(self.temp_indicator_series)
             .get_split_variable_intervals(**self.split_paramsL)
         )
 
-        self.data_frame[f'{based_on}_split'] = (
+        self.data_frame[f"{based_on}_split"] = (
             DataHandler(self.data_frame)
-            .calculate_intervals_variables('temp_indicator', intervals)
-        ).astype('int8')
+            .calculate_intervals_variables("temp_indicator", intervals)
+        ).astype("int8")
 
-        self.data_frame[f'{based_on}_high'] = (
+        self.data_frame[f"{based_on}_high"] = (
+            DataHandler(self.data_frame).calculate_intervals_variables(
+                "temp_indicator", intervals_highs
+            )
+        ).astype("int8")
+
+        self.data_frame[f"{based_on}_low"] = (
             DataHandler(self.data_frame)
-            .calculate_intervals_variables('temp_indicator', intervalsH)
-        ).astype('int8')
+            .calculate_intervals_variables("temp_indicator", intervals_lows)
+        ).astype("int8")
 
-        self.data_frame[f'{based_on}_low'] = (
-            DataHandler(self.data_frame)
-            .calculate_intervals_variables('temp_indicator', intervalsL)
-        ).astype('int8')
-
-        self.data_frame = self.data_frame.drop(columns='temp_indicator')
+        self.data_frame = self.data_frame.drop(columns="temp_indicator")
 
         return self.data_frame
 
