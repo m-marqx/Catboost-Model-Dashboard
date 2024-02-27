@@ -121,13 +121,13 @@ class FeaturesCreator:
 
     def calculate_results(
         self,
-        features_columns = None,
-        model_params=None,
-        fee = 0.13,
-        test_size = 0.5,
-        model_algorithm: Literal['xgboost', 'catboost'] = 'xgboost',
+        features_columns: list | None=None,
+        model_params =None,
+        fee=0.13,
+        test_size=0.5,
+        model_algorithm: Literal["xgboost", "catboost"] = "xgboost",
         save_model: bool = True,
-        **kwargs
+        **kwargs,
     ) -> pd.DataFrame:
         """
         Calculate the results of the model pipeline.
@@ -151,59 +151,57 @@ class FeaturesCreator:
 
         """
         development = (
-            self.data_frame.iloc[:self.validation_index].copy()
+            self.data_frame.iloc[: self.validation_index].copy()
             if isinstance(self.validation_index, int)
-            else self.data_frame.loc[:self.validation_index].copy()
+            else self.data_frame.loc[: self.validation_index].copy()
         )
 
         validation = (
-            self.data_frame.iloc[self.validation_index:].copy()
+            self.data_frame.iloc[self.validation_index :].copy()
             if isinstance(self.validation_index, int)
-            else self.data_frame.loc[self.validation_index:].copy()
+            else self.data_frame.loc[self.validation_index :].copy()
         )
 
         features = development[features_columns]
-        target = development["Target_1_bin"]
+        target = development["Target_bin"]
 
         if not model_params:
             model_params = {
-                'objective' : "binary:logistic",
-                'random_state' : 42,
-                'eval_metric' : 'auc'
+                "objective": "binary:logistic",
+                "random_state": 42,
+                "eval_metric": "auc",
             }
 
         X_train, X_test, y_train, y_test = train_test_split(
             features,
             target,
             test_size=test_size,
-            random_state=model_params['random_state'],
-            shuffle=False
+            random_state=model_params["random_state"],
+            shuffle=False,
         )
 
-        if model_algorithm == 'xgboost':
+        if model_algorithm == "xgboost":
             model = xgb.XGBClassifier(**model_params)
-        elif model_algorithm == 'catboost':
+        elif model_algorithm == "catboost":
             model = catboost.CatBoostClassifier(**model_params)
 
         model.fit(X_train, y_train)
 
         if save_model:
-            with open('xgboost_model.pkl', 'wb') as file:
+            with open("xgboost_model.pkl", "wb") as file:
                 pickle.dump(model, file)
 
         validacao_X_test = validation[features_columns].iloc[:-1]
-        validacao_y_test = validation["Target_1_bin"].iloc[:-1]
+        validacao_y_test = validation["Target_bin"].iloc[:-1]
 
         x_series = pd.concat([X_test, validacao_X_test], axis=0)
         y_series = pd.concat([y_test, validacao_y_test], axis=0)
 
         mh2 = ModelHandler(model, x_series, y_series).model_returns(
-            self.target_series,
-            fee,
-            **kwargs
+            self.target_series, fee, **kwargs
         )
-        mh2['validation_date'] = str(validation.index[0])
-        mh2['Target'] = y_series
+        mh2["validation_date"] = str(validation.index[0])
+        mh2["Target"] = y_series
         return mh2
 
     def temp_indicator(
