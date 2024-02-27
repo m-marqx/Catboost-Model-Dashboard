@@ -418,12 +418,12 @@ class FeaturesCreator:
     def calculate_model_returns(
         self,
         value: int,
-        indicator: Literal['RSI', 'rolling_ratio'] = 'RSI',
+        indicator: Literal["RSI", "rolling_ratio"] = "RSI",
         model_params: dict | None = None,
         fee: float = 0.1,
         train_end_index: int | None = 1526,
         results_column: str | list[pd.Index] | None = None,
-        features: list[pd.Index] | None = None
+        features: list[pd.Index] | None = None,
     ) -> dict:
         """
         Run the entire model pipeline and return drawdown results.
@@ -455,11 +455,7 @@ class FeaturesCreator:
         """
         features = features or []
 
-        train_end_index = (
-            train_end_index
-            or
-            self.train_development_index
-        )
+        train_end_index = train_end_index or self.train_development_index
 
         train_development = (
             self.data_frame.iloc[:train_end_index]
@@ -467,7 +463,7 @@ class FeaturesCreator:
             else self.data_frame.loc[:train_end_index]
         )
 
-        self.data_frame['temp_indicator'] = (
+        self.data_frame["temp_indicator"] = (
             self.temp_indicator(value, indicator)
         )
 
@@ -481,57 +477,54 @@ class FeaturesCreator:
             .get_split_variable_intervals(**self.split_params)
         )
 
-        intervalsH = (
+        intervals_highs = (
             DataHandler(self.temp_indicator_series)
             .get_split_variable_intervals(**self.split_paramsH)
         )
 
-        intervalsL = (
+        intervals_lows = (
             DataHandler(self.temp_indicator_series)
             .get_split_variable_intervals(**self.split_paramsL)
         )
 
-        self.data_frame['temp_variable'] = (
-            DataHandler(self.data_frame)
-            .calculate_intervals_variables('temp_indicator', intervals)
-        ).astype('int8')
+        self.data_frame["temp_variable"] = (
+            DataHandler(self.data_frame).calculate_intervals_variables(
+                "temp_indicator", intervals
+            )
+        ).astype("int8")
 
-        self.data_frame['temp_variableH'] = (
+        self.data_frame["temp_variableH"] = (
             DataHandler(self.data_frame)
-            .calculate_intervals_variables('temp_indicator', intervalsH)
-        ).astype('int8')
+            .calculate_intervals_variables("temp_indicator", intervals_highs)
+        ).astype("int8")
 
-        self.data_frame['temp_variableL'] = (
+        self.data_frame["temp_variableL"] = (
             DataHandler(self.data_frame)
-            .calculate_intervals_variables('temp_indicator', intervalsL)
-        ).astype('int8')
+            .calculate_intervals_variables("temp_indicator", intervals_lows)
+        ).astype("int8")
 
-        temp_variables = (
-            'temp_variable', 'temp_variableH', 'temp_variableL',
-        )
+        temp_variables = ("temp_variable", "temp_variableH", "temp_variableL")
 
         all_combinations = []
         for items in range(1, 4):
             combinations_item = combinations(temp_variables, items)
             all_combinations.extend(list(combinations_item))
 
-        params = {'model_params': model_params, 'fee': fee}
+        params = {"model_params": model_params, "fee": fee}
 
         if results_column:
             results = {
-                f"RSI{value}_{combination}"
-                : self.calculate_results(
-                    features_columns=list(combination) + features,
-                    **params
-                )[results_column] for combination in all_combinations
+                f"RSI{value}_{combination}": self.calculate_results(
+                    features_columns=list(combination) + features, **params
+                )[results_column]
+                for combination in all_combinations
             }
             return results
 
         results = {
-            f"RSI{value}_{combination}"
-            : self.calculate_results(
-                features_columns=list(combination) + features,
-                **params
-            ) for combination in all_combinations
+            f"RSI{value}_{combination}": self.calculate_results(
+                features_columns=list(combination) + features, **params
+            )
+            for combination in all_combinations
         }
         return results
