@@ -308,11 +308,7 @@ class FeaturesCreator:
             DataFrame containing the calculated features.
 
         """
-        train_end_index = (
-            train_end_index
-            or
-            self.train_development_index
-        )
+        train_end_index = train_end_index or self.train_development_index
 
         train_development = (
             self.data_frame.iloc[:train_end_index]
@@ -320,10 +316,10 @@ class FeaturesCreator:
             else self.data_frame.loc[:train_end_index]
         )
 
-        self.data_frame['temp_indicator'] = self.data_frame[based_on]
+        self.data_frame["temp_indicator"] = self.data_frame[based_on]
 
         self.temp_indicator_series = (
-            self.data_frame['temp_indicator']
+            self.data_frame["temp_indicator"]
             .reindex(train_development.index)
         ).dropna()
 
@@ -332,17 +328,17 @@ class FeaturesCreator:
             .get_split_variable_intervals(**self.split_params)
         )
 
-        intervalsH = (
+        intervals_h = (
             DataHandler(self.temp_indicator_series)
             .get_split_variable_intervals(**self.split_paramsH)
         )
 
-        intervalsL = (
+        intervals_l = (
             DataHandler(self.temp_indicator_series)
             .get_split_variable_intervals(**self.split_paramsL)
         )
 
-        return {"split": intervals, "high": intervalsH, "low": intervalsL}
+        return {"split": intervals, "high": intervals_h, "low": intervals_l}
 
     def calculate_features(
         self,
