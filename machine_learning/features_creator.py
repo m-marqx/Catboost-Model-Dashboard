@@ -236,28 +236,25 @@ class FeaturesCreator:
             source = self.source
 
         match indicator:
-            case 'RSI':
+            case "RSI":
                 return ta.RSI(source, value)
 
-            case 'rolling_ratio':
+            case "rolling_ratio":
 
                 source_name = source.name if isinstance(source, pd.Series) else source
                 source_name = source_name or self.source.name
 
-                return (
-                    MathFeature(self.data_frame[source_name].to_frame(), source_name)
-                    .rolling_ratio(*value)
-                )
-            case 'wick_proportion':
+                return MathFeature(
+                    self.data_frame[source_name].to_frame(), source_name
+                ).rolling_ratio(*value)
+            case "wick_proportion":
                 open_column = (
-                    "open"
-                    if "open" in self.data_frame.columns else "Open"
+                    "open" if "open" in self.data_frame.columns else "Open"
                 )
                 open_price = self.data_frame[open_column].copy()
 
                 close_column = (
-                    "close"
-                    if "close" in self.data_frame.columns else "Close"
+                    "close" if "close" in self.data_frame.columns else "Close"
                 )
                 close_price = self.data_frame[close_column].copy()
 
@@ -275,7 +272,7 @@ class FeaturesCreator:
                 wick_proportion = np.where(
                     close_price > open_price,
                     (high_price - close_price) / candle_amplitude,
-                    (close_price - low_price) / candle_amplitude
+                    (close_price - low_price) / candle_amplitude,
                 )
 
                 return pd.Series(
