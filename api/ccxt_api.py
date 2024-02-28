@@ -109,7 +109,12 @@ class CcxtAPI:
         self.is_progress_bar_verbose = verbose == "Progress_Bar"
         self.max_interval = KlineTimes(symbol, interval).get_max_interval
         self.utils = KlineTimes(self.symbol, self.max_interval)
-        self.max_multiplier = int(self.utils.calculate_max_multiplier()) if interval != '1w' else None
+
+        self.max_multiplier = (
+            int(self.utils.calculate_max_multiplier()) if interval != '1w'
+            else None
+        )
+
         self.data_frame = None
         self.klines_list = None
 
@@ -121,7 +126,7 @@ class CcxtAPI:
         handler = logging.StreamHandler()
         handler.setFormatter(formatter)
 
-        if (self.logger.hasHandlers()):
+        if self.logger.hasHandlers():
             self.logger.handlers.clear()
 
         self.logger.addHandler(handler)
