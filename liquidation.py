@@ -22,10 +22,10 @@ class Liquidation:
     _initial_margin(leverage, funding_rate)
         Calculates the initial margin.
 
-    calc_sell(entry, leverage, funding_rate)
+    calculate_short(entry, leverage, funding_rate)
         Calculates the liquidation value for a sell order.
 
-    calc_buy(entry, leverage, funding_rate)
+    calculate_long(entry, leverage, funding_rate)
         Calculates the liquidation value and bankrupt price for a buy
         order.
     """
