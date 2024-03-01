@@ -393,8 +393,15 @@
   justify-content: center;
 }
 
-.p {
-  font-size: 4rem;
+p {
+  text-align: center;
+  font-size: max(2svh, 2rem); /* 4k resolution */
+  @media (max-width: 2560px) {
+    font-size: max(1.7svh, 1.7rem); /* 2.5k resolution */
+  }
+  @media (max-width: 1920px) {
+    font-size: max(1.3svh, 1.3rem); /* FHD resolution */
+  }
 }
 
 .progress-info {
