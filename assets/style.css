@@ -228,12 +228,17 @@
 
 .btn-outline-secondary {
   background: none;
-  border-radius: 0px !important;
+  border-radius: 2svh !important;
   padding: 1rem 1.5rem;
   color: rgba(255, 255, 255, 0.85) !important;
-  border-top: 1px solid #8bbb11 !important;
-  border-right: 1px solid #8bbb11 !important;
-  border-left: 1px solid #8bbb11 !important;
+  border: 0.12svw solid #7BB4DB !important;
+  font-size: max(1.8svh, 1.8rem); /* 4k resolution */
+  @media (max-width: 2560px) {
+    font-size: max(1.5svh, 1.5rem); /* 2.5k resolution */
+  }
+  @media (max-width: 1920px) {
+    font-size: max(1.1svh, 1.1rem); /* FHD resolution */
+  }
 }
 
 .btn.btn-outline-secondary:active {
@@ -244,14 +249,14 @@
 }
 
 .btn.btn-outline-secondary:hover {
-  background: #1f2611;
+  background: #1F2687;
   padding: 1rem 1.5rem;
   box-shadow: none;
   transition: background 0.08s ease-in-out;
 }
 
 .btn.btn-outline-secondary:focus {
-  background: #2e3c10 !important;
+  background: #1F2687 !important;
   padding: 1rem 1.5rem;
   box-shadow: none;
   transition: background 0.08s ease-in-out;
