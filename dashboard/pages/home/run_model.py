@@ -1,24 +1,32 @@
 import os
-import json
+import dill
 
 import ccxt
 import dash
 from dash import Output, Input, State, callback
 import dash_ag_grid as dag
-import tradingview_indicators as ta
 import pandas as pd
-
+import numpy as np
 
 from api.ccxt_api import CcxtAPI
 
 from machine_learning.ml_utils import DataHandler
-from machine_learning.feature_params import FeaturesParams, FeaturesParamsComplete
-from machine_learning.features_creator import FeaturesCreator
 
 from dashboard.pages.home.graph_layout import GraphLayout
 from dashboard.pages.home.graphs import display_linechart, add_outlier_lines
 
+
 class DevRunModel:
+    @callback(
+        Output("upload-data", "children"),
+        Output("upload-data", "className"),
+        Input('upload-data', 'filename')
+    )
+    def update_upload_button(filename):
+        if filename is not None:
+            return filename, "btn btn-outline-secondary-filled"
+        return "Upload Model", "btn btn-outline-secondary"
+
     @callback(
         Output("dev_model_text_output", "children"),
         Output("dev_model_text_output", "className"),
