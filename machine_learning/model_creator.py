@@ -199,6 +199,37 @@ def adjust_predict_one_side(
                 target[idx] = 0
 
     return pd.Series(target, index=predict.index, name=predict.name)
+
+def adjust_predict_both_side(
+    data_set: pd.DataFrame,
+    off_days: int,
+    max_trades: int,
+):
+    """
+    Adjusts the maximum trades on both sides of the data set.
+
+    Parameters:
+    ----------
+    data_set : pd.Series
+        The input data set.
+    off_days : int
+        The number of off days.
+    max_trades : int
+        The maximum number of trades.
+
+    Returns:
+    -------
+    pd.Series
+        The adjusted data set.
+    """
+    for idx, row in data_set.iloc[max_trades:].iterrows():
+        if row["Predict"] != 0:
+            three_lag_days = data_set.loc[:idx].iloc[-(max_trades + 1) : -1]
+            three_lag_days_trades = three_lag_days["Predict"].abs().sum()
+            if three_lag_days_trades >= max_trades:
+                data_set.loc[idx:, "Predict"].iloc[0:off_days] = 0
+    return data_set
+
 def adjust_max_trades(
     dataframe: pd.DataFrame,
     off_days: int,
