@@ -165,6 +165,40 @@ def create_catboost_model(
 
     raise ValueError("Invalid output parameter")
 
+def adjust_predict_one_side(
+    predict: pd.Series,
+    max_trades: int,
+    target_days: int,
+    side: int = 1,
+) -> pd.Series:
+    """
+    Adjusts the maximum trades on one side of the data set.
+
+    Parameters:
+    ----------
+    predict : pd.Series
+        The input series containing the predicted values.
+    max_trades : int
+        The maximum number of trades.
+    target_days : int
+        The number of days to consider for trade calculation.
+    side : int, optional
+        The side of the trade to adjust (default is 1).
+
+    Returns:
+    -------
+    pd.Series
+        The adjusted series with maximum trades on one side.
+    """
+    target = np.where(predict == side, predict, 0)
+    for idx in range(max_trades, len(predict)):
+        if predict[idx] != 0:
+            three_lag_days_trades = np.sum(target[idx-(target_days):idx + 1])
+
+            if three_lag_days_trades > max_trades:
+                target[idx] = 0
+
+    return pd.Series(target, index=predict.index, name=predict.name)
 def adjust_max_trades(
     dataframe: pd.DataFrame,
     off_days: int,
