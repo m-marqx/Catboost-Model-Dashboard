@@ -235,6 +235,7 @@ def adjust_max_trades(
     off_days: int,
     max_trades: int,
     pct_adj: float,
+    side: Literal["both"] | int = "both",
 ) -> pd.DataFrame:
     """
     Adjust the dataframe based on maximum trades.
@@ -256,14 +257,21 @@ def adjust_max_trades(
     pd.DataFrame
         The adjusted dataframe.
     """
-    original_datafrane = dataframe.copy()
-    data_frame = dataframe.copy()
-    for idx, row in data_frame.iloc[max_trades:].iterrows():
-        if row["Predict"] != 0:
-            three_lag_days = data_frame.loc[:idx].iloc[-(max_trades + 1) : -1]
-            three_lag_days_trades = three_lag_days["Predict"].abs().sum()
-            if three_lag_days_trades >= max_trades:
-                data_frame.loc[idx:, "Predict"].iloc[0:off_days] = 0
+    original_dataframe = dataframe.copy()
+    data_frame: pd.DataFrame = dataframe.copy()
+
+    if side == "both":
+        data_frame = adjust_predict_both_side(dataframe, off_days, max_trades)
+    else:
+        if ~isinstance(side, int):
+            raise ValueError("Invalid side parameter")
+
+        data_frame["Predict"] = adjust_predict_one_side(
+            predict=data_frame["Predict"],
+            max_trades=max_trades,
+            target_days=off_days,
+            side=side,
+        )
 
     data_frame["y_pred_probs"] = np.where(
         data_frame["Predict"] == 0, 0, data_frame["y_pred_probs"]
@@ -273,11 +281,11 @@ def adjust_max_trades(
     data_frame = data_frame.iloc[:, :6]
 
     data_frame["Liquid_Result"] = np.where(
-        data_frame["Predict"] == 0, 0, original_datafrane["Liquid_Result"]
+        data_frame["Predict"] == 0, 0, original_dataframe["Liquid_Result"]
     ) / max_trades + 1
 
     data_frame["Liquid_Result_pct_adj"] = np.where(
-        data_frame["Predict"] == 0, 0, original_datafrane["Liquid_Result"]
+        data_frame["Predict"] == 0, 0, original_dataframe["Liquid_Result"]
     ) / max_trades * pct_adj + 1
 
     data_frame["Liquid_Return"] = data_frame["Liquid_Result"].cumprod().ffill()
