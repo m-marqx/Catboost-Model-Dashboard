@@ -18,7 +18,7 @@ def create_catboost_model(
     target_series: pd.Series,
     plot: bool = False,
     output: Literal["All", "Return", "Model", "Dataset"] = "All",
-    **kwargs,
+    **hyperparams,
 ):
     """
     Create the machine learning model using the CatBoost algorithm.
@@ -40,7 +40,7 @@ def create_catboost_model(
     output : Literal["All", "Return", "Model", "Dataset"], optional
         Output parameter to specify the desired return values.
         (default: "All")
-    **kwargs : dict, optional
+    **hyperparams : dict, optional
         Additional keyword arguments to be passed to the
         CatBoostClassifier.
 
@@ -83,10 +83,8 @@ def create_catboost_model(
     all_x = pd.concat([X_train, x_test, X_validation])
     all_y = pd.concat([y_train, y_test, y_validation])
 
-    if kwargs:
-        params = kwargs
-    else:
-        params = {
+    if not hyperparams:
+        hyperparams = {
             "iterations": 500,
             "learning_rate": 0.1,
             "eval_metric": "Logloss",
@@ -98,7 +96,7 @@ def create_catboost_model(
     train_pool = Pool(X_train, y_train)
     test_pool = Pool(x_test, y_test)
 
-    best_model = CatBoostClassifier(**params)
+    best_model = CatBoostClassifier(**hyperparams)
 
     best_model.fit(train_pool, eval_set=test_pool, plot=plot)
 
