@@ -14,7 +14,8 @@ from machine_learning.model_handler import ModelHandler
 def create_catboost_model(
     dataset: pd.DataFrame,
     feats: list,
-    test_index: int = 1000,
+    test_index: int,
+    target_series: pd.Series,
     plot: bool = False,
     output: Literal["All", "Return", "Model", "Dataset"] = "All",
     **kwargs,
@@ -31,6 +32,8 @@ def create_catboost_model(
     test_index : int, optional
         Index to split the dataset into training and testing sets.
         (default: 1000)
+    target_series : pd.Series
+        The target variable series.
     plot : bool, optional
         Whether to plot the evaluation set during model training.
         (default: False)
@@ -116,7 +119,7 @@ def create_catboost_model(
 
     target_index = all_y.index
     mh2 = ModelHandler(best_model, **dataset_params).model_returns(
-        data_frame["Target"].reindex(target_index),
+        target_series=target_series.reindex(target_index),
         0,
         cutoff=cutoff,
         long_only=False,
