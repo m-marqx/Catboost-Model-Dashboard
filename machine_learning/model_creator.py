@@ -130,6 +130,7 @@ def create_catboost_model(
             validation_set.index[0], validation_set.index[-1]
         ),
     }
+
     if output == "All":
         return (
             mh2,
@@ -146,7 +147,6 @@ def create_catboost_model(
         )
 
     if output == "Return":
-
         return mh2, index_splits
 
     if output == "Model":
