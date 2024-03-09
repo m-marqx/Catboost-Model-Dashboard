@@ -19,7 +19,7 @@ def create_catboost_model(
     plot: bool = False,
     output: Literal["All", "Return", "Model", "Dataset"] = "All",
     **hyperparams,
-):
+) -> tuple | CatBoostClassifier:
     """
     Create the machine learning model using the CatBoost algorithm.
 
