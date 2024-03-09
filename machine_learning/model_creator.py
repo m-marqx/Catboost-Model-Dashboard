@@ -18,6 +18,9 @@ def create_catboost_model(
     target_series: pd.Series,
     plot: bool = False,
     output: Literal["All", "Return", "Model", "Dataset"] = "All",
+    long_only: bool = False,
+    short_only: bool = False,
+    train_in_middle: bool = False,
     **hyperparams,
 ) -> tuple | CatBoostClassifier:
     """
@@ -40,6 +43,15 @@ def create_catboost_model(
     output : Literal["All", "Return", "Model", "Dataset"], optional
         Output parameter to specify the desired return values.
         (default: "All")
+    long_only : bool, optional
+        Whether to consider long positions only.
+        (default: False)
+    short_only : bool, optional
+        Whether to consider short positions only.
+        (default: False)
+    train_in_middle : bool, optional
+        Whether to train the model using the test set in the middle.
+        (default: False)
     **hyperparams : dict, optional
         Additional keyword arguments to be passed to the
         CatBoostClassifier.
@@ -74,13 +86,13 @@ def create_catboost_model(
     X_train = train_set[features]
     y_train = train_set[target]
 
-    x_test = test_set[features]
+    X_test = test_set[features]
     y_test = test_set[target]
 
     X_validation = validation_set[features]
     y_validation = validation_set[target]
 
-    all_x = pd.concat([X_train, x_test, X_validation])
+    all_x = pd.concat([X_train, X_test, X_validation])
     all_y = pd.concat([y_train, y_test, y_validation])
 
     if not hyperparams:
@@ -93,8 +105,12 @@ def create_catboost_model(
             "use_best_model": True,
         }
 
-    train_pool = Pool(X_train, y_train)
-    test_pool = Pool(x_test, y_test)
+    if train_in_middle:
+        train_pool = Pool(X_test, y_test)
+        test_pool = Pool(X_train, y_train)
+    else:
+        train_pool = Pool(X_train, y_train)
+        test_pool = Pool(X_test, y_test)
 
     best_model = CatBoostClassifier(**hyperparams)
 
@@ -118,16 +134,19 @@ def create_catboost_model(
     target_index = all_y.index
     mh2 = ModelHandler(best_model, **dataset_params).model_returns(
         target_series=target_series.reindex(target_index),
-        0,
+        fee=0,
         cutoff=cutoff,
-        long_only=False,
+        long_only=long_only,
+        short_only=short_only,
     )
+
     mh2["cuttoff"] = cutoff
     index_splits = {
         "train": pd.Interval(train_set.index[0], train_set.index[-1]),
         "test": pd.Interval(test_set.index[0], test_set.index[-1]),
         "validation": pd.Interval(
-            validation_set.index[0], validation_set.index[-1]
+            validation_set.index[0],
+            validation_set.index[-1],
         ),
     }
 
