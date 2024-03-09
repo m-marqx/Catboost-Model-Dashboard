@@ -5,11 +5,10 @@ import pandas as pd
 import numpy as np
 import klib
 from catboost import CatBoostClassifier, Pool
-import sklearn.metrics as metrics
-from utils.utils import model_metrics
 
 from machine_learning.model_features import ModelFeatures
 from machine_learning.model_handler import ModelHandler
+from machine_learning.ml_utils import DataHandler
 
 def create_catboost_model(
     dataset: pd.DataFrame,
@@ -283,7 +282,7 @@ def adjust_max_trades(
     if side == "both":
         data_frame = adjust_predict_both_side(dataframe, off_days, max_trades)
     else:
-        if ~isinstance(side, int):
+        if not isinstance(side, int):
             raise ValueError("Invalid side parameter")
 
         data_frame["Predict"] = adjust_predict_one_side(
