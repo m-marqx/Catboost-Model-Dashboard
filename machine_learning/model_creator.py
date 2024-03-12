@@ -333,9 +333,9 @@ def adjust_max_trades(
 def perform_general_random_search(
     dataframe: pd.DataFrame,
     test_index: int,
-    max_trades:int = 3,
-    off_days:int = 4,
-    pct_adj:float = 0.5,
+    max_trades: int = 3,
+    off_days: int = 7,
+    pct_adj: float = 0.5,
 ) -> dict:
     """
     Perform a general random search for model creation.
