@@ -397,3 +397,60 @@ def add_outlier_lines(
             fig.add_hline(limits[key], **line_kwargs)
         else:
             fig.add_hline(limits[key], **line_kwargs)
+
+def calculate_sequencial_results(
+    dataframe: pd.DataFrame,
+    base_value: int = 0,
+) -> pd.DataFrame:
+    """
+    Calculate the sequential count of profits or losses for a given dataframe.
+
+    Parameters
+    ----------
+    dataframe : pd.DataFrame
+        The input dataframe containing the results.
+
+    base_value : int, optional
+        The base value used for calculating the results count.
+        (default: 0)
+
+    Returns
+    -------
+    pd.DataFrame
+        The dataframe with the sequential count of profits or losses.
+    """
+    data_frame = dataframe.copy()
+
+    liquid_results = (
+        data_frame.query(f"Liquid_Result != {base_value}")
+        ["Liquid_Result"] - base_value
+    )
+
+    sequencial_results = liquid_results.to_frame()
+
+    loss_results_arrays = np.array([])
+    gain_results_arrays = np.array([])
+
+    loss_counter = 0
+    gain_counter = 0
+
+    for x in liquid_results.to_numpy():
+        if x < 0:
+            loss_counter += 1
+            gain_counter = 0
+        else:
+            loss_counter = 0
+            gain_counter += 1
+
+        gain_results_arrays = np.append(gain_results_arrays, gain_counter)
+        loss_results_arrays = np.append(loss_results_arrays, loss_counter)
+
+    sequencial_results['loss_count'] = loss_results_arrays
+    sequencial_results['gain_count'] = gain_results_arrays
+    sequencial_results['sequential_count'] = (
+        sequencial_results['gain_count'] - sequencial_results['loss_count']
+    )
+    data_frame['sequential_count'] = sequencial_results['sequential_count']
+    data_frame['sequential_count'] = data_frame['sequential_count'].ffill().fillna(0)
+
+    return data_frame
