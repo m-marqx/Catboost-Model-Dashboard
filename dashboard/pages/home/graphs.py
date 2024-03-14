@@ -239,7 +239,7 @@ def display_linechart(
     validation_date: str | pd.Timestamp,
     stat: str,
     period: Literal["full", "test", "validation"] = "validation",
-    timePeriod: int | str = 30,
+    time_period: int | str = 30,
     iqr_scales: None | list[float, float] = None,
     get_data: bool = False,
 ) -> px.line:
@@ -254,7 +254,7 @@ def display_linechart(
         period (Literal["full", "test", "validation"]): The period of
         data to display.
         (default: "validation")
-        timePeriod (int | str): The time period for calculations.
+        time_period (int | str): The time period for calculations.
         (default: 30)
         iqr_scales (list[float, float]): The IQR scales for outlier
         detection.
@@ -266,7 +266,7 @@ def display_linechart(
         px.line: The line chart.
 
     """
-    timePeriod = int(timePeriod)
+    time_period = int(time_period)
     method = "rolling"
 
     calculate_drawdown = (
@@ -302,22 +302,22 @@ def display_linechart(
 
     match stat:
         case "drawdown":
-            drawdown_returns = calculate_drawdown(return_source, timePeriod)
+            drawdown_returns = calculate_drawdown(return_source, time_period)
 
             asset_drawdown = (
-                asset_source.resample(timePeriod).std() if method == "resample"
-                else asset_source.rolling(timePeriod).std()
+                asset_source.resample(time_period).std() if method == "resample"
+                else asset_source.rolling(time_period).std()
             )
 
             result_df = pd.concat([drawdown_returns, asset_drawdown], axis=1)
         case "expected_return":
-            result_df = calculate_expected_return(return_source, timePeriod)
+            result_df = calculate_expected_return(return_source, time_period)
         case "payoff_sum":
-            result_df = calculate_payoff(return_source, "sum", timePeriod)
+            result_df = calculate_payoff(return_source, "sum", time_period)
         case "payoff_mean":
-            result_df = calculate_payoff(return_source, "mean", timePeriod)
+            result_df = calculate_payoff(return_source, "mean", time_period)
         case "winrate":
-            result_df = calculate_win_rate(return_source, timePeriod)
+            result_df = calculate_win_rate(return_source, time_period)
 
     match period:
         case "test":
