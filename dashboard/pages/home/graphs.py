@@ -451,6 +451,4 @@ def calculate_sequencial_results(
         sequencial_results['gain_count'] - sequencial_results['loss_count']
     )
     data_frame['sequential_count'] = sequencial_results['sequential_count']
-    data_frame['sequential_count'] = data_frame['sequential_count'].ffill().fillna(0)
-
-    return data_frame
+    return data_frame[['sequential_count']]
