@@ -234,7 +234,6 @@ def rolling_calculate_win_rate(
     return win_rate
 
 def display_linechart(
-    asset_source: pd.DataFrame,
     return_source: pd.DataFrame,
     validation_date: str | pd.Timestamp,
     stat: str,
@@ -293,23 +292,10 @@ def display_linechart(
         else rolling_calculate_win_rate
     )
 
-    asset_source = (
-        asset_source
-        .copy()
-        .reindex(return_source.index)
-        .rename('Asset')
-    )
 
     match stat:
         case "drawdown":
-            drawdown_returns = calculate_drawdown(return_source, time_period)
-
-            asset_drawdown = (
-                asset_source.resample(time_period).std() if method == "resample"
-                else asset_source.rolling(time_period).std()
-            )
-
-            result_df = pd.concat([drawdown_returns, asset_drawdown], axis=1)
+            result_df = calculate_drawdown(return_source, time_period)
         case "expected_return":
             result_df = calculate_expected_return(return_source, time_period)
         case "payoff_sum":
