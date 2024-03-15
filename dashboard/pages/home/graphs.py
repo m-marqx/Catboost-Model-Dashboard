@@ -239,7 +239,7 @@ def display_linechart(
     stat: str,
     period: Literal["full", "test", "validation"] = "validation",
     time_period: int | str = 30,
-    iqr_scales: None | list[float, float] = None,
+    iqr_scales: None | list[float] = None,
     get_data: bool = False,
 ) -> px.line:
     """
@@ -255,7 +255,7 @@ def display_linechart(
         (default: "validation")
         time_period (int | str): The time period for calculations.
         (default: 30)
-        iqr_scales (list[float, float]): The IQR scales for outlier
+        iqr_scales (list[float]): The IQR scales for outlier
         detection.
         (default: [1.0, 1.5])
         get_data (bool): Whether to return the calculated data.
@@ -348,7 +348,7 @@ def display_linechart(
 def add_outlier_lines(
     result_df: pd.DataFrame,
     fig,
-    iqr_scales: None | list[float, float] = None,
+    iqr_scales: None | list[float] = None,
     min_value=None,
     **line_kwargs
     ):
