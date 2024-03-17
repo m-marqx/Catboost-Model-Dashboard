@@ -1,5 +1,6 @@
 from typing import Literal
 import pandas as pd
+import numpy as np
 import plotly.express as px
 from machine_learning.ml_utils import DataHandler
 
