@@ -333,6 +333,7 @@ def adjust_max_trades(
 def perform_general_random_search(
     dataframe: pd.DataFrame,
     test_index: int,
+    side: Literal["both"] | int = 1,
     max_trades: int = 3,
     off_days: int = 7,
     pct_adj: float = 0.5,
@@ -488,27 +489,7 @@ def perform_general_random_search(
 
     data_set = mh2.copy()
 
-    mta = adjust_max_trades(data_set, off_days, max_trades, pct_adj)
-    drawdowns = mta[["Drawdown", "Drawdown_pct_adj"]].quantile(0.95).to_list()
-
-    y_train = all_y.loc[
-        index_splits["train"].left : index_splits["train"].right
-    ]
-
-    y_test = all_y.loc[
-        index_splits["test"].left : index_splits["test"].right
-    ]
-
-    y_val = all_y.loc[
-        index_splits["validation"].left : index_splits["validation"].right
-    ][:-7]
-
-    y_pred_train = (
-        mta[["Predict"]]
-        .loc[index_splits["train"].left : index_splits["train"].right]
-        .query("Predict != 0")
-        .where(mta["Predict"] == 1, 0)
-    )
+    mta = adjust_max_trades(mh2, off_days, max_trades, pct_adj, side)
     y_pred_test = (
         mta[["Predict"]]
         .loc[index_splits["test"].left : index_splits["test"].right]
@@ -528,42 +509,15 @@ def perform_general_random_search(
     y_test_adj = y_test.reindex(y_pred_test.index)
     y_val_adj = y_val.reindex(y_pred_val.index)
 
-    report_train = metrics.classification_report(
-        y_train_adj, y_pred_train, output_dict=True, zero_division=0
-    )
-    report_test = metrics.classification_report(
-        y_test_adj, y_pred_test, output_dict=True, zero_division=0
-    )
-
-    report_val = metrics.classification_report(
-        y_val_adj, y_pred_val, output_dict=True, zero_division=0
-    )
-
-    model_metrics_test = model_metrics(
-        y_pred_test.iloc[:, -1],
-        y_test_adj.iloc[:, -1],
-    )
-
-    model_metrics_val = model_metrics(
-        y_pred_val.iloc[:, -1],
-        y_val_adj.iloc[:, -1],
-    )
-
-    support_diff_test = model_metrics_test["support_diff"][-1]
-    support_diff_val = model_metrics_val["support_diff"][-1]
-    support_diffs = support_diff_test, support_diff_val
-
-    accuracys = report_test["accuracy"], report_val["accuracy"]
-
-    precisions_test = (
-        report_test["0.0"]["precision"], report_test["1.0"]["precision"]
-    )
-
-    precisions_val = (
-        report_val["0.0"]["precision"], report_val["1.0"]["precision"]
-    )
-
-    precisions = precisions_test + precisions_val
+    if side != "both":
+        adj_targets = adjust_predict_one_side(
+            data_frame['Target_bin'],
+            3,
+            7,
+            side,
+        )
+    else:
+        adj_targets = adjust_predict_both_side(data_frame, 7, 3)
 
     metrics_results = {
         "accuracy_test": report_test["accuracy"],
