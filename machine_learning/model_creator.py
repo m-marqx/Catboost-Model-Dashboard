@@ -370,6 +370,7 @@ def perform_general_random_search(
     ma_type_combinations = np.array(
         list(combinations_list) + ["all"], dtype="object"
     )
+
     random_variables = {
         # DTW
         "random_source_price_dtw": np.random.choice(["open", "high", "low"]),
@@ -407,25 +408,44 @@ def perform_general_random_search(
         "silent": True,
     }
 
-    kraken_df2 = dataframe.copy()
-    kraken_df2["slow_stoch_source"] = kraken_df2[
+    empty_dict = {
+        "features_selected": None,
+        "feat_parameters": None,
+        "hyperparameters": None,
+        "metrics_results": None,
+        "drawdown_full_test": None,
+        "drawdown_full_val": None,
+        "drawdown_adj_test": None,
+        "drawdown_adj_val": None,
+        "expected_return_test": None,
+        "expected_return_val": None,
+        "precisions_test": None,
+        "precisions_val": None,
+        "support_diff_test": None,
+        "support_diff_val": None,
+        "total_operations_test": None,
+        "total_operations_val": None,
+        "total_operations_pct_test": None,
+        "total_operations_pct_val": None,
+    }
+
+    data_frame = dataframe.copy()
+    data_frame["slow_stoch_source"] = data_frame[
         random_variables["random_source_price_stoch"]
     ].pct_change(1)
 
     dtw_source = (
-        kraken_df2[random_variables["random_source_price_dtw"]]
-        .pct_change(1)
-        .iloc[1:]
+        data_frame[random_variables["random_source_price_dtw"]]
+        .pct_change(1).iloc[1:]
     )
 
     rsi_source = (
-        kraken_df2[random_variables["random_source_price_rsi"]]
-        .pct_change(1)
-        .iloc[1:]
+        data_frame[random_variables["random_source_price_rsi"]]
+        .pct_change(1).iloc[1:]
     )
 
-    kraken_df2 = ModelFeatures(
-        kraken_df2, test_index, random_variables["random_binnings_qty_dtw"]
+    data_frame = ModelFeatures(
+        data_frame, test_index, random_variables["random_binnings_qty_dtw"]
     ).create_dtw_distance_feature(
         dtw_source,
         random_variables["random_moving_averages"],
@@ -433,13 +453,13 @@ def perform_general_random_search(
     )
 
     if "RSI" in random_variables["random_features"]:
-        kraken_df2 = ModelFeatures(
-            kraken_df2, test_index, random_variables["random_binnings_qty_rsi"]
+        data_frame = ModelFeatures(
+            data_frame, test_index, random_variables["random_binnings_qty_rsi"]
         ).create_rsi_feature(rsi_source, random_variables["random_rsi_length"])
 
     if "Stoch" in random_variables["random_features"]:
-        kraken_df2 = ModelFeatures(
-            kraken_df2, test_index, random_variables["random_binnings_qty_stoch"]
+        data_frame = ModelFeatures(
+            data_frame, test_index, random_variables["random_binnings_qty_stoch"]
         ).create_slow_stoch_feature(
             random_variables["random_source_price_stoch"],
             random_variables["random_slow_stoch_length"],
@@ -449,13 +469,13 @@ def perform_general_random_search(
 
     dtw_features = [
         feature
-        for feature in kraken_df2.columns[9:]
+        for feature in data_frame.columns[9:]
         if feature.endswith("feat") and "DTW" in feature
     ]
 
     other_features = [
         feature
-        for feature in kraken_df2.columns[9:]
+        for feature in data_frame.columns[9:]
         if feature.endswith("feat") and "DTW" not in feature
     ]
 
@@ -474,38 +494,121 @@ def perform_general_random_search(
 
     (
         mh2,
-        _,_,_,
-        y_train, y_test,
-        y_pred_train, y_pred_test,
-        _, all_y,
+        _,
+        _,
+        _,
+        _,
+        y_test,
+        _,
+        y_pred_test,
+        _,
+        all_y,
         index_splits,
     ) = create_catboost_model(
-        kraken_df2,
-        features,
+        dataset=data_frame,
+        feats=features,
+        test_index=test_index,
+        target_series=data_frame["Target_bin"],
         plot=False,
         output="All",
+        long_only=False,
         train_in_middle=train_in_middle,
+        **hyperparams,
     )
 
-    data_set = mh2.copy()
+    mh2['Liquid_Result'] = np.where(
+        mh2['Predict'] == -1, 0, mh2['Liquid_Result']
+    )
 
     mta = adjust_max_trades(mh2, off_days, max_trades, pct_adj, side)
+
+    val_periods = (
+        index_splits['validation'].left,
+        index_splits['validation'].right,
+    )
+
+    if train_in_middle:
+        test_periods = (index_splits['train'].left,index_splits['train'].right)
+        mta_test = mta.loc[test_periods[0]:test_periods[1]]
+    else:
+        test_periods = (index_splits['test'].left,index_splits['test'].right)
+        mta_test = mta.loc[test_periods[0]:test_periods[1]]
+
+    mta_val = mta.loc[val_periods[0]:val_periods[1]]
+
+    test_buys = mta_test['Predict'].value_counts()
+    val_buys = mta_val['Predict'].value_counts()
+
+    if (
+        len(test_buys) <= 1 or len(val_buys) <= 1
+        or len(mta_test["Liquid_Result"].value_counts()) <= 1
+        or len(mta_val["Liquid_Result"].value_counts()) <= 1
+    ):
+        return empty_dict
+
+    total_operations = (
+        test_buys[1],
+        val_buys[1],
+    )
+
+    total_operations_test_pct = test_buys[1] / (1041 // 3) * 100
+    total_operations_val_pct = val_buys[1] / (1041 // 3) * 100
+
+    total_operations_pct = (
+        total_operations_test_pct,
+        total_operations_val_pct,
+    )
+
+    drawdown_full_test = (
+        (mta_test['Liquid_Return'].cummax() - mta_test['Liquid_Return'])
+        / mta_test['Liquid_Return'].cummax()
+    )
+
+    drawdown_full_val = (
+        (mta_val['Liquid_Return'].cummax() - mta_val['Liquid_Return'])
+        / mta_val['Liquid_Return'].cummax()
+    )
+
+    drawdown_adj_test = (
+        (
+            mta_test['Liquid_Return_pct_adj'].cummax()
+            - mta_test['Liquid_Return_pct_adj']
+        )
+        / mta_test['Liquid_Return_pct_adj'].cummax()
+    )
+
+    drawdown_adj_val = (
+        (
+            mta_val['Liquid_Return_pct_adj'].cummax()
+            - mta_val['Liquid_Return_pct_adj']
+        )
+        / mta_val['Liquid_Return_pct_adj'].cummax()
+    )
+
+    drawdowns = (
+        drawdown_full_test.quantile(0.95),
+        drawdown_full_val.quantile(0.95),
+        drawdown_adj_test.quantile(0.95),
+        drawdown_adj_val.quantile(0.95),
+    )
+
+    y_test = all_y.loc[test_periods[0]:test_periods[1]]
+
+    y_val = all_y.loc[val_periods[0]:val_periods[1]][:-7]
+
     y_pred_test = (
         mta[["Predict"]]
-        .loc[index_splits["test"].left : index_splits["test"].right]
+        .loc[test_periods[0] : test_periods[1]]
         .query("Predict != 0")
         .where(mta["Predict"] == 1, 0)
     )
     y_pred_val = (
         mta[["Predict"]]
-        .loc[
-            index_splits["validation"].left : index_splits["validation"].right
-        ][:-7]
+        .loc[val_periods[0]:val_periods[1]][:-7]
         .query("Predict != 0")
         .where(mta["Predict"] == 1, 0)
     )
 
-    y_train_adj = y_train.reindex(y_pred_train.index)
     y_test_adj = y_test.reindex(y_pred_test.index)
     y_val_adj = y_val.reindex(y_pred_val.index)
 
@@ -519,61 +622,72 @@ def perform_general_random_search(
     else:
         adj_targets = adjust_predict_both_side(data_frame, 7, 3)
 
+    test_predict_adj = adj_targets.loc[test_periods[0]:test_periods[1]]
+    val_predict_adj = adj_targets.loc[val_periods[0]:val_periods[1]]
+
+    support_diff_test = (
+        test_predict_adj.value_counts(normalize=True)
+        - mta_test['Predict'].value_counts(normalize=True)
+    )[1]
+
+    support_diff_val = (
+        val_predict_adj.value_counts(normalize=True)
+        - mta_val['Predict'].value_counts(normalize=True)
+    )[1]
+
+    support_diffs = (support_diff_test, support_diff_val)
+
+    result_metrics_test = (
+        DataHandler(mta.loc[y_test_adj.index])
+        .result_metrics('Liquid_Result', is_percentage_data=True)
+    )
+
+    result_metrics_val = (
+        DataHandler(mta.loc[y_val_adj.index])
+        .result_metrics('Liquid_Result', is_percentage_data=True)
+    )
+
+    precisions = (
+        result_metrics_test.loc['Win_Rate'][0],
+        result_metrics_val.loc['Win_Rate'][0],
+    )
+
+    expected_return = (
+        result_metrics_test.loc['Expected_Return'][0],
+        result_metrics_val.loc['Expected_Return'][0],
+    )
+
     metrics_results = {
-        "accuracy_test": report_test["accuracy"],
-        "accuracy_val": report_val["accuracy"],
-        "precisions_test": precisions_test,
-        "precisions_val": precisions_val,
+        "expected_return_test": expected_return[0],
+        "expected_return_val": expected_return[1],
+        "precisions_test": precisions[0],
+        "precisions_val": precisions[1],
         "precisions": precisions,
-        "support_diff_test": support_diff_test,
-        "support_diff_val": support_diff_val,
-    }
-
-    reports = {
-        "report_train": report_train,
-        "report_test": report_test,
-        "report_val": report_val,
-    }
-
-    metrics_reports = {
-        "metrics_reports_test" : model_metrics_test.iloc[-1].to_dict(),
-        "metrics_reports_val" : model_metrics_val.iloc[-1].to_dict(),
     }
 
     has_any_low_precision = min(precisions) <= 0.5
-
-    has_any_low_accuracy = min(accuracys) <= 0.5
-
-    has_big_drawdown = max(drawdowns) >= 0.5
-
-    has_high_support_diff = (
-        max(support_diffs) >= 0.35
-        and min(support_diffs) <= -0.35
-    )
-
     if (
         has_any_low_precision
-        or has_any_low_accuracy
-        or has_big_drawdown
-        or has_high_support_diff
     ):
-        return {
-            "features_selected": None,
-            "feat_parameters": None,
-            "hyperparameters": None,
-            "metrics_results": None,
-            "drawdown_full": None,
-            "drawdown_adj": None,
-            "reports": None,
-        }
+        return empty_dict
 
     return {
         "features_selected": [features],
         "feat_parameters": [random_variables],
         "hyperparameters": [hyperparams],
         "metrics_results": [metrics_results],
-        "drawdown_full": drawdowns[0],
-        "drawdown_adj": drawdowns[1],
-        "reports": [reports],
-        "model_reports": [metrics_reports],
+        "drawdown_full_test": drawdowns[0],
+        "drawdown_full_val": drawdowns[1],
+        "drawdown_adj_test": drawdowns[2],
+        "drawdown_adj_val": drawdowns[3],
+        "expected_return_test": expected_return[0],
+        "expected_return_val": expected_return[1],
+        "precisions_test": precisions[0],
+        "precisions_val": precisions[1],
+        "support_diff_test": support_diffs[0],
+        "support_diff_val": support_diffs[1],
+        "total_operations_test": total_operations[0],
+        "total_operations_val": total_operations[1],
+        "total_operations_pct_test": total_operations_pct[0],
+        "total_operations_pct_val": total_operations_pct[1],
     }
