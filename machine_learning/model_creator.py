@@ -336,6 +336,7 @@ def perform_general_random_search(
     max_trades: int = 3,
     off_days: int = 7,
     pct_adj: float = 0.5,
+    train_in_middle: bool = True,
 ) -> dict:
     """
     Perform a general random search for model creation.
@@ -482,7 +483,7 @@ def perform_general_random_search(
         features,
         plot=False,
         output="All",
-        **hyperparams
+        train_in_middle=train_in_middle,
     )
 
     data_set = mh2.copy()
