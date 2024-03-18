@@ -47,33 +47,9 @@ def layout(lang="en_US"):
                                             }
                                         },
                                         className="graph",
-                                        style={"width": "69%", "margin": "1vh auto 0svh"}
+                                        style={"width": "80%", "margin": "1vh auto 0svh"}
                                     ),
-                                    dcc.Graph(
-                                        id="dev_ml_results2",
-                                        figure={
-                                            "layout": {
-                                                "paper_bgcolor": "rgba(0,0,0,0)",
-                                                "plot_bgcolor": "rgba(0,0,0,0)",
-                                                "xaxis": {
-                                                    "showgrid": False,
-                                                    "showticklabels": False,
-                                                    "zeroline": False,
-                                                    "title": "",
-                                                },
-                                                "yaxis": {
-                                                    "showticklabels": False,
-                                                    "zeroline": False,
-                                                    "gridcolor": "#595959",
-                                                    "griddash": "dash",
-                                                    "title": "",
-                                                    "exponentformat": "none",
-                                                },
-                                            }
-                                        },
-                                        className="graph",
-                                        style={"width": "29%"}
-                                    ),
+                                    html.P(id='dev_ml_results2', style={"width": "20%", "margin-bottom": "0px"}),
                             ]),
                         ],
                         width=10,
@@ -112,7 +88,7 @@ def layout(lang="en_US"):
                                         color="primary",
                                         spinner_class_name="spinner-loader",
                                     ),
-                                    html.P(id="dev_signal_output"),
+                                    html.P(id="dev_signal_output", style={"margin-bottom": "0px"}),
                                     html.P(id="dev_new_signal_output"),
                                 ]
                             ),

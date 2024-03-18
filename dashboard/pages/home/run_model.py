@@ -7,20 +7,25 @@ from dash import Output, Input, State, callback
 import dash_ag_grid as dag
 import pandas as pd
 import numpy as np
+import plotly.express as px
 
 from api.ccxt_api import CcxtAPI
 
 from machine_learning.ml_utils import DataHandler
 
 from dashboard.pages.home.graph_layout import GraphLayout
-from dashboard.pages.home.graphs import display_linechart, add_outlier_lines
+from dashboard.pages.home.graphs import (
+    display_linechart,
+    add_outlier_lines,
+    calculate_sequencial_results,
+)
 
 
 class DevRunModel:
     @callback(
         Output("upload-data", "children"),
         Output("upload-data", "className"),
-        Input('upload-data', 'filename')
+        Input("upload-data", "filename"),
     )
     def update_upload_button(filename):
         if filename is not None:
@@ -34,14 +39,14 @@ class DevRunModel:
         Output("dev_progress_bar", "className"),
         # Graph Charts
         Output("dev_ml_results", "figure"),
-        Output("dev_ml_results2", "figure"),
+        Output("dev_ml_results2", "children"),
         Output("drawdown_graph", "figure"),
         Output("expected_return_graph", "figure"),
         Output("payoff_graph", "figure"),
         Output("win_rate_graph", "figure"),
         inputs=[
             Input("dev_run_model", "n_clicks"),
-            State('upload-data', 'filename'),
+            State("upload-data", "filename"),
         ],
         background=True,
         cancel=Input("dev_cancel_model", "n_clicks"),
@@ -74,37 +79,33 @@ class DevRunModel:
             result = model_pickled()
             validation_date = "23-03-2021"
 
+            if result["Liquid_Result"].min() < 0:
+                liquid_return = (
+                    result["Liquid_Result"]
+                    .loc[validation_date:]
+                    .cumsum()
+                    .rename("Liquid_Return")
+                    .to_frame()
+                )
+
+            else:
+                liquid_return = (
+                    result["Liquid_Result"]
+                    .loc[validation_date:]
+                    .cumprod()
+                    .rename("Liquid_Return")
+                    .to_frame()
+                )
+
             model_fig = GraphLayout(
-                result["Liquid_Result"].loc[validation_date:].cumsum().to_frame(),
+                liquid_return,
                 "Model Result",
                 "1D",
                 "spot",
-            ).plot_single_linechart("Liquid_Result")
-
-            api_key = os.getenv("APIKEY")
-            secret_key = os.getenv("SECRETKEY")
-
-            keys = {"apiKey": api_key, "secret": secret_key}
-
-            coin_api = CcxtAPI(
-                symbol="BTCUSD_PERP",
-                interval="1d",
-                exchange=ccxt.binancecoinm(keys),
-                since=None,
-            )
-
-            account_result = coin_api.get_account_result(130)
-
-            account_fig = GraphLayout(
-                account_result,
-                "Account Result",
-                "1D",
-                "spot",
-            ).plot_single_linechart("liquid_result_usd_aggr")
+            ).plot_single_linechart("Liquid_Return")
 
             win_rate = display_linechart(
-                result["Gross_Return"],
-                result["Liquid_Return"],
+                liquid_return["Liquid_Return"],
                 validation_date,
                 "winrate",
                 "full",
@@ -122,7 +123,6 @@ class DevRunModel:
             add_outlier_lines(win_rate, win_rate_fig)
 
             expected_return = display_linechart(
-                result["Gross_Return"],
                 result["Liquid_Return"],
                 validation_date,
                 "expected_return",
@@ -140,43 +140,32 @@ class DevRunModel:
 
             add_outlier_lines(expected_return, expected_return_fig)
 
-            drawdown = display_linechart(
-                result["Gross_Return"],
-                result["Liquid_Return"],
-                validation_date,
-                "drawdown",
-                "full",
-                get_data=True,
-            )
+            drawdown = 1 - liquid_return / liquid_return.cummax()
 
             drawdown_fig = GraphLayout(
                 drawdown.loc[validation_date:],
                 "Drawdown",
-                "30D",
+                "Validation",
                 "spot",
                 0.75,
             ).plot_single_linechart("Liquid_Return")
 
             add_outlier_lines(drawdown, drawdown_fig, min_value=0)
 
-            payoff = display_linechart(
-                result["Gross_Return"],
-                result["Liquid_Return"],
-                validation_date,
-                "payoff_mean",
-                "full",
-                get_data=True,
-            )
+            sequential_results = calculate_sequencial_results(
+                result["Liquid_Result"].to_frame(),
+                1,
+            )['sequential_count'].to_frame()
 
-            payoff_fig = GraphLayout(
-                payoff.loc[validation_date:],
-                "Payoff",
-                "30D",
+            sequential_results_fig = GraphLayout(
+                sequential_results.loc[validation_date:].ffill().fillna(0),
+                "Sequential Results",
+                "Validation",
                 "spot",
-                0.618,
-            ).plot_single_linechart("Liquid_Return")
+                0.75,
+            ).plot_single_linechart(sequential_results.columns[-1])
 
-            add_outlier_lines(payoff, payoff_fig)
+            add_outlier_lines(sequential_results, sequential_results_fig)
 
             print(result.columns)
             predict = result["Predict"].copy()
@@ -190,7 +179,7 @@ class DevRunModel:
             recommendation["Predict"] = np.where(
                 recommendation["Predict"] > 0,
                 "Long",
-                np.where(recommendation["Predict"] == 0, "Do Nothing", "Short")
+                np.where(recommendation["Predict"] == 0, "Do Nothing", "Short"),
             )
 
             if predict.iloc[-1] > 0:
@@ -222,6 +211,50 @@ class DevRunModel:
                 style={"z-index": "0"},
             )
 
+            sequential_count = (
+                sequential_results["sequential_count"]
+                .rename("sequence")
+                .value_counts()
+                .sort_index(ascending=False)
+                .reset_index()
+                .query("sequence != 0")
+                .reset_index(drop=True)
+            )
+
+            gain_sequences = np.array([])
+            loss_sequences = np.array([])
+
+            for x in sequential_count["sequence"].to_numpy():
+                if x > 0:
+                    x = f"{x} Profits"
+                    gain_sequences = np.append(gain_sequences, x)
+                else:
+                    x = f"{-x} Losses"
+                    loss_sequences = np.append(loss_sequences, x)
+
+            sequential_count["sequence"] = pd.concat(
+                [
+                    pd.Series(gain_sequences).rename("gain"),
+                    pd.Series(loss_sequences).rename('loss')
+                ],
+                axis=0,
+            ).reset_index(drop=True)
+
+            # sequential_count = sequential_count.sort_values("sequence", ascending=False)
+            cols_def = [{"field": i} for i in sequential_count.columns]
+            # cols_def[0]["sort"] = "desc"
+
+            sequential_results_table = dag.AgGrid(
+                rowData=sequential_count.to_dict("records"),
+                getRowId="params.data.count",
+                columnDefs=cols_def,
+                defaultColDef={"resizable": True, "sortable": True, "filter": True},
+                columnSize="responsiveSizeToFit",
+                dashGridOptions={"pagination": False},
+                className="bigger-table ag-theme-alpine-dark responsive",
+                style={"z-index": "0"},
+            )
+
             line_grid = dict(line_width=1, line_dash="dash", line_color="#595959")
 
             model_fig.add_vline(validation_date, **line_grid)
@@ -234,9 +267,9 @@ class DevRunModel:
                 "hidden",
                 # Graph Charts
                 model_fig,
-                account_fig,
+                sequential_results_table,
                 drawdown_fig,
                 expected_return_fig,
-                payoff_fig,
+                sequential_results_fig,
                 win_rate_fig,
             )
