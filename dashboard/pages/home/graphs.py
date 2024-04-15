@@ -422,10 +422,10 @@ def calculate_sequencial_results(
     gain_counter = 0
 
     for x in liquid_results.to_numpy():
-        if x < 0:
+        if x < 0 and not np.isnan(x):
             loss_counter += 1
             gain_counter = 0
-        else:
+        elif x > 0:
             loss_counter = 0
             gain_counter += 1
 
