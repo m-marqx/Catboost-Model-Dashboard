@@ -353,3 +353,67 @@ class ModelFeatures:
         )
 
         return self.dataset
+
+    def create_didi_index_feature(
+        self,
+        source: pd.Series,
+        short_length: int = 3,
+        medium_length: int = 18,
+        long_length: int = 20,
+        ma_type: Literal['sma', 'ema', 'rma'] = 'sma',
+        method: Literal['absolute', 'ratio', 'dtw'] = 'absolute',
+    ):
+        """
+        Create the Didi Index feature.
+
+        Parameters:
+        -----------
+
+        source : pd.Series
+            The source series for calculating the DIDI index.
+        short_length : int, optional
+            The length of the short EMA. (default: 3)
+        medium_length : int, optional
+            The length of the medium EMA. (default: 18)
+        long_length : int, optional
+            The length of the long EMA. (default: 20)
+
+        Returns:
+        --------
+
+        pd.DataFrame
+            The dataset with the DIDI index feature added.
+        """
+        self.logger.info("Calculating new DIDI index...")
+        start = time.perf_counter()
+
+        didi_index = ta.DidiIndex(
+            source,
+            short_length,
+            medium_length,
+            long_length,
+            ma_type,
+        )
+        if method == "absolute":
+            self.dataset["DIDI"] = didi_index.absolute()
+        elif method == "ratio":
+            self.dataset["DIDI"] = didi_index.ratio()
+        elif method == "dtw":
+            self.dataset["DIDI"] = didi_index.dtw()
+        else:
+            raise ValueError(
+                "Invalid method provided. Use 'absolute', 'ratio', or 'dtw'."
+            )
+
+        self.dataset.loc[:, "DIDI_feat"] = feature_binning(
+            self.dataset["DIDI"],
+            self.test_index,
+            self.bins,
+        )
+
+        self.logger.info(
+            "DIDI index calculated in %.2f seconds.",
+            time.perf_counter() - start
+        )
+
+        return self.dataset
