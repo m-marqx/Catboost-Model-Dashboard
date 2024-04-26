@@ -47,7 +47,7 @@ def layout(lang="en_US"):
                                             }
                                         },
                                         className="graph",
-                                        style={"width": "80%", "margin": "1vh auto 0svh"}
+                                        style={"width": "79%", "margin": "1svh 0svh 0px 1svh"}
                                     ),
                                     html.P(id='dev_ml_results2', style={"width": "20%", "margin-bottom": "0px"}),
                             ]),
