@@ -458,3 +458,71 @@ class ModelFeatures:
         )
 
         return self.dataset
+
+    def create_macd_feature(
+        self,
+        source: pd.Series,
+        fast_length: int = 12,
+        slow_length: int = 26,
+        signal_length: int = 9,
+        diff_method: Literal['absolute', 'ratio', 'dtw'] = 'absolute',
+        ma_method: Literal['sma', 'ema','dema','tema', 'rma'] = 'ema',
+        signal_method: Literal['sma', 'ema','dema','tema', 'rma'] = 'ema',
+        column: Literal['macd', 'signal', 'histogram'] = 'histogram',
+    ):
+        """
+        Create the MACD index feature.
+
+        Parameters:
+        -----------
+        source : pd.Series
+            The source series for calculating the MACD index.
+        short_length : int, optional
+            The length of the short EMA. (default: 12)
+        long_length : int, optional
+            The length of the long EMA. (default: 26)
+        signal_length : int, optional
+            The length of the signal line. (default: 9)
+        diff_method : Literal['absolute', 'ratio', 'dtw'], optional
+            The method to use for calculating the MACD index.
+            (default: 'absolute')
+        ma_method : Literal['sma', 'ema','dema','tema', 'rma'], optional
+            The moving average method to use for MACD calculation.
+            (default: 'ema')
+        signal_method : Literal['sma', 'ema','dema','tema', 'rma'], optional
+            The moving average method to use for signal line calculation.
+            (default: 'ema')
+        column : Literal['macd', 'signal', 'histogram'], optional
+            The column to return from the MACD calculation.
+            (default: 'histogram')
+
+        Returns:
+        --------
+        pd.DataFrame
+            The dataset with the MACD index feature added.
+        """
+        self.logger.info("Calculating MACD index...")
+        start = time.perf_counter()
+
+        self.dataset["MACD"] = ta.MACD(
+            source=source,
+            fast_length=fast_length,
+            slow_length=slow_length,
+            signal_length=signal_length,
+            diff_method=diff_method,
+            ma_method=ma_method,
+            signal_method=signal_method,
+        )[column]
+
+        self.dataset.loc[:, "MACD_feat"] = feature_binning(
+            self.dataset["MACD"],
+            self.test_index,
+            self.bins,
+        )
+
+        self.logger.info(
+            "MACD index calculated in %.2f seconds.",
+            time.perf_counter() - start
+        )
+
+        return self.dataset
