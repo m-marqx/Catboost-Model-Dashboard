@@ -354,6 +354,48 @@ class ModelFeatures:
 
         return self.dataset
 
+    def create_cci_feature(
+        self,
+        source: pd.Series,
+        length: int = 20,
+        method: Literal['sma', 'ema', 'dema', 'tema', 'rma'] = 'sma',
+    ):
+        """
+        Create the CCI (Commodity Channel Index) feature.
+
+        Parameters:
+        -----------
+        source : pd.Series
+            The source series for calculating CCI.
+        length : int, optional
+            The length of the CCI calculation.
+            (default: 20)
+        method : Literal['sma', 'ema', 'dema', 'tema', 'rma'], optional
+            The moving average method to use for CCI calculation.
+            (default: 'sma')
+
+        Returns:
+        --------
+        pd.DataFrame
+            The dataset with the CCI feature added.
+        """
+        self.logger.info("Calculating CCI...")
+        start = time.perf_counter()
+
+        self.dataset['CCI'] =  ta.CCI(source, length, method=method)['CCI']
+
+        self.dataset.loc[:, "CCI_feat"] = feature_binning(
+            self.dataset["CCI"],
+            self.test_index,
+            self.bins,
+        )
+
+        self.logger.info(
+            "CCI calculated in %.2f seconds.", time.perf_counter() - start
+        )
+
+        return self.dataset
+
     def create_didi_index_feature(
         self,
         source: pd.Series,
@@ -380,7 +422,6 @@ class ModelFeatures:
 
         Returns:
         --------
-
         pd.DataFrame
             The dataset with the DIDI index feature added.
         """
