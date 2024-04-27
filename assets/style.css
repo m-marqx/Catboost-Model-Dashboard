@@ -541,7 +541,7 @@ p {
 
 .VirtualizedSelectOption {
   color: rgba(255, 255, 255, 0.85) !important;
-  background: #536d13d9 !important;
+  background: #7BB4DBd9 !important;
   border: 0px solid rgba(0, 0, 0, 0) !important;
 }
 
@@ -550,10 +550,13 @@ p {
 .ReactVirtualized__List,
 .VirtualSelectGrid {
   color: rgba(255, 255, 255, 0.85) !important;
-  background: #536d13 !important;
   border: 0px solid rgba(0, 0, 0, 0) !important;
   border-bottom-left-radius: 10px !important;
   border-bottom-right-radius: 10px !important;
+  background: #0c0e338c !important;
+  backdrop-filter: blur(0.5vh);
+  -webkit-backdrop-filter: blur(0.5vh);
+  width: 5vw;
 }
 
 .ReactVirtualized__Grid::-webkit-scrollbar,
@@ -563,7 +566,7 @@ p {
 
 .VirtualizedSelectFocusedOption {
   color: #ffffff !important;
-  background: #c9e75da6 !important;
+  background: #7C82DCa6 !important;
   overflow: hidden;
 }
 
@@ -588,9 +591,9 @@ p {
 }
 
 .Select-control {
-  background: #536d13d9 !important;
+  background: transparent !important;
+  border: 0.3vh solid #7BB4DB;
   border-radius: 7px;
-  border: 1px solid rgba(0, 0, 0, 0) !important;
   color: rgba(255, 255, 255, 0.85);
   display: table;
   border-spacing: 0;
@@ -598,13 +601,15 @@ p {
   height: var(--default-height);
   overflow: hidden;
   text-align: center;
+  width: 75% !important;
+  margin-left: 4svh;
 }
 
 .Select--multi .Select-value {
-  background-color: #c9e75d27;
+  background-color: #7BB4DB27;
   border-radius: 2px;
-  border: 1px solid #c9e75da6;
-  color: #c9e75d;
+  border: 1px solid #7BB4DBa6;
+  color: #7BB4DB;
   display: inline-block;
   font-size: 0.9em;
   line-height: 1.4;
@@ -615,8 +620,8 @@ p {
 
 .Select--multi .Select-value-icon,
 .Select--multi .Select-value-icon:hover {
-  border-right: 1px solid #c9e75d;
-  color: #c9e75d !important;
+  border-right: 1px solid #7BB4DB;
+  color: #7BB4DB !important;
 }
 
 .Select-placeholder {
