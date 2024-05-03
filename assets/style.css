@@ -605,6 +605,10 @@ p {
   margin-left: 4svh;
 }
 
+.Select-value {
+  display:grid;
+}
+
 .Select--multi .Select-value {
   background-color: #7BB4DB27;
   border-radius: 2px;
@@ -639,6 +643,9 @@ p {
   display: grid;
   align-content: center;
   justify-content: center;
+  font-size: 2.5svh;
+  align-items: center;
+  justify-items: center;
 }
 
 .dropdown-toggle {
