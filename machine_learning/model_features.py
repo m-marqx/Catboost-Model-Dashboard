@@ -402,7 +402,7 @@ class ModelFeatures:
         short_length: int = 3,
         medium_length: int = 18,
         long_length: int = 20,
-        ma_type: Literal['sma', 'ema', 'rma'] = 'sma',
+        ma_type: Literal['sma', 'ema','dema','tema', 'rma'] = 'sma',
         method: Literal['absolute', 'ratio', 'dtw'] = 'absolute',
     ):
         """
