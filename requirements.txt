@@ -1,0 +1,14 @@
+tqdm
+tradingview_indicators
+catboost
+klib
+ccxt
+dill
+dash[diskcache]
+dash_ag_grid
+dash_bootstrap_components
+plotly
+pandas
+numpy
+shap
+gunicorn
