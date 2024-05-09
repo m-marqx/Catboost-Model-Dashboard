@@ -187,8 +187,15 @@ class ModelFeatures:
         start = time.perf_counter()
 
         stoch_k, stoch_d = (
-            ta.SlowStochastic(self.dataset, source_column)
-            .slow_stoch(k_length, k_smoothing, d_smoothing)
+            ta.slow_stoch(
+                self.dataset[source_column],
+                self.dataset['high'],
+                self.dataset['low'],
+                k_length,
+                k_smoothing,
+                d_smoothing,
+                'sma'
+            )
         )
 
         self.dataset["stoch_k"] = stoch_k
