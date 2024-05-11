@@ -421,11 +421,14 @@ class ModelFeatures:
         source : pd.Series
             The source series for calculating the DIDI index.
         short_length : int, optional
-            The length of the short EMA. (default: 3)
+            The length of the short EMA.
+            (default: 3)
         medium_length : int, optional
-            The length of the medium EMA. (default: 18)
+            The length of the medium EMA.
+            (default: 18)
         long_length : int, optional
-            The length of the long EMA. (default: 20)
+            The length of the long EMA.
+            (default: 20)
 
         Returns:
         --------
