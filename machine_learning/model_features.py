@@ -599,12 +599,12 @@ class ModelFeatures:
         source : pd.Series
             The source series for calculating the SMIO.
         short_length : int, optional
-            The length of the short EMA. (default: 3)
+            The length of the faster moving average. (default: 3)
         long_length : int, optional
-            The length of the long EMA. (default: 18)
-        ma_type : Literal['sma', 'ema', 'rma'], optional
+            The length of the slower moving average. (default: 18)
+        ma_type : Literal['sma', 'ema', 'dema', 'tema', 'rma'], optional
             The moving average method to use for SMIO calculation.
-            (default: 'sma')
+            (default: 'ema')
 
         Returns:
         --------
