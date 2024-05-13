@@ -2,6 +2,7 @@ from typing import Literal
 import logging
 import time
 
+import numpy as np
 import pandas as pd
 import tradingview_indicators as ta
 from utils import DynamicTimeWarping
@@ -28,7 +29,21 @@ def feature_binning(
     --------
     pd.Series
         The binned feature series.
+
+    Raises:
+    -------
+    ValueError
+        If the feature contains NaN or infinite values.
     """
+    has_inf = np.sum(np.isinf(feature.dropna().to_numpy())) >= 1
+    has_na = np.sum(np.isnan(feature.dropna().to_numpy())) >= 1
+
+    if has_inf or has_na:
+        raise ValueError(
+            "Feature contains NaN or infinite values. "
+            "Please clean the data before binning."
+        )
+
     train_series = (
         feature.iloc[:test_index].copy() if isinstance(test_index, int)
         else feature.loc[:test_index].copy()
@@ -43,8 +58,8 @@ def feature_binning(
 
     lows = pd.Series([interval.left for interval in intervals])
     highs = pd.Series([interval.right for interval in intervals])
-    lows.iloc[0] = -999999999999
-    highs.iloc[-1] = 999999999999
+    lows.iloc[0] = -np.inf
+    highs.iloc[-1] = np.inf
 
     intervals_range = (
         pd.concat([lows.rename("lowest"), highs.rename("highest")], axis=1)
