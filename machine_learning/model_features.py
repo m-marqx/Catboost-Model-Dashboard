@@ -450,26 +450,29 @@ class ModelFeatures:
         pd.DataFrame
             The dataset with the DIDI index feature added.
         """
+        if method not in ["absolute", "ratio", "dtw"]:
+            raise ValueError(
+                "Invalid method provided. Use 'absolute', 'ratio', or 'dtw'."
+            )
+
         self.logger.info("Calculating new DIDI index...")
         start = time.perf_counter()
 
-        didi_index = ta.DidiIndex(
+        is_dtw_distance = False
+
+        if method == "dtw":
+            method = "absolute"
+            is_dtw_distance = True
+
+        self.dataset["DIDI"] = ta.didi_index(
             source,
             short_length,
             medium_length,
             long_length,
             ma_type,
+            method,
+            is_dtw_distance,
         )
-        if method == "absolute":
-            self.dataset["DIDI"] = didi_index.absolute()
-        elif method == "ratio":
-            self.dataset["DIDI"] = didi_index.ratio()
-        elif method == "dtw":
-            self.dataset["DIDI"] = didi_index.dtw()
-        else:
-            raise ValueError(
-                "Invalid method provided. Use 'absolute', 'ratio', or 'dtw'."
-            )
 
         self.dataset.loc[:, "DIDI_feat"] = feature_binning(
             self.dataset["DIDI"],
