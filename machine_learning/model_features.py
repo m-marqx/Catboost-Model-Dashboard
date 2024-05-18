@@ -702,3 +702,162 @@ class ModelFeatures:
         )
 
         return self.dataset
+
+def model_creation(
+    random_variables: dict,
+    hyperparams: dict,
+    test_index: int,
+    dataframe: pd.DataFrame,
+    max_trades: int = 3,
+    off_days: int = 7,
+    pct_adj: float = 0.5,
+    train_in_middle: bool = True,
+):
+    data_frame = dataframe.copy()
+
+    if "DTW" in random_variables["random_features"]:
+        dtw_source = (
+            data_frame[random_variables["random_source_price_dtw"]]
+            .pct_change(1)
+            .iloc[1:]
+        )
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, random_variables["random_binnings_qty_dtw"]
+        ).create_dtw_distance_feature(
+            dtw_source,
+            random_variables["random_moving_averages"],
+            random_variables["random_moving_averages_length"],
+        )
+
+    if "RSI" in random_variables["random_features"]:
+        rsi_source = (
+            data_frame[random_variables["random_source_price_rsi"]]
+            .pct_change(1)
+            .iloc[1:]
+        )
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, random_variables["random_binnings_qty_rsi"]
+        ).create_rsi_feature(rsi_source, random_variables["random_rsi_length"])
+
+    if "Stoch" in random_variables["random_features"]:
+        data_frame["slow_stoch_source"] = (
+            data_frame[random_variables["random_source_price_stoch"]]
+            .pct_change(1)
+        )
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, random_variables["random_binnings_qty_stoch"]
+        ).create_slow_stoch_feature(
+            random_variables["random_source_price_stoch"],
+            random_variables["random_slow_stoch_length"],
+            random_variables["random_slow_stoch_k"],
+            random_variables["random_slow_stoch_d"],
+        )
+
+    if "CCI" in random_variables["random_features"]:
+        cci_source = (
+            data_frame[random_variables["random_source_price_cci"]]
+            .pct_change(1)
+            .iloc[1:]
+        )
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, random_variables["random_binnings_qty_cci"]
+        ).create_cci_feature(
+            cci_source,
+            random_variables["random_cci_length"],
+            random_variables["random_cci_method"],
+        )
+
+    if "MACD" in random_variables["random_features"]:
+        macd_source = (
+            data_frame[random_variables["random_source_price_macd"]]
+            .pct_change(1)
+            .iloc[1:]
+        )
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, random_variables["random_binnings_qty_macd"]
+        ).create_macd_feature(
+            macd_source,
+            random_variables["random_macd_fast_length"],
+            random_variables["random_macd_slow_length"],
+            random_variables["random_macd_signal_length"],
+            random_variables["random_macd_diff_method"],
+            random_variables["random_macd_ma_method"],
+            random_variables["random_macd_signal_method"],
+            random_variables["random_macd_column"],
+        )
+
+    if "TRIX" in random_variables["random_features"]:
+        trix_source = data_frame[random_variables["random_source_price_trix"]]
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, random_variables["random_binnings_qty_trix"]
+        ).create_trix_feature(
+            trix_source,
+            random_variables["random_trix_length"],
+            random_variables["random_trix_signal_length"],
+            random_variables["random_trix_ma_method"],
+        )
+
+    if "SMIO" in random_variables["random_features"]:
+        smio_source = data_frame[random_variables["random_source_price_smio"]]
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, random_variables["random_binnings_qty_smio"]
+        ).create_smio_feature(
+            smio_source,
+            random_variables["random_smio_short_length"],
+            random_variables["random_smio_long_length"],
+            random_variables["random_smio_signal_length"],
+            random_variables["random_smio_ma_method"],
+        )
+
+    if "DIDI" in random_variables["random_features"]:
+        didi_source = (
+            data_frame[random_variables["random_source_price_didi"]]
+        )
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, random_variables["random_binnings_qty_didi"]
+        ).create_didi_index_feature(
+            source=didi_source,
+            short_length=random_variables["random_didi_short_length"],
+            medium_length=random_variables["random_didi_mid_length"],
+            long_length=random_variables["random_didi_long_length"],
+            ma_type=random_variables["random_didi_ma_type"],
+            method=random_variables["random_didi_method"],
+        )
+
+    if "TSI" in random_variables["random_features"]:
+        tsi_source = data_frame[random_variables["random_source_price_tsi"]]
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, random_variables["random_binnings_qty_tsi"]
+        ).create_tsi_feature(
+            tsi_source,
+            random_variables["random_tsi_short_length"],
+            random_variables["random_tsi_long_length"],
+            random_variables["random_tsi_ma_method"],
+        )
+
+    df_columns = data_frame.columns.tolist()
+    features = [x for x in df_columns if "feat" in x]
+
+    mh2, _, _, _, _, _, _, _, _, all_y, index_splits = calculate_model(
+        dataset=data_frame,
+        feats=features,
+        test_index=test_index,
+        plot=False,
+        output="All",
+        long_only=False,
+        train_in_middle=train_in_middle,
+        **hyperparams,
+    )
+
+    mh2["Liquid_Result"] = np.where(mh2["Predict"] == -1, 0, mh2["Liquid_Result"])
+
+    return max_trade_adj(mh2, off_days, max_trades, pct_adj), index_splits, all_y
