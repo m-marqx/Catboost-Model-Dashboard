@@ -244,3 +244,198 @@ def calculate_model(
     else:
         raise ValueError("Invalid output parameter")
 
+def model_creation(
+    feat_parameters: dict,
+    hyperparams: dict,
+    test_index: int,
+    dataframe: pd.DataFrame,
+    max_trades: int = 3,
+    off_days: int = 7,
+    pct_adj: float = 0.5,
+    train_in_middle: bool = True,
+):
+    """
+    Calculate and create the model based on the input parameters.
+
+    Parameters
+    ----------
+    feat_parameters : dict
+        Dictionary containing the parameters for the random features.
+    hyperparams : dict
+        Dictionary containing the hyperparameters for the model.
+    test_index : int
+        Index to split the dataset into train and test sets.
+    dataframe : pd.DataFrame
+        Input dataset.
+    max_trades : int, optional
+        Maximum number of trades to consider before waiting for off days
+        (default: 3)
+    off_days : int, optional
+        When max_trades is reached, the number of days to wait before
+        opening a new trade.
+        (default: 7)
+    pct_adj : float, optional
+        Percentage adjustment to apply to the liquid results.
+        (default: 0.5)
+    train_in_middle : bool, optional
+        Whether to train the model in the middle of the dataset
+        (default: True)
+
+    Returns
+    -------
+    tuple
+        A tuple containing the adjusted model, index splits, and target
+        values.
+    """
+    data_frame = dataframe.copy()
+
+    if "DTW" in feat_parameters["random_features"]:
+        dtw_source = (
+            data_frame[feat_parameters["random_source_price_dtw"]]
+            .pct_change(1)
+            .iloc[1:]
+        )
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, feat_parameters["random_binnings_qty_dtw"]
+        ).create_dtw_distance_feature(
+            dtw_source,
+            feat_parameters["random_moving_averages"],
+            feat_parameters["random_moving_averages_length"],
+        )
+
+    if "RSI" in feat_parameters["random_features"]:
+        rsi_source = (
+            data_frame[feat_parameters["random_source_price_rsi"]]
+            .pct_change(1)
+            .iloc[1:]
+        )
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, feat_parameters["random_binnings_qty_rsi"]
+        ).create_rsi_feature(rsi_source, feat_parameters["random_rsi_length"])
+
+    if "Stoch" in feat_parameters["random_features"]:
+        data_frame["slow_stoch_source"] = (
+            data_frame[feat_parameters["random_source_price_stoch"]]
+            .pct_change(1)
+        )
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, feat_parameters["random_binnings_qty_stoch"]
+        ).create_slow_stoch_feature(
+            feat_parameters["random_source_price_stoch"],
+            feat_parameters["random_slow_stoch_length"],
+            feat_parameters["random_slow_stoch_k"],
+            feat_parameters["random_slow_stoch_d"],
+        )
+
+    if "CCI" in feat_parameters["random_features"]:
+        cci_source = (
+            data_frame[feat_parameters["random_source_price_cci"]]
+            .pct_change(1)
+            .iloc[1:]
+        )
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, feat_parameters["random_binnings_qty_cci"]
+        ).create_cci_feature(
+            cci_source,
+            feat_parameters["random_cci_length"],
+            feat_parameters["random_cci_method"],
+        )
+
+    if "MACD" in feat_parameters["random_features"]:
+        macd_source = (
+            data_frame[feat_parameters["random_source_price_macd"]]
+            .pct_change(1)
+            .iloc[1:]
+        )
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, feat_parameters["random_binnings_qty_macd"]
+        ).create_macd_feature(
+            macd_source,
+            feat_parameters["random_macd_fast_length"],
+            feat_parameters["random_macd_slow_length"],
+            feat_parameters["random_macd_signal_length"],
+            feat_parameters["random_macd_diff_method"],
+            feat_parameters["random_macd_ma_method"],
+            feat_parameters["random_macd_signal_method"],
+            feat_parameters["random_macd_column"],
+        )
+
+    if "TRIX" in feat_parameters["random_features"]:
+        trix_source = data_frame[feat_parameters["random_source_price_trix"]]
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, feat_parameters["random_binnings_qty_trix"]
+        ).create_trix_feature(
+            trix_source,
+            feat_parameters["random_trix_length"],
+            feat_parameters["random_trix_signal_length"],
+            feat_parameters["random_trix_ma_method"],
+        )
+
+    if "SMIO" in feat_parameters["random_features"]:
+        smio_source = data_frame[feat_parameters["random_source_price_smio"]]
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, feat_parameters["random_binnings_qty_smio"]
+        ).create_smio_feature(
+            smio_source,
+            feat_parameters["random_smio_short_length"],
+            feat_parameters["random_smio_long_length"],
+            feat_parameters["random_smio_signal_length"],
+            feat_parameters["random_smio_ma_method"],
+        )
+
+    if "DIDI" in feat_parameters["random_features"]:
+        didi_source = (
+            data_frame[feat_parameters["random_source_price_didi"]]
+        )
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, feat_parameters["random_binnings_qty_didi"]
+        ).create_didi_index_feature(
+            source=didi_source,
+            short_length=feat_parameters["random_didi_short_length"],
+            medium_length=feat_parameters["random_didi_mid_length"],
+            long_length=feat_parameters["random_didi_long_length"],
+            ma_type=feat_parameters["random_didi_ma_type"],
+            method=feat_parameters["random_didi_method"],
+        )
+
+    if "TSI" in feat_parameters["random_features"]:
+        tsi_source = data_frame[feat_parameters["random_source_price_tsi"]]
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, feat_parameters["random_binnings_qty_tsi"]
+        ).create_tsi_feature(
+            tsi_source,
+            feat_parameters["random_tsi_short_length"],
+            feat_parameters["random_tsi_long_length"],
+            feat_parameters["random_tsi_ma_method"],
+        )
+
+    df_columns = data_frame.columns.tolist()
+    features = [x for x in df_columns if "feat" in x]
+
+    mh2, _, _, _, _, _, _, _, _, all_y, index_splits = calculate_model(
+        dataset=data_frame,
+        feats=features,
+        test_index=test_index,
+        plot=False,
+        output="All",
+        long_only=False,
+        train_in_middle=train_in_middle,
+        **hyperparams,
+    )
+
+    mh2["Liquid_Result"] = np.where(mh2["Predict"] == -1, 0, mh2["Liquid_Result"])
+
+    return (
+        max_trade_adj(mh2, off_days, max_trades, pct_adj),
+        index_splits,
+        all_y
+    )
