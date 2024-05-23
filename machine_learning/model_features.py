@@ -702,3 +702,101 @@ class ModelFeatures:
         )
 
         return self.dataset
+
+    def create_ichimoku_feature(
+        self,
+        conversion_periods,
+        base_periods,
+        lagging_span_2_periods,
+        displacement,
+        based_on: Literal["lead_line", "lagging_span"] = "lagging_span",
+        method: Literal["absolute", "ratio", "dtw"] = "absolute",
+    ):
+        """
+        Create the Ichimoku Clouds feature.
+
+        Parameters:
+        -----------
+        conversion_periods : int
+            The conversion line period.
+        base_periods : int
+            The base line period.
+        lagging_span_2_periods : int
+            The lagging span 2 period.
+        displacement : int
+            The displacement period.
+        based_on : Literal["lead_line", "lagging_span"], optional
+            The line to base the distance calculation on.
+            (default: "lagging_span")
+        method : Literal["absolute", "ratio", "dtw"], optional
+            The method to use for calculating the distance.
+            (default: "absolute")
+        """
+        self.logger.info("Calculating Ichimoku Clouds...")
+        start = time.perf_counter()
+
+        ichimoku = ta.Ichimoku(
+            dataframe=self.dataset,
+            conversion_periods=conversion_periods,
+            base_periods=base_periods,
+            lagging_span_2_periods=lagging_span_2_periods,
+            displacement=displacement,
+        )[[
+            "lead_line1",
+            "lead_line2",
+            "leading_span_a",
+            "leading_span_b",
+        ]]
+
+        if method == "absolute":
+            lead_line_distance = (
+                ichimoku['lead_line1'] - ichimoku['lead_line2']
+            )
+
+            leading_span_distance = (
+                ichimoku['leading_span_a'] - ichimoku['leading_span_b']
+            )
+        elif method == "ratio":
+            lead_line_distance = (
+                ichimoku['lead_line1'] / ichimoku['lead_line2']
+            )
+
+            leading_span_distance = (
+                ichimoku['leading_span_a'] / ichimoku['leading_span_b']
+            )
+
+        elif method == "dtw":
+            lead_line_distance = DynamicTimeWarping(
+                ichimoku['lead_line1'].dropna(),
+                ichimoku['lead_line2'].dropna(),
+            ).calculate_dtw_distance(
+                method="absolute", align_sequences=True,
+            )
+
+            leading_span_distance = DynamicTimeWarping(
+                ichimoku['leading_span_a'].dropna(),
+                ichimoku['leading_span_b'].dropna(),
+            ).calculate_dtw_distance(
+                method="absolute", align_sequences=True,
+            )
+        else:
+            raise ValueError(f"method '{method}' not found.")
+
+        if based_on == "lead_line":
+            self.dataset['ichimoku_distance'] = lead_line_distance
+        elif based_on == "lagging_span":
+            self.dataset['ichimoku_distance'] = leading_span_distance
+        else:
+            raise ValueError(f"'{based_on}' is a invalid parameter.")
+
+        self.dataset.loc[:, "ichimoku_feat"] = feature_binning(
+            self.dataset["ichimoku_distance"],
+            self.test_index,
+            self.bins,
+        )
+
+        self.logger.info(
+            "TSI calculated in %.2f seconds.", time.perf_counter() - start
+        )
+
+        return self.dataset
