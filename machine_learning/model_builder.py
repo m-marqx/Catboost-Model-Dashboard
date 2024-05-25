@@ -418,6 +418,20 @@ def model_creation(
             feat_parameters["random_tsi_ma_method"],
         )
 
+    if "Ichimoku" in feat_parameters["random_features"]:
+        data_frame = ModelFeatures(
+            data_frame,
+            test_index,
+            feat_parameters["random_binnings_qty_ichimoku"],
+        ).create_ichimoku_feature(
+            feat_parameters["random_ichimoku_conversion_periods"],
+            feat_parameters["random_ichimoku_base_periods"],
+            feat_parameters["random_ichimoku_lagging_span_2_periods"],
+            feat_parameters["random_ichimoku_displacement"],
+            feat_parameters["random_ichimoku_based_on"],
+            feat_parameters["random_ichimoku_method"],
+        )
+
     df_columns = data_frame.columns.tolist()
     features = [x for x in df_columns if "feat" in x]
 
