@@ -151,3 +151,88 @@ class ModelMiner:
             "r2_val": None,
             "test_index": None,
         }
+
+    def __generate_feat_parameters(self):
+        macd_lengths = np.random.choice(range(2, 151), 2, replace=False)
+        smio_lengths = np.random.choice(range(2, 151), 2, replace=False)
+        tsi_lengths = np.random.choice(range(2, 151), 2, replace=False)
+        didi_ma_lengths = np.random.choice(range(2, 151), 3, replace=False)
+        ichimoku_lengths = np.random.choice(range(2, 151), 2, replace=False)
+
+        fast_length = max(macd_lengths)
+        slow_length = min(macd_lengths)
+        signal_length = np.random.choice(range(2, 51))
+        signal_length = (
+            signal_length + 1 if signal_length in macd_lengths else signal_length
+        )
+
+        return {
+            # General
+            "random_features": list(np.random.choice(self.random_features)),
+            # DTW
+            "random_source_price_dtw": np.random.choice(self.ohlc),
+            "random_binnings_qty_dtw": np.random.choice(range(10, 31)),
+            "random_moving_averages": np.random.choice(self.ma_type_combinations),
+            "random_moving_averages_length": np.random.choice(range(2, 301)),
+            # RSI
+            "random_source_price_rsi": np.random.choice(self.ohlc),
+            "random_binnings_qty_rsi": np.random.choice(range(10, 31)),
+            "random_rsi_length": np.random.choice(range(2, 151)),
+            # STOCH
+            "random_source_price_stoch": np.random.choice(self.ohlc),
+            "random_binnings_qty_stoch": np.random.choice(range(10, 31)),
+            "random_slow_stoch_length": np.random.choice(range(2, 51)),
+            "random_slow_stoch_k": np.random.choice(range(1, 11)),
+            "random_slow_stoch_d": np.random.choice(range(2, 11)),
+            # DIDI
+            "random_source_price_didi": np.random.choice(self.ohlc),
+            "random_binnings_qty_didi": np.random.choice(range(10, 31)),
+            "random_didi_short_length": int(np.min(didi_ma_lengths)),
+            "random_didi_mid_length": int(np.median(didi_ma_lengths)),
+            "random_didi_long_length": int(np.max(didi_ma_lengths)),
+            "random_didi_ma_type": np.random.choice(self.ma_types),
+            "random_didi_method": np.random.choice(["absolute", "ratio", "dtw"]),
+            # CCI
+            "random_source_price_cci": np.random.choice(self.ohlc),
+            "random_binnings_qty_cci": np.random.choice(range(10, 31)),
+            "random_cci_length": np.random.choice(range(2, 151)),
+            "random_cci_method": np.random.choice(self.ma_types),
+            # MACD
+            "random_source_price_macd": np.random.choice(self.ohlc),
+            "random_binnings_qty_macd": np.random.choice(range(10, 31)),
+            "random_macd_fast_length": fast_length,
+            "random_macd_slow_length": slow_length,
+            "random_macd_signal_length": signal_length,
+            "random_macd_diff_method": np.random.choice(["absolute", "dtw"]),
+            "random_macd_ma_method": np.random.choice(self.ma_types),
+            "random_macd_signal_method": np.random.choice(self.ma_types),
+            "random_macd_column": np.random.choice(["macd", "signal", "histogram"]),
+            # TRIX
+            "random_source_price_trix": np.random.choice(self.ohlc),
+            "random_binnings_qty_trix": np.random.choice(range(10, 31)),
+            "random_trix_length": np.random.choice(range(2, 51)),
+            "random_trix_signal_length": np.random.choice(range(2, 51)),
+            "random_trix_ma_method": np.random.choice(self.ma_types),
+            # SMIO
+            "random_source_price_smio": np.random.choice(self.ohlc),
+            "random_binnings_qty_smio": np.random.choice(range(10, 31)),
+            "random_smio_short_length": max(smio_lengths),
+            "random_smio_long_length": min(smio_lengths),
+            "random_smio_signal_length": np.random.choice(range(2, 51)),
+            "random_smio_ma_method": np.random.choice(self.ma_types),
+            # TSI
+            "random_source_price_tsi": np.random.choice(self.ohlc),
+            "random_binnings_qty_tsi": np.random.choice(range(10, 31)),
+            "random_tsi_short_length": max(tsi_lengths),
+            "random_tsi_long_length": min(tsi_lengths),
+            "random_tsi_ma_method": np.random.choice(self.ma_types),
+            # Ichimoku
+            "random_binnings_qty_ichimoku": np.random.choice(range(10, 31)),
+            "random_ichimoku_conversion_periods": ichimoku_lengths[0],
+            "random_ichimoku_base_periods": ichimoku_lengths[1],
+            "random_ichimoku_lagging_span_2_periods": np.random.choice(range(2, 31)),
+            "random_ichimoku_displacement": np.random.choice(range(2, 31)),
+            "random_ichimoku_based_on": np.random.choice(['lead_line', 'lagging_span']),
+            "random_ichimoku_method": np.random.choice(["absolute", "ratio", "dtw"]),
+        }
+
