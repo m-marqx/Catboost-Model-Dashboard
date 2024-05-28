@@ -705,10 +705,10 @@ class ModelFeatures:
 
     def create_ichimoku_feature(
         self,
-        conversion_periods,
-        base_periods,
-        lagging_span_2_periods,
-        displacement,
+        conversion_periods: int,
+        base_periods: int,
+        lagging_span_2_periods: int,
+        displacement: int,
         based_on: Literal["lead_line", "lagging_span"] = "lagging_span",
         method: Literal["absolute", "ratio", "dtw"] = "absolute",
     ):
