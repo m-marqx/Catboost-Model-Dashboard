@@ -234,5 +234,19 @@ class ModelMiner:
             "random_ichimoku_displacement": np.random.choice(range(2, 31)),
             "random_ichimoku_based_on": np.random.choice(['lead_line', 'lagging_span']),
             "random_ichimoku_method": np.random.choice(["absolute", "ratio", "dtw"]),
+    def __generate_hyperparameters(self):
+        return {
+            "iterations": 1000,
+            "learning_rate": np.random.choice(np.arange(0.01, 1.01, 0.01)),
+            "depth": np.random.choice(range(1, 17, 1)),
+            "min_child_samples": np.random.choice(range(1, 21, 1)),
+            "colsample_bylevel": np.random.choice(np.arange(0.1, 1.01, 0.01)),
+            "subsample": np.random.choice(np.arange(0.1, 1.01, 0.01)),
+            "reg_lambda": np.random.choice(range(1, 206, 1)),
+            "use_best_model": True,
+            "eval_metric": np.random.choice(
+                ["Logloss", "AUC", "F1", "Precision", "Recall", "PRAUC"]
+            ),
+            "random_seed": np.random.choice(range(1, 50_001, 1)),
+            "silent": True,
         }
-
