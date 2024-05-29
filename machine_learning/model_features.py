@@ -796,7 +796,7 @@ class ModelFeatures:
         )
 
         self.logger.info(
-            "TSI calculated in %.2f seconds.", time.perf_counter() - start
+            "Ichimoku calculated in %.2f seconds.", time.perf_counter() - start
         )
 
         return self.dataset
