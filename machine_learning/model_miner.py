@@ -118,7 +118,8 @@ class ModelMiner:
             "DTW",
             "TSI",
             "DIDI",
-            "Ichimoku"
+            "Ichimoku",
+            "Ichimoku Price Distance",
         ]
 
         self.random_features = []
@@ -158,6 +159,7 @@ class ModelMiner:
         tsi_lengths = np.random.choice(range(2, 151), 2, replace=False)
         didi_ma_lengths = np.random.choice(range(2, 151), 3, replace=False)
         ichimoku_lengths = np.random.choice(range(2, 151), 2, replace=False)
+        ichimoku_price_distance_lengths = np.random.choice(range(2, 151), 2, replace=False)
 
         fast_length = max(macd_lengths)
         slow_length = min(macd_lengths)
@@ -234,6 +236,19 @@ class ModelMiner:
             "random_ichimoku_displacement": np.random.choice(range(2, 31)),
             "random_ichimoku_based_on": np.random.choice(['lead_line', 'lagging_span']),
             "random_ichimoku_method": np.random.choice(["absolute", "ratio", "dtw"]),
+
+            # Ichimoku Price Distance
+            "random_source_ichimoku_price_distance": np.random.choice(self.ohlc),
+            "random_binnings_qty_ichimoku_price_distance": np.random.choice(range(10, 31)),
+            "random_ichimoku_price_distance_conversion_periods": ichimoku_price_distance_lengths[0],
+            "random_ichimoku_price_distance_base_periods": ichimoku_price_distance_lengths[1],
+            "random_ichimoku_price_distance_lagging_span_2_periods": np.random.choice(range(2, 31)),
+            "random_ichimoku_price_distance_displacement": np.random.choice(range(2, 31)),
+            "random_ichimoku_price_distance_based_on": np.random.choice(['lead_line', 'leading_span']),
+            "random_ichimoku_price_distance_method": np.random.choice(["absolute", "ratio", "dtw"]),
+            "random_ichimoku_price_distance_use_pct": True,
+        }
+
     def __generate_hyperparameters(self):
         return {
             "iterations": 1000,
