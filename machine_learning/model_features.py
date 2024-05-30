@@ -800,3 +800,116 @@ class ModelFeatures:
         )
 
         return self.dataset
+
+    def create_ichimoku_price_distance_feature(
+        self,
+        source: pd.Series,
+        conversion_periods: int,
+        base_periods: int,
+        lagging_span_2_periods: int,
+        displacement: int,
+        based_on: Literal["lead_line", "lagging_span"] = "lagging_span",
+        method: Literal["absolute", "ratio", "dtw"] = "absolute",
+        use_pct_change: bool = True,
+    ):
+        """
+        Create the Ichimoku Clouds feature.
+
+        Parameters:
+        -----------
+        conversion_periods : int
+            The conversion line period.
+        base_periods : int
+            The base line period.
+        lagging_span_2_periods : int
+            The lagging span 2 period.
+        displacement : int
+            The displacement period.
+        based_on : Literal["lead_line", "lagging_span"], optional
+            The line to base the distance calculation on.
+            (default: "lagging_span")
+        method : Literal["absolute", "ratio", "dtw"], optional
+            The method to use for calculating the distance.
+            (default: "absolute")
+        """
+        self.logger.info("Calculating Ichimoku Clouds...")
+        start = time.perf_counter()
+
+        if not isinstance(source, pd.Series):
+            raise ValueError("source must be a pandas Series.")
+
+        if use_pct_change:
+            dataset = self.dataset.copy().pct_change().iloc[1:]
+            source_df = source.copy().pct_change().iloc[1:]
+
+        ichimoku = ta.Ichimoku(
+            dataframe=dataset,
+            conversion_periods=conversion_periods,
+            base_periods=base_periods,
+            lagging_span_2_periods=lagging_span_2_periods,
+            displacement=displacement,
+        )[[
+            "lead_line1",
+            "lead_line2",
+            "leading_span_a",
+            "leading_span_b",
+        ]]
+
+        ichimoku['source'] = source_df
+
+        if based_on == 'leading_span':
+            line1 = ichimoku['leading_span_a']
+            line2 = ichimoku['leading_span_b']
+        elif based_on == 'lead_line':
+            line1 = ichimoku['lead_line1']
+            line2 = ichimoku['lead_line2']
+        else:
+            raise ValueError(
+                "based_on parameter must be 'lead_line' or 'leading_span'"
+            )
+
+        if method == 'absolute':
+            line1_distance = abs(ichimoku['source'] - line1)
+            line2_distance = abs(ichimoku['source'] - line2)
+        elif method == 'ratio':
+            line1_distance = abs(ichimoku['source'] / line1)
+            line2_distance = abs(ichimoku['source'] / line2)
+        elif method == 'dtw':
+            line1_distance = abs(
+                DynamicTimeWarping(ichimoku['source'], line1.fillna(ichimoku['source']))
+                .calculate_dtw_distance(method='absolute', align_sequences=True)
+            )
+            line2_distance = abs(
+                DynamicTimeWarping(ichimoku['source'], line2.fillna(ichimoku['source']))
+                .calculate_dtw_distance(method='absolute', align_sequences=True)
+            )
+        else:
+            raise ValueError(
+                "method parameter must be 'absolute', 'ratio', or 'dtw'"
+            )
+
+        ichimoku_df = pd.concat([
+            line1_distance.rename('diff_line1'),
+            line2_distance.rename('diff_line2'),
+        ], axis=1)
+
+        ichimoku_df['minimum_distance'] = np.where(
+            ichimoku_df['diff_line1'] < ichimoku_df['diff_line2'],
+            line1, line2
+        )
+
+        self.dataset['ichimoku_distance'] = (
+            ichimoku['source'] - ichimoku_df['minimum_distance']
+        )
+
+        self.dataset.loc[:, "ichimoku_distance_feat"] = feature_binning(
+            self.dataset["ichimoku_distance"],
+            self.test_index,
+            self.bins,
+        )
+
+        self.logger.info(
+            "Ichimoku distance calculated in %.2f seconds.", time.perf_counter() - start
+        )
+
+        return self.dataset
