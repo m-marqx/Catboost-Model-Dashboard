@@ -304,6 +304,19 @@ def model_creation(
             feat_parameters["random_moving_averages_length"],
         )
 
+    if "DTW_clean" in feat_parameters["random_features"]:
+        dtw_source = (
+            data_frame[feat_parameters["random_source_price_dtw"]]
+        )
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, feat_parameters["random_binnings_qty_dtw"]
+        ).create_dtw_distance_feature(
+            dtw_source,
+            feat_parameters["random_moving_averages"],
+            feat_parameters["random_moving_averages_length"],
+        )
+
     if "RSI" in feat_parameters["random_features"]:
         rsi_source = (
             data_frame[feat_parameters["random_source_price_rsi"]]
