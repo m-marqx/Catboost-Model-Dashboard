@@ -167,6 +167,11 @@ class ModelMiner:
         signal_length = (
             signal_length + 1 if signal_length in macd_lengths else signal_length
         )
+        distance_types = [
+            "absolute",
+            "ratio",
+            "dtw",
+        ]
 
         return {
             # General
@@ -193,7 +198,7 @@ class ModelMiner:
             "random_didi_mid_length": int(np.median(didi_ma_lengths)),
             "random_didi_long_length": int(np.max(didi_ma_lengths)),
             "random_didi_ma_type": np.random.choice(self.ma_types),
-            "random_didi_method": np.random.choice(["absolute", "ratio", "dtw"]),
+            "random_didi_method": np.random.choice(distance_types),
             # CCI
             "random_source_price_cci": np.random.choice(self.ohlc),
             "random_binnings_qty_cci": np.random.choice(range(10, 31)),
@@ -205,7 +210,7 @@ class ModelMiner:
             "random_macd_fast_length": fast_length,
             "random_macd_slow_length": slow_length,
             "random_macd_signal_length": signal_length,
-            "random_macd_diff_method": np.random.choice(["absolute", "dtw"]),
+            "random_macd_diff_method": np.random.choice(distance_types),
             "random_macd_ma_method": np.random.choice(self.ma_types),
             "random_macd_signal_method": np.random.choice(self.ma_types),
             "random_macd_column": np.random.choice(["macd", "signal", "histogram"]),
@@ -235,7 +240,7 @@ class ModelMiner:
             "random_ichimoku_lagging_span_2_periods": np.random.choice(range(2, 31)),
             "random_ichimoku_displacement": np.random.choice(range(2, 31)),
             "random_ichimoku_based_on": np.random.choice(['lead_line', 'lagging_span']),
-            "random_ichimoku_method": np.random.choice(["absolute", "ratio", "dtw"]),
+            "random_ichimoku_method": np.random.choice(distance_types),
 
             # Ichimoku Price Distance
             "random_source_ichimoku_price_distance": np.random.choice(self.ohlc),
@@ -245,7 +250,7 @@ class ModelMiner:
             "random_ichimoku_price_distance_lagging_span_2_periods": np.random.choice(range(2, 31)),
             "random_ichimoku_price_distance_displacement": np.random.choice(range(2, 31)),
             "random_ichimoku_price_distance_based_on": np.random.choice(['lead_line', 'leading_span']),
-            "random_ichimoku_price_distance_method": np.random.choice(["absolute", "ratio", "dtw"]),
+            "random_ichimoku_price_distance_method": np.random.choice(distance_types),
             "random_ichimoku_price_distance_use_pct": True,
         }
 
