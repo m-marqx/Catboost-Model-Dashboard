@@ -414,6 +414,27 @@ def model_creation(
             feat_parameters["random_macd_column"],
         )
 
+
+    if "MACD_std" in feat_parameters["random_features"]:
+        macd_source = (
+            data_frame[feat_parameters["random_source_price_macd"]]
+            .rolling(2)
+            .std()
+            .iloc[1:]
+        )
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, feat_parameters["random_binnings_qty_macd"]
+        ).create_macd_feature(
+            macd_source,
+            feat_parameters["random_macd_fast_length"],
+            feat_parameters["random_macd_slow_length"],
+            feat_parameters["random_macd_signal_length"],
+            feat_parameters["random_macd_diff_method"],
+            feat_parameters["random_macd_ma_method"],
+            feat_parameters["random_macd_signal_method"],
+            feat_parameters["random_macd_column"],
+        )
     if "TRIX" in feat_parameters["random_features"]:
         trix_source = data_frame[feat_parameters["random_source_price_trix"]]
 
