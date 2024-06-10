@@ -397,8 +397,7 @@ def model_creation(
     if "MACD" in feat_parameters["random_features"]:
         macd_source = (
             data_frame[feat_parameters["random_source_price_macd"]]
-            .rolling(2)
-            .std()
+            .pct_change(1)
             .iloc[1:]
         )
 
