@@ -466,6 +466,18 @@ def model_creation(
             feat_parameters["random_trix_ma_method"],
         )
 
+    if "TRIX_opt" in feat_parameters["random_features"]:
+        trix_source = data_frame[feat_parameters["random_source_price_trix"]]
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, feat_parameters["random_binnings_qty_trix"]
+        ).create_trix_opt_feature(
+            trix_source,
+            feat_parameters["random_trix_length"],
+            feat_parameters["random_trix_signal_length"],
+            feat_parameters["random_trix_ma_method"],
+        )
+
     if "SMIO" in feat_parameters["random_features"]:
         smio_source = data_frame[feat_parameters["random_source_price_smio"]]
 
