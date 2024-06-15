@@ -519,6 +519,18 @@ def model_creation(
             feat_parameters["random_tsi_ma_method"],
         )
 
+    if "TSI_opt" in feat_parameters["random_features"]:
+        tsi_source = data_frame[feat_parameters["random_source_price_tsi"]]
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, feat_parameters["random_binnings_qty_tsi"]
+        ).create_tsi_opt_feature(
+            tsi_source,
+            feat_parameters["random_tsi_short_length"],
+            feat_parameters["random_tsi_long_length"],
+            feat_parameters["random_tsi_ma_method"],
+        )
+
     if "Ichimoku" in feat_parameters["random_features"]:
         data_frame = ModelFeatures(
             data_frame,
