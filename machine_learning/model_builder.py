@@ -545,6 +545,24 @@ def model_creation(
             feat_parameters["random_ichimoku_method"],
         )
 
+    if "Ichimoku Price Distance" in feat_parameters["random_features"]:
+        ichimoku_source = data_frame[feat_parameters["random_source_ichimoku_price_distance"]]
+
+        data_frame = ModelFeatures(
+            data_frame,
+            test_index,
+            feat_parameters["random_binnings_qty_ichimoku_price_distance"],
+        ).create_ichimoku_price_distance_feature(
+            ichimoku_source,
+            feat_parameters["random_ichimoku_price_distance_conversion_periods"],
+            feat_parameters["random_ichimoku_price_distance_base_periods"],
+            feat_parameters["random_ichimoku_price_distance_lagging_span_2_periods"],
+            feat_parameters["random_ichimoku_price_distance_displacement"],
+            feat_parameters["random_ichimoku_price_distance_based_on"],
+            feat_parameters["random_ichimoku_price_distance_method"],
+            feat_parameters["random_ichimoku_price_distance_use_pct"],
+        )
+
     df_columns = data_frame.columns.tolist()
     features = [x for x in df_columns if "feat" in x]
 
