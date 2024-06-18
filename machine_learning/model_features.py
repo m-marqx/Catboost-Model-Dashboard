@@ -140,7 +140,12 @@ class ModelFeatures:
         else:
             self.logger.setLevel(logging.WARNING)
 
-    def create_rsi_feature(self, source: pd.Series, length: int):
+    def create_rsi_feature(
+        self,
+        source: pd.Series,
+        length: int,
+        ma_method: Literal['sma', 'ema', 'dema', 'tema', 'rma'] = 'sma'
+    ):
         """
         Create the RSI (Relative Strength Index) feature.
 
@@ -159,7 +164,7 @@ class ModelFeatures:
         self.logger.info("Calculating RSI...")
         start = time.perf_counter()
 
-        self.dataset["RSI"] = ta.RSI(source, length)
+        self.dataset["RSI"] = ta.RSI(source, length, ma_method)
         self.dataset.loc[:, "RSI_feat"] = feature_binning(
             self.dataset["RSI"],
             self.test_index,
