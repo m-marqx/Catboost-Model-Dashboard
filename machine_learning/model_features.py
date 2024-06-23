@@ -915,7 +915,7 @@ class ModelFeatures:
         base_periods: int,
         lagging_span_2_periods: int,
         displacement: int,
-        based_on: Literal["lead_line", "lagging_span"] = "lagging_span",
+        based_on: Literal["lead_line", "leading_span"] = "lagging_span",
         method: Literal["absolute", "ratio", "dtw"] = "absolute",
     ):
         """
@@ -990,7 +990,7 @@ class ModelFeatures:
 
         if based_on == "lead_line":
             self.dataset['ichimoku_distance'] = lead_line_distance
-        elif based_on == "lagging_span":
+        elif based_on == "leading_span":
             self.dataset['ichimoku_distance'] = leading_span_distance
         else:
             raise ValueError(f"'{based_on}' is a invalid parameter.")
