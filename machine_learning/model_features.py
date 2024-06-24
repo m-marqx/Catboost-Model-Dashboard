@@ -1046,7 +1046,7 @@ class ModelFeatures:
 
         if use_pct_change:
             dataset = self.dataset.copy().pct_change().iloc[1:]
-            source_df = source.copy().pct_change().iloc[1:]
+            source = source.copy().pct_change().iloc[1:]
 
         ichimoku = ta.Ichimoku(
             dataframe=dataset,
@@ -1061,7 +1061,7 @@ class ModelFeatures:
             "leading_span_b",
         ]]
 
-        ichimoku['source'] = source_df
+        ichimoku['source'] = source
 
         if based_on == 'leading_span':
             line1 = ichimoku['leading_span_a']
