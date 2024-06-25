@@ -328,6 +328,17 @@ def model_creation(
             data_frame, test_index, feat_parameters["random_binnings_qty_rsi"]
         ).create_rsi_feature(rsi_source, feat_parameters["random_rsi_length"])
 
+    if "RSI_opt" in feat_parameters["random_features"]:
+        rsi_source = (
+            data_frame[feat_parameters["random_source_price_rsi"]]
+            .pct_change(1)
+            .iloc[1:]
+        )
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, feat_parameters["random_binnings_qty_rsi"]
+        ).create_rsi_opt_feature(rsi_source, feat_parameters["random_rsi_length"], feat_parameters["random_rsi_ma_method"])
+
     if "RSI_clean" in feat_parameters["random_features"]:
         rsi_source = (
             data_frame[feat_parameters["random_source_price_rsi"]]
