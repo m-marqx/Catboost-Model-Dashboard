@@ -331,8 +331,6 @@ def model_creation(
     if "RSI_opt" in feat_parameters["random_features"]:
         rsi_source = (
             data_frame[feat_parameters["random_source_price_rsi"]]
-            .pct_change(1)
-            .iloc[1:]
         )
 
         data_frame = ModelFeatures(
