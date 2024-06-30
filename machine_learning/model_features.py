@@ -318,14 +318,14 @@ class ModelFeatures:
             )
         )
 
-        self.dataset["stoch_k"] = stoch_k.rolling(2).std()
+        self.dataset["stoch_k"] = stoch_k.rolling(2).std().diff()
         self.dataset.loc[:, "stoch_k_feat"] = feature_binning(
             self.dataset["stoch_k"],
             self.test_index,
             self.bins,
         )
 
-        self.dataset["stoch_d"] = stoch_d.rolling(2).std()
+        self.dataset["stoch_d"] = stoch_d.rolling(2).std().diff()
         self.dataset.loc[:, "stoch_d_feat"] = feature_binning(
             self.dataset["stoch_d"],
             self.test_index,
