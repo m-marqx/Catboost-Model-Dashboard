@@ -180,7 +180,7 @@ class ModelFeatures:
         self,
         source: pd.Series,
         length: int,
-        ma_method: Literal['sma', 'ema', 'dema', 'tema', 'rma'] = 'sma'
+        ma_method: Literal['sma', 'ema', 'dema', 'rma'] = 'sma'
     ):
         """
         Create the RSI (Relative Strength Index) feature.
