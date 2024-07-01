@@ -150,6 +150,8 @@ class ModelMiner:
             "total_operations_pct_val": None,
             "r2_in_2023": None,
             "r2_val": None,
+            "ols_coef_2023": None,
+            "ols_coef_val": None,
             "test_index": None,
         }
 
@@ -365,11 +367,27 @@ class ModelMiner:
                     .split("<br>")[0]
                 )
 
+                ols_coef_2023 = literal_eval(
+                    px.scatter(results, trendline="ols")
+                    .data[1]['hovertemplate']
+                    .split('<br>')[1]
+                    .split('*')[0]
+                    .split(' ')[-2]
+                )
+
                 r2_val = literal_eval(
                     px.scatter(mta_val["Liquid_Result"].cumprod(), trendline="ols")
                     .data[1]["hovertemplate"]
                     .split(">=")[1]
                     .split("<br>")[0]
+                )
+
+                ols_coef_val = literal_eval(
+                    px.scatter(mta_val["Liquid_Result"].cumprod(), trendline="ols")
+                    .data[1]['hovertemplate']
+                    .split('<br>')[1]
+                    .split('*')[0]
+                    .split(' ')[-2]
                 )
 
             except Exception:
@@ -501,6 +519,8 @@ class ModelMiner:
                 "total_operations_pct_val": total_operations_pct[1],
                 "r2_in_2023": r2_2023,
                 "r2_val": r2_val,
+                "ols_coef_2023": ols_coef_2023,
+                "ols_coef_val": ols_coef_val,
                 "test_index": test_index,
             }
         except Exception as e:
