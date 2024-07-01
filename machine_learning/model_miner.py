@@ -97,7 +97,7 @@ class ModelMiner:
         self.target = target.copy()
 
         self.ma_types = ["sma", "ema", "dema", "tema", "rma"]
-        self.rsi_ma_types = ["sma", "ema", "dema", "rma"]
+        self.train_in_middle = None
 
         combinations_list = []
         for r in range(1, len(self.ma_types) + 1):
@@ -176,7 +176,7 @@ class ModelMiner:
         return {
             # General
             "random_features": list(np.random.choice(self.random_features)),
-            # DTW
+            "train_in_middle": self.train_in_middle,
             "random_source_price_dtw": np.random.choice(self.ohlc),
             "random_binnings_qty_dtw": np.random.choice(range(10, 31)),
             "random_moving_averages": np.random.choice(self.ma_type_combinations),
@@ -298,6 +298,7 @@ class ModelMiner:
         """
         feat_parameters = self.__generate_feat_parameters()
         hyperparams = self.__generate_hyperparameters()
+        self.train_in_middle = train_in_middle
 
         try:
             selected_features = feat_parameters["random_features"]
