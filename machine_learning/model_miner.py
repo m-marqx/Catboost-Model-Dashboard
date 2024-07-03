@@ -187,8 +187,7 @@ class ModelMiner:
             "random_source_price_rsi": np.random.choice(self.ohlc),
             "random_binnings_qty_rsi": np.random.choice(range(10, 31)),
             "random_rsi_length": np.random.choice(range(2, 151)),
-            # STOCH
-            "random_source_price_stoch": np.random.choice(self.ohlc),
+            "random_source_price_stoch": np.random.choice(['open', 'close']),
             "random_binnings_qty_stoch": np.random.choice(range(10, 31)),
             "random_slow_stoch_length": np.random.choice(range(2, 51)),
             "random_slow_stoch_k": np.random.choice(range(1, 11)),
