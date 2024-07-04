@@ -1022,6 +1022,7 @@ class ModelFeatures:
         """
         self.logger.info("Calculating TRIX...")
         start = time.perf_counter()
+        source = source.copy().pct_change().rolling(2).std().iloc[2:]
 
         self.dataset["TRIX"] = (
             ta.TRIX(source, length, signal_length, method)
