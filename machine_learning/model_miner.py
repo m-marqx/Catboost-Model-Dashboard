@@ -97,7 +97,6 @@ class ModelMiner:
         self.target = target.copy()
 
         self.ma_types = ["sma", "ema", "dema", "tema", "rma"]
-        self.train_in_middle = None
 
         combinations_list = []
         for r in range(1, len(self.ma_types) + 1):
@@ -299,7 +298,6 @@ class ModelMiner:
         """
         feat_parameters = self.__generate_feat_parameters()
         hyperparams = self.__generate_hyperparameters()
-        self.train_in_middle = train_in_middle
 
         try:
             selected_features = feat_parameters["random_features"]
@@ -521,6 +519,7 @@ class ModelMiner:
                 "ols_coef_2023": ols_coef_2023,
                 "ols_coef_val": ols_coef_val,
                 "test_index": test_index,
+                "train_in_middle": train_in_middle,
             }
         except Exception as e:
             raise ValueError(f"Error: {e} \n {feat_parameters} \n\n  {hyperparams}") from e
