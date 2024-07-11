@@ -149,40 +149,42 @@ def create_catboost_model(
         ),
     }
 
-    if output == "All":
-        return (
-            mh2,
-            best_model,
-            X_train,
-            X_test,
-            y_train,
-            y_test,
-            y_pred_train,
-            y_pred_test,
-            all_x,
-            all_y,
-            index_splits,
-        )
+    match output:
+        case "All":
+            return (
+                mh2,
+                best_model,
+                X_train,
+                X_test,
+                y_train,
+                y_test,
+                y_pred_train,
+                y_pred_test,
+                all_x,
+                all_y,
+                index_splits,
+            )
 
-    if output == "Return":
-        return mh2, index_splits
+        case "Return":
+            return mh2, index_splits
 
-    if output == "Model":
-        return best_model
+        case "Model":
+            return best_model
 
-    if output == "Dataset":
-        return (
-            X_train,
-            X_test,
-            y_train,
-            y_test,
-            y_pred_train,
-            y_pred_test,
-            all_x,
-            all_y,
-        )
+        case "Dataset":
+            return (
+                X_train,
+                X_test,
+                y_train,
+                y_test,
+                y_pred_train,
+                y_pred_test,
+                all_x,
+                all_y,
+            )
 
-    raise ValueError("Invalid output parameter")
+        case _:
+            raise ValueError("Invalid output parameter")
 
 def adjust_predict_one_side(
     predict: pd.Series,
