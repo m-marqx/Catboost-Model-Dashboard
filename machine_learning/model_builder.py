@@ -352,18 +352,15 @@ def model_creation(
             feat_parameters["random_slow_stoch_d"],
         )
 
-    if "Stoch_clean" in feat_parameters["random_features"]:
-        data_frame["slow_stoch_source"] = (
-            data_frame[feat_parameters["random_source_price_stoch"]]
-        )
-
+    if "Stoch_opt" in feat_parameters["random_features"]:
         data_frame = ModelFeatures(
             data_frame, test_index, feat_parameters["random_binnings_qty_stoch"]
-        ).create_slow_stoch_feature(
+        ).create_slow_stoch_opt_feature(
             feat_parameters["random_source_price_stoch"],
             feat_parameters["random_slow_stoch_length"],
             feat_parameters["random_slow_stoch_k"],
             feat_parameters["random_slow_stoch_d"],
+            feat_parameters["random_slow_stoch_ma_method"],
         )
 
     if "CCI" in feat_parameters["random_features"]:
