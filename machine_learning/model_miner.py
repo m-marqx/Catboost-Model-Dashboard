@@ -350,22 +350,36 @@ class ModelMiner:
             ):
                 return self.empty_dict
 
-            results = mta.loc["2023", "Liquid_Result"].cumprod()
-            if results.iloc[-1] < 1:
+            #Filter the results that doesn't have profit in bear market
+            bearmarket_2022 = mta.loc["2021-08-11":"2023-01-01", "Liquid_Result"].cumprod()
+            if bearmarket_2022.iloc[-1] < 1:
                 return self.empty_dict
-            if (results == 1).all():
+            if (bearmarket_2022 == 1).all():
                 return self.empty_dict
+
+            bearmarket_2019 = mta.loc["2019-06-24":"2020-03-09", "Liquid_Result"].cumprod()
+            if bearmarket_2019.iloc[-1] < 1:
+                return self.empty_dict
+            if (bearmarket_2019 == 1).all():
+                return self.empty_dict
+
+            bearmarket_2018 = mta.loc["2017-11-17":"2019-01-01", "Liquid_Result"].cumprod()
+            if bearmarket_2018.iloc[-1] < 1:
+                return self.empty_dict
+            if (bearmarket_2018 == 1).all():
+                return self.empty_dict
+
 
             try:
                 r2_2023 = literal_eval(
-                    px.scatter(results, trendline="ols")
+                    px.scatter(bearmarket_2022, trendline="ols")
                     .data[1]["hovertemplate"]
                     .split(">=")[1]
                     .split("<br>")[0]
                 )
 
                 ols_coef_2023 = literal_eval(
-                    px.scatter(results, trendline="ols")
+                    px.scatter(bearmarket_2022, trendline="ols")
                     .data[1]['hovertemplate']
                     .split('<br>')[1]
                     .split('*')[0]
