@@ -108,6 +108,7 @@ def calculate_model(
     long_only: bool = False,
     short_only: bool = False,
     train_in_middle: bool = False,
+    cutoff_point: float | None = None,
     **hyperparams,
 ) -> pd.DataFrame:
     """
@@ -183,7 +184,18 @@ def calculate_model(
     best_model.fit(train_pool, eval_set=test_pool, plot=plot)
 
     predict = best_model.predict_proba(train_set[features])
+
     cutoff = np.median(predict)
+
+    if cutoff_point:
+        if cutoff_point >= 100:
+            raise ValueError("Cutoff point must be less than 100")
+        if cutoff_point <= 0:
+            raise ValueError("Cutoff point must be greater than 0")
+
+        predict_mask = predict > cutoff
+
+        cutoff = np.percentile(predict[predict_mask], cutoff_point)
 
     X_test = test_set[features]
     y_test = test_set[target]
@@ -207,6 +219,7 @@ def calculate_model(
     )
 
     mh2["cuttoff"] = cutoff
+
     index_splits = {
         "train": pd.Interval(train_set.index[0], train_set.index[-1]),
         "test": pd.Interval(test_set.index[0], test_set.index[-1]),
