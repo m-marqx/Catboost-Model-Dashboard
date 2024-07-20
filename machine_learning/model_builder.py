@@ -266,7 +266,8 @@ def model_creation(
     off_days: int = 7,
     pct_adj: float = 0.5,
     train_in_middle: bool = True,
-):
+    cutoff_point: float | None = None,
+) -> tuple[pd.DataFrame, dict, pd.Series]:
     """
     Calculate and create the model based on the input parameters.
 
@@ -296,7 +297,7 @@ def model_creation(
 
     Returns
     -------
-    tuple
+    tuple : pd.DataFrame, dict, pd.Series
         A tuple containing the adjusted model, index splits, and target
         values.
     """
@@ -584,6 +585,7 @@ def model_creation(
         output="All",
         long_only=False,
         train_in_middle=train_in_middle,
+        cutoff_point=cutoff_point,
         **hyperparams,
     )
 
