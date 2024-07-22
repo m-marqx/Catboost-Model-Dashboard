@@ -1,6 +1,6 @@
 tqdm
 tradingview_indicators
-catboost
+catboost==1.2.2
 klib
 ccxt
 dill
@@ -8,7 +8,7 @@ dash[diskcache]
 dash_ag_grid
 dash_bootstrap_components
 plotly
-pandas
-numpy
-shap
+pandas==2.0.3
+numpy==1.23.5
+shap==0.43.0
 gunicorn
