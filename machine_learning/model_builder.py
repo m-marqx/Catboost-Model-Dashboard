@@ -574,6 +574,24 @@ def model_creation(
             feat_parameters["random_ichimoku_price_distance_use_pct"],
         )
 
+    if "BBTrend" in feat_parameters["random_features"]:
+        bb_source = data_frame[feat_parameters["random_source_bb_trend"]]
+
+        data_frame = ModelFeatures(
+            data_frame,
+            test_index,
+            feat_parameters["random_binnings_qty_bb_trend"],
+        ).create_bb_trend_feature(
+            bb_source,
+            feat_parameters["random_bb_trend_short_length"],
+            feat_parameters["random_bb_trend_long_length"],
+            feat_parameters["random_bb_trend_stdev"],
+            feat_parameters["random_bb_trend_ma_method"],
+            feat_parameters["random_bb_trend_stdev_method"],
+            feat_parameters["random_bb_trend_diff_method"],
+            feat_parameters["random_bb_trend_based_on"],
+        )
+
     df_columns = data_frame.columns.tolist()
     features = [x for x in df_columns if "feat" in x]
 
