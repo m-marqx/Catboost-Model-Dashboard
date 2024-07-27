@@ -392,19 +392,6 @@ def model_creation(
             feat_parameters["random_cci_method"],
         )
 
-    if "CCI_clean" in feat_parameters["random_features"]:
-        cci_source = (
-            data_frame[feat_parameters["random_source_price_cci"]]
-        )
-
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_cci"]
-        ).create_cci_feature(
-            cci_source,
-            feat_parameters["random_cci_length"],
-            feat_parameters["random_cci_method"],
-        )
-
     if "MACD" in feat_parameters["random_features"]:
         macd_source = (
             data_frame[feat_parameters["random_source_price_macd"]]
