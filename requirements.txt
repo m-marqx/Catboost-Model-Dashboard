@@ -12,3 +12,4 @@ pandas==2.0.3
 numpy==1.23.5
 shap==0.43.0
 gunicorn
+scikit-learn
