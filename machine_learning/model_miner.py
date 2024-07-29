@@ -276,6 +276,7 @@ class ModelMiner:
         test_index: int,
         pct_adj: float = 0.5,
         train_in_middle: bool = True,
+        cutoff_point: float | None = None,
     ):
         """
         Search for the best model parameters.
@@ -323,6 +324,7 @@ class ModelMiner:
                 self.off_days,
                 pct_adj,
                 train_in_middle,
+                cutoff_point,
             )
 
             val_periods = (
