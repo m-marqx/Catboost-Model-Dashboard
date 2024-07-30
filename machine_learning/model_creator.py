@@ -211,9 +211,11 @@ def adjust_predict_one_side(
     pd.Series
         The adjusted series with maximum trades on one side.
     """
-    target = np.where(predict == side, predict, 0)
-    for idx in range(max_trades, len(predict)):
-        if predict[idx] != 0:
+    predict_numpy = predict.to_numpy()
+    target = np.where(predict_numpy == side, predict_numpy, 0)
+
+    for idx in range(max_trades, len(predict_numpy)):
+        if predict_numpy[idx] != 0:
             three_lag_days_trades = np.sum(target[idx-(target_days):idx + 1])
 
             if three_lag_days_trades > max_trades:
