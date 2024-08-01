@@ -465,6 +465,19 @@ def model_creation(
             feat_parameters["random_smio_ma_method"],
         )
 
+    if "SMIO_opt" in feat_parameters["random_features"]:
+        smio_source = data_frame[feat_parameters["random_source_price_smio"]]
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, feat_parameters["random_binnings_qty_smio"]
+        ).create_smio_opt_feature(
+            smio_source,
+            feat_parameters["random_smio_short_length"],
+            feat_parameters["random_smio_long_length"],
+            feat_parameters["random_smio_signal_length"],
+            feat_parameters["random_smio_ma_method"],
+        )
+
     if "DIDI" in feat_parameters["random_features"]:
         didi_source = (
             data_frame[feat_parameters["random_source_price_didi"]]
