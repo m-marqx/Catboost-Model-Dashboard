@@ -164,8 +164,8 @@ class Statistics:
         self.dataframe["Mean_Gain"] = query_gains.expanding().mean()
         self.dataframe["Mean_Loss"] = query_loss.expanding().mean()
 
-        self.dataframe["Mean_Gain"].fillna(method="ffill", inplace=True)
-        self.dataframe["Mean_Loss"].fillna(method="ffill", inplace=True)
+        self.dataframe["Mean_Gain"] = self.dataframe["Mean_Gain"].ffill()
+        self.dataframe["Mean_Loss"] = self.dataframe["Mean_Loss"].ffill()
 
         self.dataframe["Total_Gain"] = (
             np.where(gain, self.dataframe["Result"], 0)
