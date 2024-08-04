@@ -494,6 +494,21 @@ def model_creation(
             method=feat_parameters["random_didi_method"],
         )
 
+    if "DIDI_opt" in feat_parameters["random_features"]:
+        didi_source = (
+            data_frame[feat_parameters["random_source_price_didi"]]
+        )
+
+        data_frame = ModelFeatures(
+            data_frame, test_index, feat_parameters["random_binnings_qty_didi"]
+        ).create_didi_index_opt_feature(
+            source=didi_source,
+            short_length=feat_parameters["random_didi_short_length"],
+            medium_length=feat_parameters["random_didi_mid_length"],
+            long_length=feat_parameters["random_didi_long_length"],
+            ma_type=feat_parameters["random_didi_ma_type"],
+        )
+
     if "TSI" in feat_parameters["random_features"]:
         tsi_source = data_frame[feat_parameters["random_source_price_tsi"]]
 
