@@ -204,7 +204,8 @@ def adjust_predict_one_side(
     target_days : int
         The number of days to consider for trade calculation.
     side : int, optional
-        The side of the trade to adjust (default is 1).
+        The side of the trade to adjust
+        (default: 1).
 
     Returns:
     -------
