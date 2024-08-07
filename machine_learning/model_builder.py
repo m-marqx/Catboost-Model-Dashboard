@@ -12,7 +12,7 @@ from machine_learning.model_creator import (
     adjust_predict_one_side,
 )
 
-def max_trade_adj(data_set, off_days, max_trades, pct_adj):
+def max_trade_adj(data_set, off_days, max_trades, pct_adj, side=1):
     """
     Adjusts the input dataset based on the maximum number of trades,
     off days, and percentage adjustment.
@@ -51,9 +51,10 @@ def max_trade_adj(data_set, off_days, max_trades, pct_adj):
     original_dataset = data_set.copy()
 
     data_set["Predict"] = adjust_predict_one_side(
-        data_set["Predict"], max_trades, off_days, 1
+        data_set["Predict"], max_trades, off_days, side
     )
 
+    # set the predicted probabilities to 0 if the prediction is 0 (No trade)
     data_set["y_pred_probs"] = np.where(
         data_set["Predict"] == 0, 0, data_set["y_pred_probs"]
     )
