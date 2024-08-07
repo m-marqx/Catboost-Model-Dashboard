@@ -268,6 +268,7 @@ def model_creation(
     pct_adj: float = 0.5,
     train_in_middle: bool = True,
     cutoff_point: float | None = None,
+    side: int = 1,
 ) -> tuple[pd.DataFrame, dict, pd.Series]:
     """
     Calculate and create the model based on the input parameters.
@@ -602,7 +603,7 @@ def model_creation(
     mh2["Liquid_Result"] = np.where(mh2["Predict"] == -1, 0, mh2["Liquid_Result"])
 
     return (
-        max_trade_adj(mh2, off_days, max_trades, pct_adj),
+        max_trade_adj(mh2, off_days, max_trades, pct_adj, side),
         index_splits,
         all_y
     )
