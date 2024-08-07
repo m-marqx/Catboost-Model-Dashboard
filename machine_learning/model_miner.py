@@ -89,9 +89,10 @@ class ModelMiner:
             The side of the trade to adjust
             (default : 1).
         """
-        self.ohlc = ["open", "high", "low", "close"]
-        self.max_trades = max_trades
-        self.off_days = off_days
+        self.ohlc: list[str] = ["open", "high", "low", "close"]
+        self.max_trades: int = max_trades
+        self.off_days: int = off_days
+        self.side: int = side
 
         self.dataframe = dataframe.copy()
         self.target = target.copy()
@@ -129,7 +130,7 @@ class ModelMiner:
 
         self.adj_targets = adjust_predict_one_side(self.target, max_trades, off_days, side)
 
-        self.empty_dict = {
+        self.empty_dict: dict[str, None] = {
             "feat_parameters": None,
             "hyperparameters": None,
             "metrics_results": None,
@@ -152,6 +153,7 @@ class ModelMiner:
             "ols_coef_2023": None,
             "ols_coef_val": None,
             "test_index": None,
+            "side": None,
         }
 
     def __generate_feat_parameters(self):
@@ -325,6 +327,7 @@ class ModelMiner:
                 pct_adj,
                 train_in_middle,
                 cutoff_point,
+                self.side,
             )
 
             val_periods = (
@@ -536,6 +539,7 @@ class ModelMiner:
                 "ols_coef_val": ols_coef_val,
                 "test_index": test_index,
                 "train_in_middle": train_in_middle,
+                "side": self.side,
             }
         except Exception as e:
             raise ValueError(f"Error: {e} \n {feat_parameters} \n\n  {hyperparams}") from e
