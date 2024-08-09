@@ -600,7 +600,7 @@ def model_creation(
         **hyperparams,
     )
 
-    mh2["Liquid_Result"] = np.where(mh2["Predict"] == -1, 0, mh2["Liquid_Result"])
+    mh2["Liquid_Result"] = np.where(mh2["Predict"] != side, 0, mh2["Liquid_Result"])
 
     return (
         max_trade_adj(mh2, off_days, max_trades, pct_adj, side),
