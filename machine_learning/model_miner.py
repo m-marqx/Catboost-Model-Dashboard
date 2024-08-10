@@ -97,7 +97,7 @@ class ModelMiner:
         self.dataframe = dataframe.copy()
         self.target = target.copy()
 
-        self.ma_types = ["sma", "ema", "dema", "tema", "rma"]
+        self.ma_types: list[str] = ["sma", "ema", "rma"]
 
         combinations_list = []
         for r in range(1, len(self.ma_types) + 1):
