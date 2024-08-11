@@ -153,6 +153,7 @@ class ModelMiner:
             "ols_coef_2023": None,
             "ols_coef_val": None,
             "test_index": None,
+            "total_time": None,
             "side": None,
         }
 
@@ -299,6 +300,7 @@ class ModelMiner:
         dict
             The dictionary containing the best model parameters.
         """
+        start = time.perf_counter()
         feat_parameters = self.__generate_feat_parameters()
         hyperparams = self.__generate_hyperparameters()
 
@@ -539,6 +541,7 @@ class ModelMiner:
                 "ols_coef_val": ols_coef_val,
                 "test_index": test_index,
                 "train_in_middle": train_in_middle,
+                "total_time": time.perf_counter() - start,
                 "side": self.side,
             }
         except Exception as e:
