@@ -220,11 +220,11 @@ def adjust_predict_one_side(
 
     for idx in range(max_trades, len(predict_numpy)):
         if predict_numpy[idx] != 0:
-            three_lag_days_trades = np.sum(target[idx-(target_days):idx + 1])
+            open_trades = np.sum(target[idx-(target_days):idx + 1])
 
-            if side > 0 and three_lag_days_trades > max_trades:
+            if side > 0 and open_trades > max_trades:
                 target[idx] = 0
-            elif side < 0 and three_lag_days_trades < -max_trades:
+            elif side < 0 and open_trades < -max_trades:
                 target[idx] = 0
 
     return pd.Series(target, index=predict.index, name=predict.name)
