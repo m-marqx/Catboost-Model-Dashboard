@@ -155,6 +155,8 @@ class ModelMiner:
             "test_index": None,
             "total_time": None,
             "side": None,
+            "max_trades": None,
+            "off_days": None,
         }
 
     def __generate_feat_parameters(self):
@@ -543,6 +545,8 @@ class ModelMiner:
                 "train_in_middle": train_in_middle,
                 "total_time": time.perf_counter() - start,
                 "side": self.side,
+                "max_trades": self.max_trades,
+                "off_days": self.off_days,
             }
         except Exception as e:
             raise ValueError(f"Error: {e} \n {feat_parameters} \n\n  {hyperparams}") from e
