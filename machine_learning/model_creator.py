@@ -204,7 +204,7 @@ def adjust_predict_one_side(
     target_days : int
         The number of days to consider for trade calculation.
     side : int, optional
-        The side of the trade to adjust
+        The side of the trade to adjust (1 for long and -1 for short).
         (default: 1).
 
     Returns:
@@ -215,11 +215,16 @@ def adjust_predict_one_side(
     predict_numpy = predict.to_numpy()
     target = np.where(predict_numpy == side, predict_numpy, 0)
 
+    if side not in (-1, 1):
+        raise ValueError("side must be 1 or -1")
+
     for idx in range(max_trades, len(predict_numpy)):
         if predict_numpy[idx] != 0:
             three_lag_days_trades = np.sum(target[idx-(target_days):idx + 1])
 
-            if three_lag_days_trades > max_trades:
+            if side > 0 and three_lag_days_trades > max_trades:
+                target[idx] = 0
+            elif side < 0 and three_lag_days_trades < -max_trades:
                 target[idx] = 0
 
     return pd.Series(target, index=predict.index, name=predict.name)
