@@ -108,18 +108,19 @@ class ModelMiner:
             dtype="object",
         )
 
-        features = [
-            "RSI",
-            "Stoch",
+        features: list[str] = [
+            "RSI_opt",
+            "Stoch_opt",
             "CCI",
-            "MACD",
-            "SMIO",
-            "TRIX",
-            "DTW",
-            "TSI",
-            "DIDI",
-            "Ichimoku",
-            "Ichimoku Price Distance",
+            "MACD_opt",
+            "SMIO_opt",
+            # "TRIX_opt",
+            # "DTW_opt",
+            "TSI_opt",
+            "DIDI_opt",
+            # "Ichimoku",
+            # "Ichimoku Price Distance",
+            "BBTrend_opt"
         ]
 
         self.random_features = []
