@@ -2,9 +2,8 @@ import unittest
 
 import pandas as pd
 import numpy as np
-from machine_learning.model_miner import ModelMiner
 
-np.random.seed(120)
+from machine_learning.model_miner import ModelMiner
 
 class ModelMinerTest(unittest.TestCase):
     def setUp(self):
@@ -400,3 +399,6 @@ class ModelMinerTest(unittest.TestCase):
             'off_days': 7
         })
         pd.testing.assert_series_equal(pd.Series(results).drop('total_time'), expected_results)
+
+if __name__ == '__main__':
+    unittest.main()
