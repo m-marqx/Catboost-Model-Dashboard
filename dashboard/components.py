@@ -1,8 +1,5 @@
-import pandas as pd
-
 import dash_bootstrap_components as dbc
 from dash import html, dcc
-import dash_ag_grid as dag
 
 class MenuCollapse:
     """
