@@ -137,7 +137,7 @@ class CcxtAPI:
         else:
             self.logger.setLevel(logging.WARNING)
 
-    def _fetch_klines(self, since, limit: int=None) -> list:
+    def _fetch_klines(self, since, limit: int | None = None) -> list:
         return self.exchange.fetch_ohlcv(
             symbol=self.symbol,
             timeframe=self.interval,
