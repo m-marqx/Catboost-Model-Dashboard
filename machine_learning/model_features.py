@@ -77,7 +77,8 @@ def feature_binning(
 
 class ModelFeatures:
     """
-    Class for creating and manipulating features for a machine learning model.
+    Class for creating and manipulating features for a machine learning
+    model.
 
     Parameters:
     -----------
@@ -89,25 +90,16 @@ class ModelFeatures:
         The number of bins to use for binning the features.
         (default: 10)
 
-    Methods:
-    --------
-    create_rsi_feature(source: pd.Series, length: int) -> pd.DataFrame:
-        Create the RSI (Relative Strength Index) feature.
-
-    create_slow_stoch_feature(
-        source_column: str,
-        k_length: int = 14,
-        k_smoothing: int = 1,
-        d_smoothing: int = 3,
-    ) -> pd.DataFrame:
-        Create the slow stochastic feature.
-
-    create_dtw_distance_feature(
-        source: pd.Series,
-        feats: list,
-        length: int,
-    ) -> pd.DataFrame:
-        Create the DTW distance feature.
+    Attributes:
+    -----------
+    dataset : pd.DataFrame
+        The dataset containing the features.
+    test_index : int
+        The index or label up to which the training data is considered.
+    bins : int
+        The number of bins to use for binning the features.
+    logger : logging.Logger
+        The logger for the ModelFeatures class.
     """
 
     def __init__(
