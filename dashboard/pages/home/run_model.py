@@ -1,15 +1,10 @@
-import os
 import dill
 
-import ccxt
 import dash
 from dash import Output, Input, State, callback
 import dash_ag_grid as dag
 import pandas as pd
 import numpy as np
-import plotly.express as px
-
-from api.ccxt_api import CcxtAPI
 
 from machine_learning.ml_utils import DataHandler
 
