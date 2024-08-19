@@ -1,6 +1,7 @@
 import unittest
 
 import pandas as pd
+from pandas import Timestamp, Interval
 import numpy as np
 
 from machine_learning.model_features import feature_binning, ModelFeatures
@@ -207,6 +208,111 @@ class ModelFeaturesTests(unittest.TestCase):
         pd.testing.assert_frame_equal(test_df.head(10), expected_df)
         pd.testing.assert_series_equal(rsi_count, expected_rsi_count)
         pd.testing.assert_series_equal(rsi_feat_count, expected_rsi_feat_count)
+
+    def test_create_rsi_opt_feature(self):
+        source = self.dataframe["close"]
+        length = 14
+        ma_method = "ema"
+
+        test_df = self.model_features.create_rsi_opt_feature(
+            source, length, ma_method
+        ).dropna()
+
+        test_values: dict[str, list] = {}
+
+        test_values["RSI"] = [
+            -3.638192938493816,
+            -0.8978086855093963,
+            -2.386459178140159,
+            -3.5193214555962395,
+            -1.4237537619312812,
+            2.6561994723420774,
+            -2.4978555240279023,
+            2.529828741435018,
+            4.9874553777196,
+            -2.784056738965517,
+        ]
+
+        test_values["RSI_feat"] = [
+            1.0,
+            3.0,
+            2.0,
+            1.0,
+            3.0,
+            8.0,
+            2.0,
+            8.0,
+            6.0,
+            2.0,
+        ]
+
+        dates = pd.Index(
+            [
+                Timestamp("2012-01-18 00:00:00"),
+                Timestamp("2012-01-19 00:00:00"),
+                Timestamp("2012-01-20 00:00:00"),
+                Timestamp("2012-01-21 00:00:00"),
+                Timestamp("2012-01-22 00:00:00"),
+                Timestamp("2012-01-23 00:00:00"),
+                Timestamp("2012-01-24 00:00:00"),
+                Timestamp("2012-01-25 00:00:00"),
+                Timestamp("2012-01-26 00:00:00"),
+                Timestamp("2012-01-27 00:00:00"),
+            ],
+            dtype="datetime64[ms]",
+            name="date",
+        )
+
+        expected_df = pd.DataFrame(test_values, index=dates)
+
+        pd.testing.assert_frame_equal(test_df.iloc[:10, -2:], expected_df)
+
+        rsi_count = (
+            test_df["RSI"]
+            .rename(None)
+            .value_counts(bins=self.model_features.bins)
+        )
+        rsi_feat_count = (
+            test_df["RSI_feat"]
+            .rename(None)
+            .value_counts(bins=self.model_features.bins)
+        )
+
+        expected_count = {}
+        expected_count["rsi_count"] = pd.Series(
+            {
+                Interval(-1.051, 5.313, closed="right"): 2019,
+                Interval(-7.414, -1.051, closed="right"): 1392,
+                Interval(5.313, 11.677, closed="right"): 491,
+                Interval(-13.778, -7.414, closed="right"): 281,
+                Interval(11.677, 18.04, closed="right"): 79,
+                Interval(-20.141, -13.778, closed="right"): 56,
+                Interval(18.04, 24.404, closed="right"): 24,
+                Interval(-26.563000000000002, -20.141, closed="right"): 10,
+                Interval(24.404, 30.768, closed="right"): 7,
+            },
+            name="count",
+        )
+
+        expected_count["rsi_feat_count"] = pd.Series(
+            {
+                Interval(6.222, 7.111, closed="right"): 561,
+                Interval(-0.009000000000000001, 0.889, closed="right"): 541,
+                Interval(0.889, 1.778, closed="right"): 524,
+                Interval(5.333, 6.222, closed="right"): 510,
+                Interval(2.667, 3.556, closed="right"): 483,
+                Interval(7.111, 8.0, closed="right"): 483,
+                Interval(4.444, 5.333, closed="right"): 438,
+                Interval(1.778, 2.667, closed="right"): 414,
+                Interval(3.556, 4.444, closed="right"): 405,
+            },
+            name="count",
+        )
+
+        pd.testing.assert_series_equal(rsi_count, expected_count["rsi_count"])
+        pd.testing.assert_series_equal(
+            rsi_feat_count, expected_count["rsi_feat_count"]
+        )
 
 
 if __name__ == "__main__":
