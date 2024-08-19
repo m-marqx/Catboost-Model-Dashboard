@@ -8,7 +8,6 @@ from machine_learning.model_features import feature_binning, ModelFeatures
 
 class ModelFeaturesTests(unittest.TestCase):
     def setUp(self):
-        np.random.seed(0)
         btc_data = pd.read_parquet(r"data\assets\btc.parquet")
         self.dataframe = btc_data.copy().loc[:"2023"]
         self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
