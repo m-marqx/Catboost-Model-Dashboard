@@ -314,6 +314,182 @@ class ModelFeaturesTests(unittest.TestCase):
             rsi_feat_count, expected_count["rsi_feat_count"]
         )
 
+    def test_create_slow_stoch_feature(self):
+        test_df: pd.DataFrame = self.model_features.create_slow_stoch_feature(
+            "close"
+        ).dropna()
+
+        test_values: dict[str, list] = {}
+
+        test_values["stoch_k"] = [
+            43.67346938775511,
+            83.13253012048192,
+            37.634408602150536,
+            76.88172043010755,
+            67.2043010752688,
+            68.27956989247313,
+            53.76344086021504,
+            55.37634408602151,
+            42.47311827956989,
+            0.0,
+        ]
+
+        test_values["stoch_k_feat"] = [
+            2.0,
+            6.0,
+            2.0,
+            5.0,
+            4.0,
+            4.0,
+            3.0,
+            3.0,
+            2.0,
+            0.0,
+        ]
+
+        test_values["stoch_d"] = [
+            74.28571428571429,
+            71.79247602655519,
+            54.813469370129184,
+            65.88288638424666,
+            60.57347670250896,
+            70.78853046594982,
+            63.08243727598566,
+            59.13978494623657,
+            50.537634408602145,
+            32.61648745519713,
+        ]
+
+        test_values["stoch_d_feat"] = [
+            5.0,
+            5.0,
+            3.0,
+            4.0,
+            4.0,
+            4.0,
+            4.0,
+            3.0,
+            3.0,
+            1.0,
+        ]
+
+        dates = pd.Index(
+            [
+                Timestamp("2012-01-17 00:00:00"),
+                Timestamp("2012-01-18 00:00:00"),
+                Timestamp("2012-01-19 00:00:00"),
+                Timestamp("2012-01-20 00:00:00"),
+                Timestamp("2012-01-21 00:00:00"),
+                Timestamp("2012-01-22 00:00:00"),
+                Timestamp("2012-01-23 00:00:00"),
+                Timestamp("2012-01-24 00:00:00"),
+                Timestamp("2012-01-25 00:00:00"),
+                Timestamp("2012-01-26 00:00:00"),
+            ],
+            dtype="datetime64[ms]",
+            name="date",
+        )
+
+        expected_df = pd.DataFrame(test_values, index=dates)
+
+        pd.testing.assert_frame_equal(test_df.iloc[:10, -4:], expected_df)
+
+        stoch_k_count = (
+            test_df["stoch_k"]
+            .rename(None)
+            .value_counts(bins=self.model_features.bins)
+        )
+        stoch_d_count = (
+            test_df["stoch_d"]
+            .rename(None)
+            .value_counts(bins=self.model_features.bins)
+        )
+
+        stoch_k_feat_count = (
+            test_df["stoch_k_feat"]
+            .rename(None)
+            .value_counts(bins=self.model_features.bins)
+        )
+        stoch_d_feat_count = (
+            test_df["stoch_d_feat"]
+            .rename(None)
+            .value_counts(bins=self.model_features.bins)
+        )
+
+        expected_count = {}
+        expected_count["stoch_k_count"] = pd.Series(
+            {
+                Interval(88.889, 100.0, closed="right"): 702,
+                Interval(77.778, 88.889, closed="right"): 635,
+                Interval(66.667, 77.778, closed="right"): 507,
+                Interval(55.556, 66.667, closed="right"): 486,
+                Interval(44.444, 55.556, closed="right"): 465,
+                Interval(33.333, 44.444, closed="right"): 459,
+                Interval(22.222, 33.333, closed="right"): 455,
+                Interval(11.111, 22.222, closed="right"): 428,
+                Interval(-0.101, 11.111, closed="right"): 223,
+            },
+            name="count",
+        )
+
+        expected_count["stoch_d_count"] = pd.Series(
+            {
+                Interval(77.398, 88.092, closed="right"): 700,
+                Interval(88.092, 98.785, closed="right"): 631,
+                Interval(66.704, 77.398, closed="right"): 524,
+                Interval(13.236, 23.929, closed="right"): 500,
+                Interval(45.317, 56.011, closed="right"): 476,
+                Interval(23.929, 34.623, closed="right"): 459,
+                Interval(34.623, 45.317, closed="right"): 455,
+                Interval(56.011, 66.704, closed="right"): 453,
+                Interval(2.4450000000000003, 13.236, closed="right"): 162,
+            },
+            name="count",
+        )
+
+        expected_count["stoch_k_feat_count"] = pd.Series(
+            {
+                Interval(-0.009000000000000001, 0.889, closed="right"): 680,
+                Interval(0.889, 1.778, closed="right"): 575,
+                Interval(5.333, 6.222, closed="right"): 495,
+                Interval(1.778, 2.667, closed="right"): 492,
+                Interval(2.667, 3.556, closed="right"): 487,
+                Interval(3.556, 4.444, closed="right"): 465,
+                Interval(6.222, 7.111, closed="right"): 462,
+                Interval(4.444, 5.333, closed="right"): 366,
+                Interval(7.111, 8.0, closed="right"): 338,
+            },
+            name="count",
+        )
+
+        expected_count["stoch_d_feat_count"] = pd.Series(
+            {
+                Interval(-0.009000000000000001, 0.889, closed="right"): 682,
+                Interval(0.889, 1.778, closed="right"): 573,
+                Interval(3.556, 4.444, closed="right"): 502,
+                Interval(5.333, 6.222, closed="right"): 483,
+                Interval(1.778, 2.667, closed="right"): 478,
+                Interval(2.667, 3.556, closed="right"): 477,
+                Interval(7.111, 8.0, closed="right"): 477,
+                Interval(4.444, 5.333, closed="right"): 408,
+                Interval(6.222, 7.111, closed="right"): 280,
+            },
+            name="count",
+        )
+
+        pd.testing.assert_series_equal(
+            stoch_k_count, expected_count["stoch_k_count"]
+        )
+        pd.testing.assert_series_equal(
+            stoch_d_count, expected_count["stoch_d_count"]
+        )
+
+        pd.testing.assert_series_equal(
+            stoch_k_feat_count, expected_count["stoch_k_feat_count"]
+        )
+        pd.testing.assert_series_equal(
+            stoch_d_feat_count, expected_count["stoch_d_feat_count"]
+        )
 
 if __name__ == "__main__":
     unittest.main()
