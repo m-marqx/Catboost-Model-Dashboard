@@ -218,9 +218,9 @@ class ModelFeaturesTests(unittest.TestCase):
             source, length, ma_method
         ).dropna()
 
-        test_values: dict[str, list] = {}
+        expected_values: dict[str, list] = {}
 
-        test_values["RSI"] = [
+        expected_values["RSI"] = [
             -3.638192938493816,
             -0.8978086855093963,
             -2.386459178140159,
@@ -233,7 +233,7 @@ class ModelFeaturesTests(unittest.TestCase):
             -2.784056738965517,
         ]
 
-        test_values["RSI_feat"] = [
+        expected_values["RSI_feat"] = [
             1.0,
             3.0,
             2.0,
@@ -263,7 +263,7 @@ class ModelFeaturesTests(unittest.TestCase):
             name="date",
         )
 
-        expected_df = pd.DataFrame(test_values, index=dates)
+        expected_df = pd.DataFrame(expected_values, index=dates)
 
         pd.testing.assert_frame_equal(test_df.iloc[:10, -2:], expected_df)
 
@@ -319,9 +319,9 @@ class ModelFeaturesTests(unittest.TestCase):
             "close"
         ).dropna()
 
-        test_values: dict[str, list] = {}
+        expected_values: dict[str, list] = {}
 
-        test_values["stoch_k"] = [
+        expected_values["stoch_k"] = [
             43.67346938775511,
             83.13253012048192,
             37.634408602150536,
@@ -334,7 +334,7 @@ class ModelFeaturesTests(unittest.TestCase):
             0.0,
         ]
 
-        test_values["stoch_k_feat"] = [
+        expected_values["stoch_k_feat"] = [
             2.0,
             6.0,
             2.0,
@@ -347,7 +347,7 @@ class ModelFeaturesTests(unittest.TestCase):
             0.0,
         ]
 
-        test_values["stoch_d"] = [
+        expected_values["stoch_d"] = [
             74.28571428571429,
             71.79247602655519,
             54.813469370129184,
@@ -360,7 +360,7 @@ class ModelFeaturesTests(unittest.TestCase):
             32.61648745519713,
         ]
 
-        test_values["stoch_d_feat"] = [
+        expected_values["stoch_d_feat"] = [
             5.0,
             5.0,
             3.0,
@@ -390,7 +390,7 @@ class ModelFeaturesTests(unittest.TestCase):
             name="date",
         )
 
-        expected_df = pd.DataFrame(test_values, index=dates)
+        expected_df = pd.DataFrame(expected_values, index=dates)
 
         pd.testing.assert_frame_equal(test_df.iloc[:10, -4:], expected_df)
 
@@ -496,9 +496,9 @@ class ModelFeaturesTests(unittest.TestCase):
             "close"
         ).dropna()
 
-        test_values: dict[str, list] = {}
+        expected_values: dict[str, list] = {}
 
-        test_values["stoch_k"] = [
+        expected_values["stoch_k"] = [
             4.2702608334987495,
             -4.419989919970305,
             -20.909071486698963,
@@ -511,7 +511,7 @@ class ModelFeaturesTests(unittest.TestCase):
             -23.42950827215129,
         ]
 
-        test_values["stoch_k_feat"] = [
+        expected_values["stoch_k_feat"] = [
             8.0,
             2.0,
             0.0,
@@ -524,7 +524,7 @@ class ModelFeaturesTests(unittest.TestCase):
             0.0,
         ]
 
-        test_values["stoch_d"] = [
+        expected_values["stoch_d"] = [
             10.242985064405225,
             -4.178710910106136,
             -4.072940244409965,
@@ -537,7 +537,7 @@ class ModelFeaturesTests(unittest.TestCase):
             0.6188555577068462,
         ]
 
-        test_values["stoch_d_feat"] = [
+        expected_values["stoch_d_feat"] = [
             7.0,
             0.0,
             0.0,
@@ -567,7 +567,7 @@ class ModelFeaturesTests(unittest.TestCase):
             name="date",
         )
 
-        expected_df = pd.DataFrame(test_values, index=dates)
+        expected_df = pd.DataFrame(expected_values, index=dates)
 
         pd.testing.assert_frame_equal(test_df.iloc[:10, -4:], expected_df)
 
@@ -664,6 +664,7 @@ class ModelFeaturesTests(unittest.TestCase):
         pd.testing.assert_series_equal(
             stoch_k_feat_count, expected_count["stoch_k_feat_count"]
         )
+
         pd.testing.assert_series_equal(
             stoch_d_feat_count, expected_count["stoch_d_feat_count"]
         )
