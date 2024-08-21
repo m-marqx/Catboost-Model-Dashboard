@@ -661,14 +661,664 @@ class ModelFeaturesTests(unittest.TestCase):
             stoch_d_count, expected_count["stoch_d_count"]
         )
 
-        pd.testing.assert_series_equal(
-            stoch_k_feat_count, expected_count["stoch_k_feat_count"]
+    #test all moving averages only using `all` keyword
+    def test_create_dtw_distance_feature_all(self):
+        source = self.dataframe["close"]
+
+        test_df = self.model_features.create_dtw_distance_feature(
+            source, "all", 14
+        ).dropna()
+
+        expected_columns = pd.Index(
+            [
+                "SMA_DTW",
+                "SMA_DTW_feat",
+                "EMA_DTW",
+                "EMA_DTW_feat",
+                "RMA_DTW",
+                "RMA_DTW_feat",
+                "DEMA_DTW",
+                "DEMA_DTW_feat",
+                "TEMA_DTW",
+                "TEMA_DTW_feat",
+            ]
         )
 
-        pd.testing.assert_series_equal(
-            stoch_d_feat_count, expected_count["stoch_d_feat_count"]
+        pd.testing.assert_index_equal(test_df.columns[8:], expected_columns)
+
+        expected_values: dict[str, list] = {}
+
+        expected_values["SMA_DTW"] = [
+            -0.4299999999999997,
+            0.10785714285714221,
+            0.49571428571428555,
+            0.5007142857142854,
+            0.140714285714286,
+            -0.19928571428571473,
+            -0.17000000000000082,
+            -0.08000000000000007,
+            0.09999999999999964,
+            0.11999999999999922,
+        ]
+
+        expected_values["SMA_DTW_feat"] = [
+            2.0,
+            8.0,
+            6.0,
+            6.0,
+            8.0,
+            2.0,
+            2.0,
+            3.0,
+            8.0,
+            8.0,
+        ]
+
+        expected_values["EMA_DTW"] = [
+            0.009498492218143362,
+            -0.9111013067442757,
+            -0.3009544658450398,
+            -0.22095446584503975,
+            -0.50095446584504,
+            0.07904553415496007,
+            0.47904553415496043,
+            0.49904553415496,
+            0.14050612960096576,
+            -0.0782280210124977,
+        ]
+
+        expected_values["EMA_DTW_feat"] = [
+            4.0,
+            1.0,
+            2.0,
+            2.0,
+            2.0,
+            5.0,
+            7.0,
+            7.0,
+            6.0,
+            3.0,
+        ]
+
+        expected_values["RMA_DTW"] = [
+            -0.49103493962253353,
+            -0.37596101536378157,
+            -0.6355352285520839,
+            -0.04513985508407803,
+            0.3548601449159223,
+            0.3748601449159219,
+            0.08879870599335682,
+            -0.16825834443474097,
+            -0.07838274840368875,
+            0.011617251596311995,
+        ]
+
+        expected_values["RMA_DTW_feat"] = [
+            1.0,
+            1.0,
+            1.0,
+            8.0,
+            5.0,
+            5.0,
+            4.0,
+            2.0,
+            8.0,
+            3.0,
+        ]
+
+        expected_values["DEMA_DTW"] = [
+            -0.05404751200735447,
+            -0.03098801797227768,
+            -0.008316877688645974,
+            0.011526189949968568,
+            0.044892295154972395,
+            0.091378084483976,
+            -0.18990819969973316,
+            -0.12589819626972254,
+            -0.035898196269721794,
+            0.14410180373027792,
+        ]
+
+        expected_values["DEMA_DTW_feat"] = [
+            3.0,
+            3.0,
+            4.0,
+            4.0,
+            5.0,
+            5.0,
+            2.0,
+            2.0,
+            3.0,
+            5.0,
+        ]
+
+        expected_values["TEMA_DTW"] = [
+            0.06396370376827143,
+            -0.20825600309942427,
+            -0.017882333373306913,
+            -0.046163648770589205,
+            0.36526835215781794,
+            -0.2486646362476943,
+            0.023810507382901136,
+            -0.034884050180921555,
+            0.03594588005311827,
+            0.19594588005311842,
+        ]
+
+        expected_values["TEMA_DTW_feat"] = [
+            5.0,
+            2.0,
+            4.0,
+            3.0,
+            6.0,
+            2.0,
+            5.0,
+            3.0,
+            5.0,
+            6.0,
+        ]
+
+        dates = pd.Index(
+            [
+                Timestamp("2012-02-10 00:00:00"),
+                Timestamp("2012-02-11 00:00:00"),
+                Timestamp("2012-02-12 00:00:00"),
+                Timestamp("2012-02-13 00:00:00"),
+                Timestamp("2012-02-14 00:00:00"),
+                Timestamp("2012-02-15 00:00:00"),
+                Timestamp("2012-02-16 00:00:00"),
+                Timestamp("2012-02-17 00:00:00"),
+                Timestamp("2012-02-18 00:00:00"),
+                Timestamp("2012-02-19 00:00:00"),
+            ],
+            dtype="datetime64[ns]",
+            name="date",
         )
 
+        expected_df = pd.DataFrame(expected_values, index=dates)
+
+        pd.testing.assert_frame_equal(test_df.iloc[:10, 8:], expected_df)
+
+        test_count = {}
+
+        for col in expected_columns:
+            test_count[col] = (
+                test_df[col].value_counts(bins=self.bins).to_dict()
+            )
+
+        expected_count: dict[str, dict] = {}
+
+        expected_count["SMA_DTW"] = {
+            Interval(-32.987, 1122.509, closed="right"): 3596,
+            Interval(-1188.482, -32.987, closed="right"): 695,
+            Interval(-2343.977, -1188.482, closed="right"): 15,
+            Interval(1122.509, 2278.004, closed="right"): 13,
+            Interval(-3509.873, -2343.977, closed="right"): 6,
+            Interval(2278.004, 3433.5, closed="right"): 5,
+            Interval(3433.5, 4588.995, closed="right"): 3,
+            Interval(4588.995, 5744.49, closed="right"): 2,
+            Interval(5744.49, 6899.986, closed="right"): 1,
+        }
+
+        expected_count["SMA_DTW_feat"] = {
+            Interval(-0.009000000000000001, 0.889, closed="right"): 1141,
+            Interval(6.222, 7.111, closed="right"): 1107,
+            Interval(7.111, 8.0, closed="right"): 503,
+            Interval(0.889, 1.778, closed="right"): 409,
+            Interval(5.333, 6.222, closed="right"): 388,
+            Interval(4.444, 5.333, closed="right"): 347,
+            Interval(1.778, 2.667, closed="right"): 191,
+            Interval(2.667, 3.556, closed="right"): 128,
+            Interval(3.556, 4.444, closed="right"): 122,
+        }
+
+        expected_count["EMA_DTW"] = {
+            Interval(-1243.089, 165.411, closed="right"): 3944,
+            Interval(165.411, 1573.911, closed="right"): 336,
+            Interval(1573.911, 2982.411, closed="right"): 18,
+            Interval(-2651.589, -1243.089, closed="right"): 17,
+            Interval(-4060.089, -2651.589, closed="right"): 7,
+            Interval(2982.411, 4390.911, closed="right"): 6,
+            Interval(4390.911, 5799.411, closed="right"): 5,
+            Interval(-5481.2660000000005, -4060.089, closed="right"): 2,
+            Interval(5799.411, 7207.91, closed="right"): 1,
+        }
+
+        expected_count["EMA_DTW_feat"] = {
+            Interval(-0.009000000000000001, 0.889, closed="right"): 1469,
+            Interval(7.111, 8.0, closed="right"): 1462,
+            Interval(6.222, 7.111, closed="right"): 363,
+            Interval(0.889, 1.778, closed="right"): 321,
+            Interval(1.778, 2.667, closed="right"): 200,
+            Interval(5.333, 6.222, closed="right"): 152,
+            Interval(4.444, 5.333, closed="right"): 133,
+            Interval(2.667, 3.556, closed="right"): 121,
+            Interval(3.556, 4.444, closed="right"): 115,
+        }
+
+        expected_count["RMA_DTW"] = {
+            Interval(-388.063, 448.552, closed="right"): 4101,
+            Interval(-1224.678, -388.063, closed="right"): 117,
+            Interval(448.552, 1285.167, closed="right"): 78,
+            Interval(-2061.293, -1224.678, closed="right"): 17,
+            Interval(1285.167, 2121.782, closed="right"): 12,
+            Interval(2121.782, 2958.397, closed="right"): 4,
+            Interval(-2905.438, -2061.293, closed="right"): 3,
+            Interval(3795.012, 4631.627, closed="right"): 3,
+            Interval(2958.397, 3795.012, closed="right"): 1,
+        }
+
+        expected_count["RMA_DTW_feat"] = {
+            Interval(-0.009000000000000001, 0.889, closed="right"): 1288,
+            Interval(6.222, 7.111, closed="right"): 1242,
+            Interval(1.778, 2.667, closed="right"): 412,
+            Interval(5.333, 6.222, closed="right"): 374,
+            Interval(7.111, 8.0, closed="right"): 310,
+            Interval(0.889, 1.778, closed="right"): 298,
+            Interval(4.444, 5.333, closed="right"): 160,
+            Interval(3.556, 4.444, closed="right"): 135,
+            Interval(2.667, 3.556, closed="right"): 117,
+        }
+
+        expected_count["DEMA_DTW"] = {
+            Interval(-930.132, 116.792, closed="right"): 3843,
+            Interval(116.792, 1163.716, closed="right"): 424,
+            Interval(-1977.056, -930.132, closed="right"): 31,
+            Interval(1163.716, 2210.641, closed="right"): 19,
+            Interval(2210.641, 3257.565, closed="right"): 7,
+            Interval(-3033.404, -1977.056, closed="right"): 4,
+            Interval(3257.565, 4304.489, closed="right"): 4,
+            Interval(4304.489, 5351.414, closed="right"): 2,
+            Interval(5351.414, 6398.338, closed="right"): 2,
+        }
+
+        expected_count["DEMA_DTW_feat"] = {
+            Interval(-0.009000000000000001, 0.889, closed="right"): 1474,
+            Interval(6.222, 7.111, closed="right"): 1155,
+            Interval(7.111, 8.0, closed="right"): 665,
+            Interval(0.889, 1.778, closed="right"): 324,
+            Interval(5.333, 6.222, closed="right"): 184,
+            Interval(1.778, 2.667, closed="right"): 158,
+            Interval(4.444, 5.333, closed="right"): 129,
+            Interval(2.667, 3.556, closed="right"): 126,
+            Interval(3.556, 4.444, closed="right"): 121,
+        }
+
+        expected_count["TEMA_DTW"] = {
+            Interval(-481.77, 363.106, closed="right"): 4056,
+            Interval(363.106, 1207.983, closed="right"): 136,
+            Interval(-1326.646, -481.77, closed="right"): 84,
+            Interval(1207.983, 2052.859, closed="right"): 22,
+            Interval(-2171.523, -1326.646, closed="right"): 20,
+            Interval(-3016.399, -2171.523, closed="right"): 11,
+            Interval(2052.859, 2897.735, closed="right"): 4,
+            Interval(-3868.88, -3016.399, closed="right"): 2,
+            Interval(2897.735, 3742.612, closed="right"): 1,
+        }
+
+        expected_count["TEMA_DTW_feat"] = {
+            Interval(-0.009000000000000001, 0.889, closed="right"): 1425,
+            Interval(7.111, 8.0, closed="right"): 1340,
+            Interval(6.222, 7.111, closed="right"): 443,
+            Interval(0.889, 1.778, closed="right"): 390,
+            Interval(1.778, 2.667, closed="right"): 190,
+            Interval(5.333, 6.222, closed="right"): 180,
+            Interval(2.667, 3.556, closed="right"): 128,
+            Interval(4.444, 5.333, closed="right"): 124,
+            Interval(3.556, 4.444, closed="right"): 116,
+        }
+
+        test_count_series: dict[str, pd.Series] = {}
+        expected_count_series: dict[str, pd.Series] = {}
+
+        for key, value in zip(test_count.keys(), test_count.values()):
+            test_count_series[key] = pd.Series(value)
+        test_count_concat: pd.Series = pd.concat(test_count_series)
+
+        for key, value in zip(test_count.keys(), expected_count.values()):
+            expected_count_series[key] = pd.Series(value)
+        expected_count_concat: pd.Series = pd.concat(expected_count_series)
+
+        pd.testing.assert_series_equal(
+            test_count_concat, expected_count_concat
+        )
+
+    #test all moving averages without `all` keyword
+    def test_create_dtw_distance_feature_all_mas(self):
+        source = self.dataframe["close"]
+
+        test_df = self.model_features.create_dtw_distance_feature(
+            source, ['sma', 'ema', 'dema', 'tema', 'rma'], 14
+        ).dropna()
+
+        expected_columns = pd.Index(
+            [
+                "SMA_DTW",
+                "SMA_DTW_feat",
+                "EMA_DTW",
+                "EMA_DTW_feat",
+                "RMA_DTW",
+                "RMA_DTW_feat",
+                "DEMA_DTW",
+                "DEMA_DTW_feat",
+                "TEMA_DTW",
+                "TEMA_DTW_feat",
+            ]
+        )
+
+        pd.testing.assert_index_equal(test_df.columns[8:], expected_columns)
+
+        expected_values: dict[str, list] = {}
+
+        expected_values["SMA_DTW"] = [
+            -0.4299999999999997,
+            0.10785714285714221,
+            0.49571428571428555,
+            0.5007142857142854,
+            0.140714285714286,
+            -0.19928571428571473,
+            -0.17000000000000082,
+            -0.08000000000000007,
+            0.09999999999999964,
+            0.11999999999999922,
+        ]
+
+        expected_values["SMA_DTW_feat"] = [
+            2.0,
+            8.0,
+            6.0,
+            6.0,
+            8.0,
+            2.0,
+            2.0,
+            3.0,
+            8.0,
+            8.0,
+        ]
+
+        expected_values["EMA_DTW"] = [
+            0.009498492218143362,
+            -0.9111013067442757,
+            -0.3009544658450398,
+            -0.22095446584503975,
+            -0.50095446584504,
+            0.07904553415496007,
+            0.47904553415496043,
+            0.49904553415496,
+            0.14050612960096576,
+            -0.0782280210124977,
+        ]
+
+        expected_values["EMA_DTW_feat"] = [
+            4.0,
+            1.0,
+            2.0,
+            2.0,
+            2.0,
+            5.0,
+            7.0,
+            7.0,
+            6.0,
+            3.0,
+        ]
+
+        expected_values["RMA_DTW"] = [
+            -0.49103493962253353,
+            -0.37596101536378157,
+            -0.6355352285520839,
+            -0.04513985508407803,
+            0.3548601449159223,
+            0.3748601449159219,
+            0.08879870599335682,
+            -0.16825834443474097,
+            -0.07838274840368875,
+            0.011617251596311995,
+        ]
+
+        expected_values["RMA_DTW_feat"] = [
+            1.0,
+            1.0,
+            1.0,
+            8.0,
+            5.0,
+            5.0,
+            4.0,
+            2.0,
+            8.0,
+            3.0,
+        ]
+
+        expected_values["DEMA_DTW"] = [
+            -0.05404751200735447,
+            -0.03098801797227768,
+            -0.008316877688645974,
+            0.011526189949968568,
+            0.044892295154972395,
+            0.091378084483976,
+            -0.18990819969973316,
+            -0.12589819626972254,
+            -0.035898196269721794,
+            0.14410180373027792,
+        ]
+
+        expected_values["DEMA_DTW_feat"] = [
+            3.0,
+            3.0,
+            4.0,
+            4.0,
+            5.0,
+            5.0,
+            2.0,
+            2.0,
+            3.0,
+            5.0,
+        ]
+
+        expected_values["TEMA_DTW"] = [
+            0.06396370376827143,
+            -0.20825600309942427,
+            -0.017882333373306913,
+            -0.046163648770589205,
+            0.36526835215781794,
+            -0.2486646362476943,
+            0.023810507382901136,
+            -0.034884050180921555,
+            0.03594588005311827,
+            0.19594588005311842,
+        ]
+
+        expected_values["TEMA_DTW_feat"] = [
+            5.0,
+            2.0,
+            4.0,
+            3.0,
+            6.0,
+            2.0,
+            5.0,
+            3.0,
+            5.0,
+            6.0,
+        ]
+
+        dates = pd.Index(
+            [
+                Timestamp("2012-02-10 00:00:00"),
+                Timestamp("2012-02-11 00:00:00"),
+                Timestamp("2012-02-12 00:00:00"),
+                Timestamp("2012-02-13 00:00:00"),
+                Timestamp("2012-02-14 00:00:00"),
+                Timestamp("2012-02-15 00:00:00"),
+                Timestamp("2012-02-16 00:00:00"),
+                Timestamp("2012-02-17 00:00:00"),
+                Timestamp("2012-02-18 00:00:00"),
+                Timestamp("2012-02-19 00:00:00"),
+            ],
+            dtype="datetime64[ns]",
+            name="date",
+        )
+
+        expected_df = pd.DataFrame(expected_values, index=dates)
+
+        pd.testing.assert_frame_equal(test_df.iloc[:10, 8:], expected_df)
+
+        test_count = {}
+
+        for col in expected_columns:
+            test_count[col] = (
+                test_df[col].value_counts(bins=self.bins).to_dict()
+            )
+
+        expected_count: dict[str, dict] = {}
+
+        expected_count["SMA_DTW"] = {
+            Interval(-32.987, 1122.509, closed="right"): 3596,
+            Interval(-1188.482, -32.987, closed="right"): 695,
+            Interval(-2343.977, -1188.482, closed="right"): 15,
+            Interval(1122.509, 2278.004, closed="right"): 13,
+            Interval(-3509.873, -2343.977, closed="right"): 6,
+            Interval(2278.004, 3433.5, closed="right"): 5,
+            Interval(3433.5, 4588.995, closed="right"): 3,
+            Interval(4588.995, 5744.49, closed="right"): 2,
+            Interval(5744.49, 6899.986, closed="right"): 1,
+        }
+
+        expected_count["SMA_DTW_feat"] = {
+            Interval(-0.009000000000000001, 0.889, closed="right"): 1141,
+            Interval(6.222, 7.111, closed="right"): 1107,
+            Interval(7.111, 8.0, closed="right"): 503,
+            Interval(0.889, 1.778, closed="right"): 409,
+            Interval(5.333, 6.222, closed="right"): 388,
+            Interval(4.444, 5.333, closed="right"): 347,
+            Interval(1.778, 2.667, closed="right"): 191,
+            Interval(2.667, 3.556, closed="right"): 128,
+            Interval(3.556, 4.444, closed="right"): 122,
+        }
+
+        expected_count["EMA_DTW"] = {
+            Interval(-1243.089, 165.411, closed="right"): 3944,
+            Interval(165.411, 1573.911, closed="right"): 336,
+            Interval(1573.911, 2982.411, closed="right"): 18,
+            Interval(-2651.589, -1243.089, closed="right"): 17,
+            Interval(-4060.089, -2651.589, closed="right"): 7,
+            Interval(2982.411, 4390.911, closed="right"): 6,
+            Interval(4390.911, 5799.411, closed="right"): 5,
+            Interval(-5481.2660000000005, -4060.089, closed="right"): 2,
+            Interval(5799.411, 7207.91, closed="right"): 1,
+        }
+
+        expected_count["EMA_DTW_feat"] = {
+            Interval(-0.009000000000000001, 0.889, closed="right"): 1469,
+            Interval(7.111, 8.0, closed="right"): 1462,
+            Interval(6.222, 7.111, closed="right"): 363,
+            Interval(0.889, 1.778, closed="right"): 321,
+            Interval(1.778, 2.667, closed="right"): 200,
+            Interval(5.333, 6.222, closed="right"): 152,
+            Interval(4.444, 5.333, closed="right"): 133,
+            Interval(2.667, 3.556, closed="right"): 121,
+            Interval(3.556, 4.444, closed="right"): 115,
+        }
+
+        expected_count["RMA_DTW"] = {
+            Interval(-388.063, 448.552, closed="right"): 4101,
+            Interval(-1224.678, -388.063, closed="right"): 117,
+            Interval(448.552, 1285.167, closed="right"): 78,
+            Interval(-2061.293, -1224.678, closed="right"): 17,
+            Interval(1285.167, 2121.782, closed="right"): 12,
+            Interval(2121.782, 2958.397, closed="right"): 4,
+            Interval(-2905.438, -2061.293, closed="right"): 3,
+            Interval(3795.012, 4631.627, closed="right"): 3,
+            Interval(2958.397, 3795.012, closed="right"): 1,
+        }
+
+        expected_count["RMA_DTW_feat"] = {
+            Interval(-0.009000000000000001, 0.889, closed="right"): 1288,
+            Interval(6.222, 7.111, closed="right"): 1242,
+            Interval(1.778, 2.667, closed="right"): 412,
+            Interval(5.333, 6.222, closed="right"): 374,
+            Interval(7.111, 8.0, closed="right"): 310,
+            Interval(0.889, 1.778, closed="right"): 298,
+            Interval(4.444, 5.333, closed="right"): 160,
+            Interval(3.556, 4.444, closed="right"): 135,
+            Interval(2.667, 3.556, closed="right"): 117,
+        }
+
+        expected_count["DEMA_DTW"] = {
+            Interval(-930.132, 116.792, closed="right"): 3843,
+            Interval(116.792, 1163.716, closed="right"): 424,
+            Interval(-1977.056, -930.132, closed="right"): 31,
+            Interval(1163.716, 2210.641, closed="right"): 19,
+            Interval(2210.641, 3257.565, closed="right"): 7,
+            Interval(-3033.404, -1977.056, closed="right"): 4,
+            Interval(3257.565, 4304.489, closed="right"): 4,
+            Interval(4304.489, 5351.414, closed="right"): 2,
+            Interval(5351.414, 6398.338, closed="right"): 2,
+        }
+
+        expected_count["DEMA_DTW_feat"] = {
+            Interval(-0.009000000000000001, 0.889, closed="right"): 1474,
+            Interval(6.222, 7.111, closed="right"): 1155,
+            Interval(7.111, 8.0, closed="right"): 665,
+            Interval(0.889, 1.778, closed="right"): 324,
+            Interval(5.333, 6.222, closed="right"): 184,
+            Interval(1.778, 2.667, closed="right"): 158,
+            Interval(4.444, 5.333, closed="right"): 129,
+            Interval(2.667, 3.556, closed="right"): 126,
+            Interval(3.556, 4.444, closed="right"): 121,
+        }
+
+        expected_count["TEMA_DTW"] = {
+            Interval(-481.77, 363.106, closed="right"): 4056,
+            Interval(363.106, 1207.983, closed="right"): 136,
+            Interval(-1326.646, -481.77, closed="right"): 84,
+            Interval(1207.983, 2052.859, closed="right"): 22,
+            Interval(-2171.523, -1326.646, closed="right"): 20,
+            Interval(-3016.399, -2171.523, closed="right"): 11,
+            Interval(2052.859, 2897.735, closed="right"): 4,
+            Interval(-3868.88, -3016.399, closed="right"): 2,
+            Interval(2897.735, 3742.612, closed="right"): 1,
+        }
+
+        expected_count["TEMA_DTW_feat"] = {
+            Interval(-0.009000000000000001, 0.889, closed="right"): 1425,
+            Interval(7.111, 8.0, closed="right"): 1340,
+            Interval(6.222, 7.111, closed="right"): 443,
+            Interval(0.889, 1.778, closed="right"): 390,
+            Interval(1.778, 2.667, closed="right"): 190,
+            Interval(5.333, 6.222, closed="right"): 180,
+            Interval(2.667, 3.556, closed="right"): 128,
+            Interval(4.444, 5.333, closed="right"): 124,
+            Interval(3.556, 4.444, closed="right"): 116,
+        }
+
+        test_count_series: dict[str, pd.Series] = {}
+        expected_count_series: dict[str, pd.Series] = {}
+
+        for key, value in zip(test_count.keys(), test_count.values()):
+            test_count_series[key] = pd.Series(value)
+        test_count_concat: pd.Series = pd.concat(test_count_series)
+
+        for key, value in zip(test_count.keys(), expected_count.values()):
+            expected_count_series[key] = pd.Series(value)
+        expected_count_concat: pd.Series = pd.concat(expected_count_series)
+
+        pd.testing.assert_series_equal(
+            test_count_concat, expected_count_concat
+        )
+
+    def test_create_dtw_distance_feature_empty_mas(self):
+        expected_df = self.dataframe.copy()
+
+        source = self.dataframe["close"]
+
+        model_features = ModelFeatures(
+            self.dataframe.copy(), self.test_index, self.bins, False
+        )
+
+        test_df = model_features.create_dtw_distance_feature(
+            source, "", 14
+        )
+
+        pd.testing.assert_frame_equal(test_df, expected_df)
 
 if __name__ == "__main__":
     unittest.main()
