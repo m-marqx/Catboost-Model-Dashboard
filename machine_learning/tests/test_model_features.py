@@ -1320,5 +1320,346 @@ class ModelFeaturesTests(unittest.TestCase):
 
         pd.testing.assert_frame_equal(test_df, expected_df)
 
+
+class TestDTWDistanceOpt(unittest.TestCase):
+    def setUp(self):
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc["2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 100
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        source = self.dataframe["close"]
+
+        self.test_df_all = self.model_features.create_dtw_distance_opt_feature(
+            source, "all", 14
+        ).dropna()
+
+        self.test_df_mas = self.model_features.create_dtw_distance_opt_feature(
+            source, ["sma", "ema", "rma", "dema", "tema"], 14
+        ).dropna()
+
+    def test_create_dtw_distance_opt_feature_columns(self) -> None:
+        expected_columns = pd.Index(
+            [
+                "SMA_DTW",
+                "SMA_DTW_feat",
+                "EMA_DTW",
+                "EMA_DTW_feat",
+                "RMA_DTW",
+                "RMA_DTW_feat",
+                "DEMA_DTW",
+                "DEMA_DTW_feat",
+                "TEMA_DTW",
+                "TEMA_DTW_feat",
+            ]
+        )
+
+        pd.testing.assert_index_equal(
+            self.test_df_all.columns[8:], expected_columns
+        )
+        pd.testing.assert_index_equal(
+            self.test_df_mas.columns[8:], expected_columns
+        )
+
+    def test_create_dtw_distance_opt_feature_values(self):
+        expected_df = pd.DataFrame(
+            {
+                "SMA_DTW": {
+                    Timestamp("2023-02-13 00:00:00"): 0.5439029532924422,
+                    Timestamp("2023-02-14 00:00:00"): -0.19191604467835344,
+                    Timestamp("2023-02-15 00:00:00"): 0.1407371263667816,
+                    Timestamp("2023-02-16 00:00:00"): -0.6763075050020219,
+                    Timestamp("2023-02-17 00:00:00"): 0.16060395573023703,
+                    Timestamp("2023-02-18 00:00:00"): -0.26054951933526094,
+                    Timestamp("2023-02-19 00:00:00"): 0.38098169236155516,
+                    Timestamp("2023-02-20 00:00:00"): -0.414070682557484,
+                    Timestamp("2023-02-21 00:00:00"): -0.057995860419852774,
+                    Timestamp("2023-02-22 00:00:00"): 0.04318271880306619,
+                },
+                "SMA_DTW_feat": {
+                    Timestamp("2023-02-13 00:00:00"): 7.0,
+                    Timestamp("2023-02-14 00:00:00"): 1.0,
+                    Timestamp("2023-02-15 00:00:00"): 6.0,
+                    Timestamp("2023-02-16 00:00:00"): 0.0,
+                    Timestamp("2023-02-17 00:00:00"): 6.0,
+                    Timestamp("2023-02-18 00:00:00"): 1.0,
+                    Timestamp("2023-02-19 00:00:00"): 7.0,
+                    Timestamp("2023-02-20 00:00:00"): 0.0,
+                    Timestamp("2023-02-21 00:00:00"): 2.0,
+                    Timestamp("2023-02-22 00:00:00"): 5.0,
+                },
+                "EMA_DTW": {
+                    Timestamp("2023-02-13 00:00:00"): -0.013763175498455654,
+                    Timestamp("2023-02-14 00:00:00"): 0.43481193117784284,
+                    Timestamp("2023-02-15 00:00:00"): -0.48610441285798744,
+                    Timestamp("2023-02-16 00:00:00"): 0.24148170295956536,
+                    Timestamp("2023-02-17 00:00:00"): 0.012595718696672031,
+                    Timestamp("2023-02-18 00:00:00"): 0.4000531659666247,
+                    Timestamp("2023-02-19 00:00:00"): -0.12119500724482213,
+                    Timestamp("2023-02-20 00:00:00"): 0.08624044130764696,
+                    Timestamp("2023-02-21 00:00:00"): -0.26537695169524517,
+                    Timestamp("2023-02-22 00:00:00"): -0.47532671469579235,
+                },
+                "EMA_DTW_feat": {
+                    Timestamp("2023-02-13 00:00:00"): 3.0,
+                    Timestamp("2023-02-14 00:00:00"): 7.0,
+                    Timestamp("2023-02-15 00:00:00"): 0.0,
+                    Timestamp("2023-02-16 00:00:00"): 6.0,
+                    Timestamp("2023-02-17 00:00:00"): 4.0,
+                    Timestamp("2023-02-18 00:00:00"): 7.0,
+                    Timestamp("2023-02-19 00:00:00"): 2.0,
+                    Timestamp("2023-02-20 00:00:00"): 5.0,
+                    Timestamp("2023-02-21 00:00:00"): 1.0,
+                    Timestamp("2023-02-22 00:00:00"): 1.0,
+                },
+                "RMA_DTW": {
+                    Timestamp("2023-02-13 00:00:00"): 0.02334534036636611,
+                    Timestamp("2023-02-14 00:00:00"): 0.5363960881696349,
+                    Timestamp("2023-02-15 00:00:00"): -0.5768106837815005,
+                    Timestamp("2023-02-16 00:00:00"): 0.2610949694575298,
+                    Timestamp("2023-02-17 00:00:00"): 0.08200297350415975,
+                    Timestamp("2023-02-18 00:00:00"): 0.6264230740458234,
+                    Timestamp("2023-02-19 00:00:00"): -0.18883377711260907,
+                    Timestamp("2023-02-20 00:00:00"): 0.12069743235336527,
+                    Timestamp("2023-02-21 00:00:00"): -0.34977754155006135,
+                    Timestamp("2023-02-22 00:00:00"): -0.149145503972211,
+                },
+                "RMA_DTW_feat": {
+                    Timestamp("2023-02-13 00:00:00"): 4.0,
+                    Timestamp("2023-02-14 00:00:00"): 7.0,
+                    Timestamp("2023-02-15 00:00:00"): 0.0,
+                    Timestamp("2023-02-16 00:00:00"): 8.0,
+                    Timestamp("2023-02-17 00:00:00"): 5.0,
+                    Timestamp("2023-02-18 00:00:00"): 7.0,
+                    Timestamp("2023-02-19 00:00:00"): 2.0,
+                    Timestamp("2023-02-20 00:00:00"): 6.0,
+                    Timestamp("2023-02-21 00:00:00"): 1.0,
+                    Timestamp("2023-02-22 00:00:00"): 2.0,
+                },
+                "DEMA_DTW": {
+                    Timestamp("2023-02-13 00:00:00"): 0.011946534165291402,
+                    Timestamp("2023-02-14 00:00:00"): -0.00015757916054042788,
+                    Timestamp("2023-02-15 00:00:00"): 0.010186207157313991,
+                    Timestamp("2023-02-16 00:00:00"): 0.048564110199953214,
+                    Timestamp("2023-02-17 00:00:00"): -0.003958777015175885,
+                    Timestamp("2023-02-18 00:00:00"): -0.014437253666313439,
+                    Timestamp("2023-02-19 00:00:00"): -0.021645148197416995,
+                    Timestamp("2023-02-20 00:00:00"): -0.007692776289891148,
+                    Timestamp("2023-02-21 00:00:00"): 0.07717844427972073,
+                    Timestamp("2023-02-22 00:00:00"): -0.022773107588911934,
+                },
+                "DEMA_DTW_feat": {
+                    Timestamp("2023-02-13 00:00:00"): 5.0,
+                    Timestamp("2023-02-14 00:00:00"): 4.0,
+                    Timestamp("2023-02-15 00:00:00"): 4.0,
+                    Timestamp("2023-02-16 00:00:00"): 5.0,
+                    Timestamp("2023-02-17 00:00:00"): 4.0,
+                    Timestamp("2023-02-18 00:00:00"): 3.0,
+                    Timestamp("2023-02-19 00:00:00"): 3.0,
+                    Timestamp("2023-02-20 00:00:00"): 4.0,
+                    Timestamp("2023-02-21 00:00:00"): 5.0,
+                    Timestamp("2023-02-22 00:00:00"): 3.0,
+                },
+                "TEMA_DTW": {
+                    Timestamp("2023-02-13 00:00:00"): -0.02328105195558007,
+                    Timestamp("2023-02-14 00:00:00"): 0.41253005482817184,
+                    Timestamp("2023-02-15 00:00:00"): -0.22540800517494608,
+                    Timestamp("2023-02-16 00:00:00"): 0.13285643797824215,
+                    Timestamp("2023-02-17 00:00:00"): 0.02979338024631234,
+                    Timestamp("2023-02-18 00:00:00"): -0.026675730495424155,
+                    Timestamp("2023-02-19 00:00:00"): -0.14197005316776398,
+                    Timestamp("2023-02-20 00:00:00"): -0.19932806806007158,
+                    Timestamp("2023-02-21 00:00:00"): -0.00885990041080887,
+                    Timestamp("2023-02-22 00:00:00"): 0.22584091773847068,
+                },
+                "TEMA_DTW_feat": {
+                    Timestamp("2023-02-13 00:00:00"): 4.0,
+                    Timestamp("2023-02-14 00:00:00"): 7.0,
+                    Timestamp("2023-02-15 00:00:00"): 1.0,
+                    Timestamp("2023-02-16 00:00:00"): 6.0,
+                    Timestamp("2023-02-17 00:00:00"): 5.0,
+                    Timestamp("2023-02-18 00:00:00"): 4.0,
+                    Timestamp("2023-02-19 00:00:00"): 2.0,
+                    Timestamp("2023-02-20 00:00:00"): 1.0,
+                    Timestamp("2023-02-21 00:00:00"): 4.0,
+                    Timestamp("2023-02-22 00:00:00"): 8.0,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(
+            self.test_df_all.iloc[:10, 8:], expected_df
+        )
+        pd.testing.assert_frame_equal(
+            self.test_df_mas.iloc[:10, 8:], expected_df
+        )
+
+    def test_create_dtw_distance_opt_feature_count(self):
+        feat_columns = self.test_df_all.columns[8:]
+
+        test_count_all = {}
+        test_count_mas = {}
+
+        for column in feat_columns:
+            test_count_all[column] = (
+                self.test_df_all[column].value_counts(bins=self.bins).to_dict()
+            )
+            test_count_mas[column] = (
+                self.test_df_mas[column].value_counts(bins=self.bins).to_dict()
+            )
+
+        expected_count: dict[str, dict] = {
+            "SMA_DTW": {
+                Interval(-0.306, 0.386, closed="right"): 185,
+                Interval(-0.998, -0.306, closed="right"): 59,
+                Interval(0.386, 1.078, closed="right"): 53,
+                Interval(-1.69, -0.998, closed="right"): 8,
+                Interval(1.078, 1.77, closed="right"): 4,
+                Interval(-2.382, -1.69, closed="right"): 2,
+                Interval(1.77, 2.462, closed="right"): 2,
+                Interval(-3.081, -2.382, closed="right"): 1,
+                Interval(2.462, 3.153, closed="right"): 1,
+            },
+            "SMA_DTW_feat": {
+                Interval(6.222, 7.111, closed="right"): 58,
+                Interval(-0.009000000000000001, 0.889, closed="right"): 53,
+                Interval(0.889, 1.778, closed="right"): 39,
+                Interval(7.111, 8.0, closed="right"): 39,
+                Interval(1.778, 2.667, closed="right"): 28,
+                Interval(4.444, 5.333, closed="right"): 28,
+                Interval(2.667, 3.556, closed="right"): 26,
+                Interval(3.556, 4.444, closed="right"): 26,
+                Interval(5.333, 6.222, closed="right"): 18,
+            },
+            "EMA_DTW": {
+                Interval(-0.09, 0.24, closed="right"): 109,
+                Interval(-0.42, -0.09, closed="right"): 68,
+                Interval(0.24, 0.571, closed="right"): 51,
+                Interval(0.571, 0.901, closed="right"): 29,
+                Interval(-0.751, -0.42, closed="right"): 25,
+                Interval(-1.081, -0.751, closed="right"): 16,
+                Interval(-1.4149999999999998, -1.081, closed="right"): 9,
+                Interval(0.901, 1.231, closed="right"): 4,
+                Interval(1.231, 1.561, closed="right"): 4,
+            },
+            "EMA_DTW_feat": {
+                Interval(6.222, 7.111, closed="right"): 62,
+                Interval(-0.009000000000000001, 0.889, closed="right"): 44,
+                Interval(1.778, 2.667, closed="right"): 44,
+                Interval(0.889, 1.778, closed="right"): 39,
+                Interval(5.333, 6.222, closed="right"): 30,
+                Interval(3.556, 4.444, closed="right"): 28,
+                Interval(2.667, 3.556, closed="right"): 27,
+                Interval(7.111, 8.0, closed="right"): 23,
+                Interval(4.444, 5.333, closed="right"): 18,
+            },
+            "RMA_DTW": {
+                Interval(-0.126, 0.427, closed="right"): 157,
+                Interval(-0.68, -0.126, closed="right"): 69,
+                Interval(0.427, 0.981, closed="right"): 51,
+                Interval(-1.233, -0.68, closed="right"): 25,
+                Interval(-1.787, -1.233, closed="right"): 6,
+                Interval(0.981, 1.534, closed="right"): 3,
+                Interval(1.534, 2.088, closed="right"): 2,
+                Interval(-2.346, -1.787, closed="right"): 1,
+                Interval(2.088, 2.641, closed="right"): 1,
+            },
+            "RMA_DTW_feat": {
+                Interval(6.222, 7.111, closed="right"): 46,
+                Interval(-0.009000000000000001, 0.889, closed="right"): 44,
+                Interval(1.778, 2.667, closed="right"): 38,
+                Interval(5.333, 6.222, closed="right"): 34,
+                Interval(7.111, 8.0, closed="right"): 34,
+                Interval(4.444, 5.333, closed="right"): 33,
+                Interval(0.889, 1.778, closed="right"): 32,
+                Interval(3.556, 4.444, closed="right"): 32,
+                Interval(2.667, 3.556, closed="right"): 22,
+            },
+            "DEMA_DTW": {
+                Interval(-0.218, 0.298, closed="right"): 148,
+                Interval(-0.734, -0.218, closed="right"): 56,
+                Interval(0.298, 0.815, closed="right"): 56,
+                Interval(-1.251, -0.734, closed="right"): 20,
+                Interval(0.815, 1.331, closed="right"): 18,
+                Interval(-1.767, -1.251, closed="right"): 8,
+                Interval(-2.2889999999999997, -1.767, closed="right"): 3,
+                Interval(1.331, 1.848, closed="right"): 3,
+                Interval(1.848, 2.364, closed="right"): 3,
+            },
+            "DEMA_DTW_feat": {
+                Interval(-0.009000000000000001, 0.889, closed="right"): 56,
+                Interval(6.222, 7.111, closed="right"): 44,
+                Interval(4.444, 5.333, closed="right"): 39,
+                Interval(1.778, 2.667, closed="right"): 34,
+                Interval(3.556, 4.444, closed="right"): 34,
+                Interval(5.333, 6.222, closed="right"): 31,
+                Interval(7.111, 8.0, closed="right"): 31,
+                Interval(0.889, 1.778, closed="right"): 25,
+                Interval(2.667, 3.556, closed="right"): 21,
+            },
+            "TEMA_DTW": {
+                Interval(-0.262, 0.0146, closed="right"): 85,
+                Interval(0.0146, 0.291, closed="right"): 82,
+                Interval(0.291, 0.567, closed="right"): 52,
+                Interval(-0.538, -0.262, closed="right"): 41,
+                Interval(-0.814, -0.538, closed="right"): 22,
+                Interval(0.567, 0.844, closed="right"): 19,
+                Interval(-1.091, -0.814, closed="right"): 6,
+                Interval(-1.371, -1.091, closed="right"): 4,
+                Interval(0.844, 1.12, closed="right"): 4,
+            },
+            "TEMA_DTW_feat": {
+                Interval(-0.009000000000000001, 0.889, closed="right"): 61,
+                Interval(7.111, 8.0, closed="right"): 48,
+                Interval(6.222, 7.111, closed="right"): 46,
+                Interval(4.444, 5.333, closed="right"): 33,
+                Interval(2.667, 3.556, closed="right"): 29,
+                Interval(5.333, 6.222, closed="right"): 29,
+                Interval(0.889, 1.778, closed="right"): 28,
+                Interval(1.778, 2.667, closed="right"): 21,
+                Interval(3.556, 4.444, closed="right"): 20,
+            },
+        }
+
+        for test_count in [test_count_all, test_count_mas]:
+            test_count_series: dict[str, pd.Series] = {}
+
+            for key, value in zip(test_count.keys(), test_count.values()):
+                test_count_series[key] = pd.Series(value)
+
+            test_count_concat: pd.Series = pd.concat(test_count_series)
+
+            expected_count_series: dict[str, pd.Series] = {}
+
+            for key, value in zip(test_count.keys(), expected_count.values()):
+                expected_count_series[key] = pd.Series(value)
+
+            expected_count_concat: pd.Series = pd.concat(expected_count_series)
+
+            pd.testing.assert_series_equal(
+                test_count_concat, expected_count_concat
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
