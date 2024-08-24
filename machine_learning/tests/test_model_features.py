@@ -1320,6 +1320,19 @@ class ModelFeaturesTests(unittest.TestCase):
 
         pd.testing.assert_frame_equal(test_df, expected_df)
 
+    def test_create_dtw_distance_feature_invalid_mas(self):
+        model_features = ModelFeatures(
+            self.dataframe.copy(), self.test_index, self.bins, False
+        )
+
+        self.assertRaises(
+            AttributeError,
+            model_features.create_dtw_distance_feature,
+            self.dataframe["close"],
+            "invalid",
+            14,
+        )
+
 
 class TestDTWDistanceOpt(unittest.TestCase):
     def setUp(self):
