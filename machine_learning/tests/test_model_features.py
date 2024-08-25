@@ -988,7 +988,7 @@ class ModelFeaturesTests(unittest.TestCase):
         source = self.dataframe["close"]
 
         test_df = self.model_features.create_dtw_distance_feature(
-            source, ['sma', 'ema', 'dema', 'tema', 'rma'], 14
+            source, ["sma", "ema", "rma", "dema", "tema"], 14
         ).dropna()
 
         expected_columns = pd.Index(
