@@ -1787,5 +1787,118 @@ class TestDTWDistanceOpt(unittest.TestCase):
             )
 
 
-if __name__ == "__main__":
-    unittest.main()
+class TestCCI(unittest.TestCase):
+    def setUp(self):
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc[:"2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        source = self.dataframe["close"]
+
+        self.test_df = self.model_features.create_cci_feature(
+            source, 14, "sma"
+        ).dropna()
+
+    def test_create_cci_feature_columns(self) -> None:
+        expected_columns = pd.Index(
+            [
+                "CCI",
+                "CCI_feat",
+            ]
+        )
+
+        pd.testing.assert_index_equal(
+            self.test_df.columns[8:], expected_columns
+        )
+
+    def test_create_cci_feature_values(self):
+        expected_df = pd.DataFrame(
+            {
+                "CCI": {
+                    Timestamp("2012-01-15 00:00:00"): 94.2593285910396,
+                    Timestamp("2012-01-16 00:00:00"): 83.08080808080821,
+                    Timestamp("2012-01-17 00:00:00"): -96.66666666666654,
+                    Timestamp("2012-01-18 00:00:00"): 77.75524002704529,
+                    Timestamp("2012-01-19 00:00:00"): -76.3681592039801,
+                    Timestamp("2012-01-20 00:00:00"): 42.960784313725675,
+                    Timestamp("2012-01-21 00:00:00"): 8.831066430120346,
+                    Timestamp("2012-01-22 00:00:00"): 16.19574119574133,
+                    Timestamp("2012-01-23 00:00:00"): -43.48484848484832,
+                    Timestamp("2012-01-24 00:00:00"): -29.807692307692033,
+                },
+                "CCI_feat": {
+                    Timestamp("2012-01-15 00:00:00"): 6.0,
+                    Timestamp("2012-01-16 00:00:00"): 6.0,
+                    Timestamp("2012-01-17 00:00:00"): 1.0,
+                    Timestamp("2012-01-18 00:00:00"): 5.0,
+                    Timestamp("2012-01-19 00:00:00"): 1.0,
+                    Timestamp("2012-01-20 00:00:00"): 4.0,
+                    Timestamp("2012-01-21 00:00:00"): 3.0,
+                    Timestamp("2012-01-22 00:00:00"): 4.0,
+                    Timestamp("2012-01-23 00:00:00"): 2.0,
+                    Timestamp("2012-01-24 00:00:00"): 3.0,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(expected_df, self.test_df.iloc[:10, 8:])
+
+    def test_create_cci_feature_count(self):
+        feat_columns = self.test_df.columns[8:]
+
+        test_count = {}
+
+        for column in feat_columns:
+            test_count[column] = (
+                self.test_df[column].value_counts(bins=self.bins).to_dict()
+            )
+
+        expected_count = {
+            "CCI": {
+                Interval(36.552, 131.956, closed="right"): 1367,
+                Interval(-58.852, 36.552, closed="right"): 1178,
+                Interval(-154.256, -58.852, closed="right"): 931,
+                Interval(131.956, 227.36, closed="right"): 565,
+                Interval(-249.66, -154.256, closed="right"): 195,
+                Interval(227.36, 322.764, closed="right"): 79,
+                Interval(-345.064, -249.66, closed="right"): 32,
+                Interval(-441.327, -345.064, closed="right"): 8,
+                Interval(322.764, 418.168, closed="right"): 7,
+            },
+            "CCI_feat": {
+                Interval(2.667, 3.556, closed="right"): 568,
+                Interval(0.889, 1.778, closed="right"): 540,
+                Interval(5.333, 6.222, closed="right"): 494,
+                Interval(-0.009000000000000001, 0.889, closed="right"): 491,
+                Interval(1.778, 2.667, closed="right"): 477,
+                Interval(3.556, 4.444, closed="right"): 477,
+                Interval(6.222, 7.111, closed="right"): 457,
+                Interval(7.111, 8.0, closed="right"): 446,
+                Interval(4.444, 5.333, closed="right"): 412,
+            },
+        }
+
+        assert_count_series(test_count, expected_count)
+
+
