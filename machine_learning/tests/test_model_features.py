@@ -11,6 +11,17 @@ def assert_count_series(
     test_count: dict[str, dict[Interval, int]],
     expected_count: dict[str, dict[Interval, int]],
 ):
+    """
+    Compare two dictionaries of count values and assert that their
+    corresponding series are equal.
+
+    Parameters
+    ----------
+    - test_count (dict[str, dict[Interval, int]]): The dictionary
+    containing the test count values.
+    - expected_count (dict[str, dict[Interval, int]]): The dictionary
+    containing the expected count values.
+    """
     test_count_series: dict[str, pd.Series] = {}
     expected_count_series: dict[str, pd.Series] = {}
 
