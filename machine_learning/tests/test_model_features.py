@@ -7,6 +7,26 @@ import numpy as np
 from machine_learning.model_features import feature_binning, ModelFeatures
 
 
+def assert_count_series(
+    test_count: dict[str, dict[Interval, int]],
+    expected_count: dict[str, dict[Interval, int]],
+):
+    test_count_series: dict[str, pd.Series] = {}
+    expected_count_series: dict[str, pd.Series] = {}
+
+    for key, value in zip(test_count.keys(), test_count.values()):
+        test_count_series[key] = pd.Series(value)
+
+    for key, value in zip(test_count.keys(), expected_count.values()):
+        expected_count_series[key] = pd.Series(value)
+
+    test_count_concat: pd.Series = pd.concat(test_count_series)
+    expected_count_concat: pd.Series = pd.concat(expected_count_series)
+
+    pd.testing.assert_series_equal(test_count_concat, expected_count_concat)
+
+
+
 class ModelFeaturesTests(unittest.TestCase):
     def setUp(self):
         btc_data = pd.read_parquet(r"data\assets\btc.parquet")
