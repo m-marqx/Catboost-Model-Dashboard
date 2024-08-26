@@ -1902,3 +1902,203 @@ class TestCCI(unittest.TestCase):
         assert_count_series(test_count, expected_count)
 
 
+class TestDidiIndex(unittest.TestCase):
+    def setUp(self):
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc[:"2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        source = self.dataframe["close"]
+
+        self.test_df_absolute = self.model_features.create_didi_index_feature(
+            source, 4, 19, 21, "sma", "absolute"
+        ).dropna()
+
+        self.test_df_dtw = self.model_features.create_didi_index_feature(
+            source, 4, 19, 21, "sma", "dtw"
+        ).dropna()
+
+    def test_create_didi_index_invalid_method(self):
+        self.assertRaises(
+            ValueError,
+            self.model_features.create_didi_index_feature,
+            self.dataframe["close"],
+            4,
+            19,
+            21,
+            "sma",
+            "invalid",
+        )
+
+    def test_create_didi_index_feature_columns(self) -> None:
+        expected_columns = pd.Index(
+            [
+                "DIDI",
+                "DIDI_feat",
+            ]
+        )
+
+        pd.testing.assert_index_equal(
+            self.test_df_absolute.columns[8:], expected_columns
+        )
+        pd.testing.assert_index_equal(
+            self.test_df_dtw.columns[8:], expected_columns
+        )
+
+    def test_create_didi_index_feature_values(self) -> None:
+        expected_df_absolute = pd.DataFrame(
+            {
+                "DIDI": {
+                    Timestamp("2012-01-22 00:00:00"): -0.19488095238095227,
+                    Timestamp("2012-01-23 00:00:00"): -0.1974999999999998,
+                    Timestamp("2012-01-24 00:00:00"): -0.037499999999999645,
+                    Timestamp("2012-01-25 00:00:00"): 0.11273809523809497,
+                    Timestamp("2012-01-26 00:00:00"): 0.3804761904761911,
+                    Timestamp("2012-01-27 00:00:00"): 0.5347619047619059,
+                    Timestamp("2012-01-28 00:00:00"): 0.8547619047619053,
+                    Timestamp("2012-01-29 00:00:00"): 0.9858333333333329,
+                    Timestamp("2012-01-30 00:00:00"): 0.9315476190476186,
+                    Timestamp("2012-01-31 00:00:00"): 0.9889285714285716,
+                },
+                "DIDI_feat": {
+                    Timestamp("2012-01-22 00:00:00"): 4.0,
+                    Timestamp("2012-01-23 00:00:00"): 4.0,
+                    Timestamp("2012-01-24 00:00:00"): 4.0,
+                    Timestamp("2012-01-25 00:00:00"): 5.0,
+                    Timestamp("2012-01-26 00:00:00"): 6.0,
+                    Timestamp("2012-01-27 00:00:00"): 6.0,
+                    Timestamp("2012-01-28 00:00:00"): 6.0,
+                    Timestamp("2012-01-29 00:00:00"): 6.0,
+                    Timestamp("2012-01-30 00:00:00"): 6.0,
+                    Timestamp("2012-01-31 00:00:00"): 6.0,
+                },
+            }
+        )
+
+        expected_df_absolute.index.name = "date"
+
+        expected_df_dtw = pd.DataFrame(
+            {
+                "DIDI": {
+                    Timestamp("2012-01-22 00:00:00"): -0.27238095238095195,
+                    Timestamp("2012-01-23 00:00:00"): -0.07249999999999979,
+                    Timestamp("2012-01-24 00:00:00"): -0.017763157894736814,
+                    Timestamp("2012-01-25 00:00:00"): -0.09120927318295813,
+                    Timestamp("2012-01-26 00:00:00"): -0.05436716791979901,
+                    Timestamp("2012-01-27 00:00:00"): -0.014630325814536604,
+                    Timestamp("2012-01-28 00:00:00"): -0.07412907268170432,
+                    Timestamp("2012-01-29 00:00:00"): -0.10721177944861982,
+                    Timestamp("2012-01-30 00:00:00"): 0.12370927318295788,
+                    Timestamp("2012-01-31 00:00:00"): 0.07491228070175282,
+                },
+                "DIDI_feat": {
+                    Timestamp("2012-01-22 00:00:00"): 2.0,
+                    Timestamp("2012-01-23 00:00:00"): 2.0,
+                    Timestamp("2012-01-24 00:00:00"): 3.0,
+                    Timestamp("2012-01-25 00:00:00"): 2.0,
+                    Timestamp("2012-01-26 00:00:00"): 3.0,
+                    Timestamp("2012-01-27 00:00:00"): 3.0,
+                    Timestamp("2012-01-28 00:00:00"): 2.0,
+                    Timestamp("2012-01-29 00:00:00"): 2.0,
+                    Timestamp("2012-01-30 00:00:00"): 6.0,
+                    Timestamp("2012-01-31 00:00:00"): 5.0,
+                },
+            }
+        )
+
+        expected_df_dtw.index.name = "date"
+
+        pd.testing.assert_frame_equal(
+            expected_df_absolute, self.test_df_absolute.iloc[:10, 8:]
+        )
+        pd.testing.assert_frame_equal(
+            expected_df_dtw, self.test_df_dtw.iloc[:10, 8:]
+        )
+
+    def test_create_didi_index_feature_count(self):
+        feat_columns = self.test_df_absolute.columns[8:]
+        test_count_absolute = {}
+        test_count_dtw = {}
+        for column in feat_columns:
+            test_count_absolute[column] = (
+                self.test_df_absolute[column]
+                .value_counts(bins=self.bins)
+                .to_dict()
+            )
+            test_count_dtw[column] = (
+                self.test_df_dtw[column].value_counts(bins=self.bins).to_dict()
+            )
+
+        expected_count_absolute = {
+            "DIDI": {
+                Interval(-24.193, 2368.777, closed="right"): 2597,
+                Interval(-2417.163, -24.193, closed="right"): 1393,
+                Interval(-4810.132, -2417.163, closed="right"): 143,
+                Interval(2368.777, 4761.746, closed="right"): 115,
+                Interval(4761.746, 7154.716, closed="right"): 36,
+                Interval(-9617.609, -7203.102, closed="right"): 33,
+                Interval(-7203.102, -4810.132, closed="right"): 28,
+                Interval(9547.685, 11940.655, closed="right"): 7,
+                Interval(7154.716, 9547.685, closed="right"): 3,
+            },
+            "DIDI_feat": {
+                Interval(-0.009000000000000001, 0.889, closed="right"): 1576,
+                Interval(7.111, 8.0, closed="right"): 1112,
+                Interval(6.222, 7.111, closed="right"): 404,
+                Interval(0.889, 1.778, closed="right"): 381,
+                Interval(5.333, 6.222, closed="right"): 277,
+                Interval(1.778, 2.667, closed="right"): 215,
+                Interval(2.667, 3.556, closed="right"): 148,
+                Interval(4.444, 5.333, closed="right"): 124,
+                Interval(3.556, 4.444, closed="right"): 118,
+            },
+        }
+
+        expected_count_dtw = {
+            "DIDI": {
+                Interval(-402.707, 26.945, closed="right"): 3525,
+                Interval(26.945, 456.598, closed="right"): 750,
+                Interval(-832.359, -402.707, closed="right"): 31,
+                Interval(456.598, 886.25, closed="right"): 29,
+                Interval(-1262.012, -832.359, closed="right"): 7,
+                Interval(886.25, 1315.902, closed="right"): 6,
+                Interval(-1691.664, -1262.012, closed="right"): 3,
+                Interval(-2554.837, -2121.316, closed="right"): 2,
+                Interval(-2121.316, -1691.664, closed="right"): 2,
+            },
+            "DIDI_feat": {
+                Interval(-0.009000000000000001, 0.889, closed="right"): 1333,
+                Interval(6.222, 7.111, closed="right"): 1086,
+                Interval(7.111, 8.0, closed="right"): 801,
+                Interval(0.889, 1.778, closed="right"): 424,
+                Interval(5.333, 6.222, closed="right"): 185,
+                Interval(1.778, 2.667, closed="right"): 165,
+                Interval(4.444, 5.333, closed="right"): 125,
+                Interval(2.667, 3.556, closed="right"): 121,
+                Interval(3.556, 4.444, closed="right"): 115,
+            },
+        }
+
+        assert_count_series(test_count_absolute, expected_count_absolute)
+        assert_count_series(test_count_dtw, expected_count_dtw)
+
+
