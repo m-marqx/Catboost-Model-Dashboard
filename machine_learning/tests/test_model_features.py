@@ -40,7 +40,7 @@ def assert_count_series(
 class AssertCountTests(unittest.TestCase):
     def setUp(self) -> None:
         self.test_count = {
-            "rsi_count": {
+            "count": {
                 Interval(42.538, 51.888, closed="right"): 918,
                 Interval(51.888, 61.237, closed="right"): 751,
                 Interval(33.189, 42.538, closed="right"): 700,
@@ -52,7 +52,7 @@ class AssertCountTests(unittest.TestCase):
                 Interval(14.49, 23.84, closed="right"): 126,
                 Interval(5.045999999999999, 14.49, closed="right"): 43,
             },
-            "rsi_feat_count": {
+            "feat_count": {
                 Interval(0.8, 1.6, closed="right"): 637,
                 Interval(3.2, 4.0, closed="right"): 559,
                 Interval(4.8, 5.6, closed="right"): 550,
@@ -68,7 +68,7 @@ class AssertCountTests(unittest.TestCase):
 
     def test_assert_count_series(self):
         expected_count = {
-            "rsi_count": {
+            "count": {
                 Interval(42.538, 51.888, closed="right"): 918,
                 Interval(51.888, 61.237, closed="right"): 751,
                 Interval(33.189, 42.538, closed="right"): 700,
@@ -80,7 +80,7 @@ class AssertCountTests(unittest.TestCase):
                 Interval(14.49, 23.84, closed="right"): 126,
                 Interval(5.045999999999999, 14.49, closed="right"): 43,
             },
-            "rsi_feat_count": {
+            "feat_count": {
                 Interval(0.8, 1.6, closed="right"): 637,
                 Interval(3.2, 4.0, closed="right"): 559,
                 Interval(4.8, 5.6, closed="right"): 550,
@@ -98,7 +98,7 @@ class AssertCountTests(unittest.TestCase):
 
     def test_assert_count_invalid(self):
         expected_count = {
-            "rsi_count": {
+            "count": {
                 Interval(42.538, 51.888, closed="right"): 918,
                 Interval(51.888, 61.237, closed="right"): 751,
                 Interval(33.189, 42.538, closed="right"): 700,
@@ -110,7 +110,7 @@ class AssertCountTests(unittest.TestCase):
                 Interval(14.49, 23.84, closed="right"): 126,
                 Interval(5.045999999999999, 14.49, closed="right"): 43,
             },
-            "rsi_feat_count": {
+            "feat_count": {
                 Interval(0.8, 1.6, closed="right"): 637,
                 Interval(3.2, 4.0, closed="right"): 559,
                 Interval(4.8, 5.6, closed="right"): 550,
