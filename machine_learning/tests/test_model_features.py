@@ -26,6 +26,99 @@ def assert_count_series(
     pd.testing.assert_series_equal(test_count_concat, expected_count_concat)
 
 
+class AssertCountTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.test_count = {
+            "rsi_count": {
+                Interval(42.538, 51.888, closed="right"): 918,
+                Interval(51.888, 61.237, closed="right"): 751,
+                Interval(33.189, 42.538, closed="right"): 700,
+                Interval(61.237, 70.586, closed="right"): 576,
+                Interval(70.586, 79.936, closed="right"): 433,
+                Interval(23.84, 33.189, closed="right"): 345,
+                Interval(79.936, 89.285, closed="right"): 322,
+                Interval(89.285, 98.634, closed="right"): 147,
+                Interval(14.49, 23.84, closed="right"): 126,
+                Interval(5.045999999999999, 14.49, closed="right"): 43,
+            },
+            "rsi_feat_count": {
+                Interval(0.8, 1.6, closed="right"): 637,
+                Interval(3.2, 4.0, closed="right"): 559,
+                Interval(4.8, 5.6, closed="right"): 550,
+                Interval(-0.009000000000000001, 0.8, closed="right"): 507,
+                Interval(7.2, 8.0, closed="right"): 474,
+                Interval(2.4, 3.2, closed="right"): 456,
+                Interval(1.6, 2.4, closed="right"): 455,
+                Interval(5.6, 6.4, closed="right"): 450,
+                Interval(6.4, 7.2, closed="right"): 273,
+                Interval(4.0, 4.8, closed="right"): 0,
+            },
+        }
+
+    def test_assert_count_series(self):
+        expected_count = {
+            "rsi_count": {
+                Interval(42.538, 51.888, closed="right"): 918,
+                Interval(51.888, 61.237, closed="right"): 751,
+                Interval(33.189, 42.538, closed="right"): 700,
+                Interval(61.237, 70.586, closed="right"): 576,
+                Interval(70.586, 79.936, closed="right"): 433,
+                Interval(23.84, 33.189, closed="right"): 345,
+                Interval(79.936, 89.285, closed="right"): 322,
+                Interval(89.285, 98.634, closed="right"): 147,
+                Interval(14.49, 23.84, closed="right"): 126,
+                Interval(5.045999999999999, 14.49, closed="right"): 43,
+            },
+            "rsi_feat_count": {
+                Interval(0.8, 1.6, closed="right"): 637,
+                Interval(3.2, 4.0, closed="right"): 559,
+                Interval(4.8, 5.6, closed="right"): 550,
+                Interval(-0.009000000000000001, 0.8, closed="right"): 507,
+                Interval(7.2, 8.0, closed="right"): 474,
+                Interval(2.4, 3.2, closed="right"): 456,
+                Interval(1.6, 2.4, closed="right"): 455,
+                Interval(5.6, 6.4, closed="right"): 450,
+                Interval(6.4, 7.2, closed="right"): 273,
+                Interval(4.0, 4.8, closed="right"): 0,
+            },
+        }
+
+        assert_count_series(self.test_count, expected_count)
+
+    def test_assert_count_invalid(self):
+        expected_count = {
+            "rsi_count": {
+                Interval(42.538, 51.888, closed="right"): 918,
+                Interval(51.888, 61.237, closed="right"): 751,
+                Interval(33.189, 42.538, closed="right"): 700,
+                Interval(61.237, 70.586, closed="right"): 576,
+                Interval(70.586, 79.936, closed="right"): 433,
+                Interval(23.84, 33.189, closed="right"): 345,
+                Interval(79.936, 89.285, closed="right"): 322,
+                Interval(89.285, 98.634, closed="right"): 147,
+                Interval(14.49, 23.84, closed="right"): 126,
+                Interval(5.045999999999999, 14.49, closed="right"): 43,
+            },
+            "rsi_feat_count": {
+                Interval(0.8, 1.6, closed="right"): 637,
+                Interval(3.2, 4.0, closed="right"): 559,
+                Interval(4.8, 5.6, closed="right"): 550,
+                Interval(-0.009000000000000001, 0.8, closed="right"): 507,
+                Interval(7.2, 8.0, closed="right"): 474,
+                Interval(2.4, 3.2, closed="right"): 0,
+                Interval(1.6, 2.4, closed="right"): 455,
+                Interval(5.6, 6.4, closed="right"): 450,
+                Interval(6.4, 7.2, closed="right"): 273,
+                Interval(4.0, 4.8, closed="right"): 0,
+            },
+        }
+
+        self.assertRaises(
+            AssertionError,
+            assert_count_series,
+            self.test_count, expected_count
+        )
+
 
 class ModelFeaturesTests(unittest.TestCase):
     def setUp(self):
