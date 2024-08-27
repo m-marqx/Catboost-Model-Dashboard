@@ -2339,3 +2339,117 @@ class TestMacd(unittest.TestCase):
 
         assert_count_series(test_count, expected_count)
 
+class TestMacdOPT(unittest.TestCase):
+    def setUp(self) -> None:
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc[:"2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        source = self.dataframe["close"]
+
+        self.test_df = self.model_features.create_macd_opt_feature(
+            source
+        ).dropna()
+
+    def test_create_macd_opt_feature_columns(self) -> None:
+        expected_columns = pd.Index(
+            [
+                "MACD",
+                "MACD_feat",
+            ]
+        )
+
+        pd.testing.assert_index_equal(
+            self.test_df.columns[8:], expected_columns
+        )
+
+    def test_create_macd_opt_feature_values(self) -> None:
+        expected_df = pd.DataFrame(
+            {
+                "MACD": {
+                    Timestamp("2012-02-08 00:00:00"): -0.0038759340792576067,
+                    Timestamp("2012-02-09 00:00:00"): -0.005031868116942268,
+                    Timestamp("2012-02-10 00:00:00"): 0.010667460962038598,
+                    Timestamp("2012-02-11 00:00:00"): 0.03458006422034684,
+                    Timestamp("2012-02-12 00:00:00"): 0.02223619782615388,
+                    Timestamp("2012-02-13 00:00:00"): -0.03996247216414588,
+                    Timestamp("2012-02-14 00:00:00"): 0.107128540130638,
+                    Timestamp("2012-02-15 00:00:00"): -0.11637512459952784,
+                    Timestamp("2012-02-16 00:00:00"): 0.050900294968030585,
+                    Timestamp("2012-02-17 00:00:00"): -0.06494074941314602,
+                },
+                "MACD_feat": {
+                    Timestamp("2012-02-08 00:00:00"): 4.0,
+                    Timestamp("2012-02-09 00:00:00"): 3.0,
+                    Timestamp("2012-02-10 00:00:00"): 6.0,
+                    Timestamp("2012-02-11 00:00:00"): 8.0,
+                    Timestamp("2012-02-12 00:00:00"): 8.0,
+                    Timestamp("2012-02-13 00:00:00"): 0.0,
+                    Timestamp("2012-02-14 00:00:00"): 7.0,
+                    Timestamp("2012-02-15 00:00:00"): 0.0,
+                    Timestamp("2012-02-16 00:00:00"): 7.0,
+                    Timestamp("2012-02-17 00:00:00"): 0.0,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(self.test_df.iloc[:10, 8:], expected_df)
+
+    def test_create_macd_opt_feature_count(self) -> None:
+        feat_columns = self.test_df.columns[8:]
+        test_count = {}
+
+        for column in feat_columns:
+            test_count[column] = (
+                self.test_df[column].value_counts(bins=self.bins).to_dict()
+            )
+
+        expected_count = {
+            "MACD": {
+                Interval(-0.0342, 0.0439, closed="right"): 3400,
+                Interval(-0.112, -0.0342, closed="right"): 526,
+                Interval(0.0439, 0.122, closed="right"): 317,
+                Interval(0.122, 0.2, closed="right"): 40,
+                Interval(-0.19, -0.112, closed="right"): 35,
+                Interval(0.2, 0.278, closed="right"): 10,
+                Interval(-0.268, -0.19, closed="right"): 6,
+                Interval(-0.348, -0.268, closed="right"): 3,
+                Interval(0.278, 0.356, closed="right"): 1,
+            },
+            "MACD_feat": {
+                Interval(7.111, 8.0, closed="right"): 527,
+                Interval(0.889, 1.778, closed="right"): 526,
+                Interval(6.222, 7.111, closed="right"): 508,
+                Interval(-0.009000000000000001, 0.889, closed="right"): 500,
+                Interval(5.333, 6.222, closed="right"): 471,
+                Interval(4.444, 5.333, closed="right"): 467,
+                Interval(3.556, 4.444, closed="right"): 453,
+                Interval(1.778, 2.667, closed="right"): 443,
+                Interval(2.667, 3.556, closed="right"): 443,
+            },
+        }
+
+        assert_count_series(test_count, expected_count)
+
+
