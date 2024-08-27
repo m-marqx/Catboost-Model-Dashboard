@@ -1,5 +1,7 @@
 import unittest
 
+import warnings
+
 import pandas as pd
 from pandas import Timestamp, Interval
 import numpy as np
@@ -2567,3 +2569,118 @@ class TestTrix(unittest.TestCase):
         assert_count_series(test_count, expected_count)
 
 
+class TestTrixOPT(unittest.TestCase):
+    def setUp(self) -> None:
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc[:"2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        source = self.dataframe["close"]
+
+        with warnings.catch_warnings():
+            warnings.simplefilter(action='ignore', category=RuntimeWarning)
+
+            self.test_df = self.model_features.create_trix_opt_feature(
+                source, 3, 2, "sma"
+            ).dropna()
+
+    def test_create_trix_opt_feature_columns(self) -> None:
+        expected_columns = pd.Index(
+            [
+                "TRIX",
+                "TRIX_feat",
+            ]
+        )
+
+        pd.testing.assert_index_equal(
+            self.test_df.columns[8:], expected_columns
+        )
+
+    def test_create_trix_opt_feature_values(self) -> None:
+        expected_df = pd.DataFrame(
+            {
+                "TRIX": {
+                    Timestamp("2012-01-14 00:00:00"): -196.61558376973153,
+                    Timestamp("2012-01-15 00:00:00"): -84.72279286582875,
+                    Timestamp("2012-01-16 00:00:00"): -94.93608635656972,
+                    Timestamp("2012-01-17 00:00:00"): 1513.7844836003042,
+                    Timestamp("2012-01-18 00:00:00"): 86.87825368232234,
+                    Timestamp("2012-01-19 00:00:00"): -1091.8176832742556,
+                    Timestamp("2012-01-20 00:00:00"): -940.643700987545,
+                    Timestamp("2012-01-21 00:00:00"): 486.1776640622003,
+                    Timestamp("2012-01-22 00:00:00"): 1106.6485467083794,
+                    Timestamp("2012-01-23 00:00:00"): 1356.487327583774,
+                },
+                "TRIX_feat": {
+                    Timestamp("2012-01-14 00:00:00"): 3.0,
+                    Timestamp("2012-01-15 00:00:00"): 4.0,
+                    Timestamp("2012-01-16 00:00:00"): 4.0,
+                    Timestamp("2012-01-17 00:00:00"): 6.0,
+                    Timestamp("2012-01-18 00:00:00"): 4.0,
+                    Timestamp("2012-01-19 00:00:00"): 2.0,
+                    Timestamp("2012-01-20 00:00:00"): 2.0,
+                    Timestamp("2012-01-21 00:00:00"): 5.0,
+                    Timestamp("2012-01-22 00:00:00"): 8.0,
+                    Timestamp("2012-01-23 00:00:00"): 6.0,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(expected_df, self.test_df.iloc[:10, 8:])
+
+    def test_create_trix_opt_feature_count(self) -> None:
+        feat_columns = self.test_df.columns[8:]
+        test_count = {}
+
+        for column in feat_columns:
+            test_count[column] = (
+                self.test_df[column].value_counts(bins=self.bins).to_dict()
+            )
+
+        expected_count = {
+            "TRIX": {
+                Interval(-670.083, 972.694, closed="right"): 1894,
+                Interval(-2312.86, -670.083, closed="right"): 1072,
+                Interval(972.694, 2615.472, closed="right"): 836,
+                Interval(-3955.638, -2312.86, closed="right"): 266,
+                Interval(2615.472, 4258.249, closed="right"): 210,
+                Interval(-5598.415, -3955.638, closed="right"): 41,
+                Interval(4258.249, 5901.026, closed="right"): 26,
+                Interval(-7255.978, -5598.415, closed="right"): 6,
+                Interval(5901.026, 7543.804, closed="right"): 5,
+            },
+            "TRIX_feat": {
+                Interval(4.444, 5.333, closed="right"): 540,
+                Interval(2.667, 3.556, closed="right"): 529,
+                Interval(5.333, 6.222, closed="right"): 509,
+                Interval(7.111, 8.0, closed="right"): 488,
+                Interval(1.778, 2.667, closed="right"): 487,
+                Interval(-0.009000000000000001, 0.889, closed="right"): 464,
+                Interval(3.556, 4.444, closed="right"): 456,
+                Interval(0.889, 1.778, closed="right"): 454,
+                Interval(6.222, 7.111, closed="right"): 429,
+            },
+        }
+
+        assert_count_series(test_count, expected_count)
