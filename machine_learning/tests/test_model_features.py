@@ -3125,3 +3125,113 @@ class TestTSIOPT(unittest.TestCase):
 
         assert_count_series(test_count, expected_count)
 
+class TestBBTrend(unittest.TestCase):
+    def setUp(self) -> None:
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc[:"2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        source = self.dataframe["close"]
+
+        self.test_df = self.model_features.create_bb_trend_feature(
+            source
+        ).dropna()
+
+    def test_create_bb_trend_feature_columns(self) -> None:
+        expected_columns = pd.Index(
+            [
+                "bb_trend",
+                "bb_trend_feat",
+            ]
+        )
+
+        pd.testing.assert_index_equal(
+            self.test_df.columns[8:], expected_columns
+        )
+
+    def test_create_bb_trend_feature_values(self) -> None:
+        expected_df = pd.DataFrame(
+            {
+                "bb_trend": {
+                    Timestamp("2012-01-26 00:00:00"): -1.165536797820343,
+                    Timestamp("2012-01-27 00:00:00"): -1.096006796738471,
+                    Timestamp("2012-01-28 00:00:00"): 4.720702576572254,
+                    Timestamp("2012-01-29 00:00:00"): 4.364689034802541,
+                    Timestamp("2012-01-30 00:00:00"): 4.273053422797143,
+                    Timestamp("2012-01-31 00:00:00"): 0.9592663716378317,
+                    Timestamp("2012-02-01 00:00:00"): 0.8247050413064548,
+                    Timestamp("2012-02-02 00:00:00"): -1.781663883186952,
+                    Timestamp("2012-02-03 00:00:00"): -4.285561135235777,
+                    Timestamp("2012-02-04 00:00:00"): -4.141180231599691,
+                },
+                "bb_trend_feat": {
+                    Timestamp("2012-01-26 00:00:00"): 2.0,
+                    Timestamp("2012-01-27 00:00:00"): 3.0,
+                    Timestamp("2012-01-28 00:00:00"): 8.0,
+                    Timestamp("2012-01-29 00:00:00"): 8.0,
+                    Timestamp("2012-01-30 00:00:00"): 8.0,
+                    Timestamp("2012-01-31 00:00:00"): 4.0,
+                    Timestamp("2012-02-01 00:00:00"): 4.0,
+                    Timestamp("2012-02-02 00:00:00"): 2.0,
+                    Timestamp("2012-02-03 00:00:00"): 1.0,
+                    Timestamp("2012-02-04 00:00:00"): 1.0,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(expected_df, self.test_df.iloc[:10, 8:])
+
+    def test_create_bb_trend_feature_count(self) -> None:
+        feat_columns = self.test_df.columns[8:]
+        test_count = {}
+        for column in feat_columns:
+            test_count[column] =  self.test_df[column].value_counts(bins=self.bins).to_dict()
+
+        expected_count = {
+            "bb_trend": {
+                Interval(-6.034, 2.063, closed="right"): 2276,
+                Interval(2.063, 10.16, closed="right"): 1212,
+                Interval(-14.13, -6.034, closed="right"): 357,
+                Interval(10.16, 18.257, closed="right"): 336,
+                Interval(-22.301000000000002, -14.13, closed="right"): 76,
+                Interval(18.257, 26.354, closed="right"): 67,
+                Interval(26.354, 34.45, closed="right"): 15,
+                Interval(34.45, 42.547, closed="right"): 6,
+                Interval(42.547, 50.644, closed="right"): 6,
+            },
+            "bb_trend_feat": {
+                Interval(5.333, 6.222, closed="right"): 570,
+                Interval(3.556, 4.444, closed="right"): 567,
+                Interval(2.667, 3.556, closed="right"): 554,
+                Interval(4.444, 5.333, closed="right"): 530,
+                Interval(7.111, 8.0, closed="right"): 503,
+                Interval(0.889, 1.778, closed="right"): 483,
+                Interval(-0.009000000000000001, 0.889, closed="right"): 474,
+                Interval(1.778, 2.667, closed="right"): 429,
+                Interval(6.222, 7.111, closed="right"): 241,
+            },
+        }
+
+        assert_count_series(test_count, expected_count)
+
