@@ -2905,3 +2905,113 @@ class TestSMIOOPT(unittest.TestCase):
 
         assert_count_series(test_count, expected_count)
 
+class TestTSI(unittest.TestCase):
+    def setUp(self):
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc[:"2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        source = self.dataframe["close"]
+
+        self.test_df = self.model_features.create_tsi_feature(
+            source
+        ).dropna()
+
+    def test_create_tsi_feature_columns(self) -> None:
+        expected_columns = pd.Index(
+            [
+                "TSI",
+                "TSI_feat",
+            ]
+        )
+
+        pd.testing.assert_index_equal(
+            self.test_df.columns[8:], expected_columns
+        )
+
+    def test_create_tsi_feature_values(self) -> None:
+        expected_df = pd.DataFrame(
+            {
+                "TSI": {
+                    Timestamp("2012-02-08 00:00:00"): -0.01239051622704824,
+                    Timestamp("2012-02-09 00:00:00"): -0.010854895473568351,
+                    Timestamp("2012-02-10 00:00:00"): -0.00979058364416123,
+                    Timestamp("2012-02-11 00:00:00"): -0.018859278235780083,
+                    Timestamp("2012-02-12 00:00:00"): -0.021811392247394847,
+                    Timestamp("2012-02-13 00:00:00"): -0.020824541290120045,
+                    Timestamp("2012-02-14 00:00:00"): -0.04557262215613051,
+                    Timestamp("2012-02-15 00:00:00"): -0.07146536178889104,
+                    Timestamp("2012-02-16 00:00:00"): -0.0977874283135179,
+                    Timestamp("2012-02-17 00:00:00"): -0.11410801234672113,
+                },
+                "TSI_feat": {
+                    Timestamp("2012-02-08 00:00:00"): 3.0,
+                    Timestamp("2012-02-09 00:00:00"): 3.0,
+                    Timestamp("2012-02-10 00:00:00"): 3.0,
+                    Timestamp("2012-02-11 00:00:00"): 3.0,
+                    Timestamp("2012-02-12 00:00:00"): 3.0,
+                    Timestamp("2012-02-13 00:00:00"): 3.0,
+                    Timestamp("2012-02-14 00:00:00"): 2.0,
+                    Timestamp("2012-02-15 00:00:00"): 2.0,
+                    Timestamp("2012-02-16 00:00:00"): 2.0,
+                    Timestamp("2012-02-17 00:00:00"): 1.0,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(expected_df, self.test_df.iloc[:10, 8:])
+
+    def test_create_tsi_feature_count(self) -> None:
+        feat_columns = self.test_df.columns[8:]
+        test_count = {}
+        for column in feat_columns:
+            test_count[column] =  self.test_df[column].value_counts(bins=self.bins).to_dict()
+
+        expected_count = {
+            "TSI": {
+                Interval(-0.158, 0.0132, closed="right"): 1186,
+                Interval(0.0132, 0.184, closed="right"): 996,
+                Interval(0.184, 0.355, closed="right"): 678,
+                Interval(-0.329, -0.158, closed="right"): 586,
+                Interval(0.355, 0.526, closed="right"): 402,
+                Interval(0.526, 0.697, closed="right"): 247,
+                Interval(-0.5, -0.329, closed="right"): 170,
+                Interval(0.697, 0.868, closed="right"): 61,
+                Interval(-0.673, -0.5, closed="right"): 12,
+            },
+            "TSI_feat": {
+                Interval(5.333, 6.222, closed="right"): 692,
+                Interval(0.889, 1.778, closed="right"): 688,
+                Interval(4.444, 5.333, closed="right"): 642,
+                Interval(1.778, 2.667, closed="right"): 500,
+                Interval(-0.009000000000000001, 0.889, closed="right"): 457,
+                Interval(3.556, 4.444, closed="right"): 400,
+                Interval(2.667, 3.556, closed="right"): 391,
+                Interval(7.111, 8.0, closed="right"): 369,
+                Interval(6.222, 7.111, closed="right"): 199,
+            },
+        }
+
+        assert_count_series(test_count, expected_count)
+
