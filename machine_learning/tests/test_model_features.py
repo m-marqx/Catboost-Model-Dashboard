@@ -3015,3 +3015,113 @@ class TestTSI(unittest.TestCase):
 
         assert_count_series(test_count, expected_count)
 
+class TestTSIOPT(unittest.TestCase):
+    def setUp(self) -> None:
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc[:"2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        source = self.dataframe["close"]
+
+        self.test_df = self.model_features.create_tsi_opt_feature(
+            source
+        ).dropna()
+
+    def test_create_tsi_opt_feature_columns(self) -> None:
+        expected_columns = pd.Index(
+            [
+                "TSI",
+                "TSI_feat",
+            ]
+        )
+
+        pd.testing.assert_index_equal(
+            self.test_df.columns[8:], expected_columns
+        )
+
+    def test_create_tsi_opt_feature_values(self) -> None:
+        expected_df = pd.DataFrame(
+            {
+                "TSI": {
+                    Timestamp("2012-02-10 00:00:00"): -0.000333265736245586,
+                    Timestamp("2012-02-11 00:00:00"): 0.005659953330372618,
+                    Timestamp("2012-02-12 00:00:00"): -0.004325075605794851,
+                    Timestamp("2012-02-13 00:00:00"): -0.0013896508325392139,
+                    Timestamp("2012-02-14 00:00:00"): 0.01680172679779965,
+                    Timestamp("2012-02-15 00:00:00"): 0.0008093959761135902,
+                    Timestamp("2012-02-16 00:00:00"): 0.00030357995658442105,
+                    Timestamp("2012-02-17 00:00:00"): -0.007072116091604212,
+                    Timestamp("2012-02-18 00:00:00"): 0.006578158149953115,
+                    Timestamp("2012-02-19 00:00:00"): -0.007137925776676615,
+                },
+                "TSI_feat": {
+                    Timestamp("2012-02-10 00:00:00"): 4.0,
+                    Timestamp("2012-02-11 00:00:00"): 6.0,
+                    Timestamp("2012-02-12 00:00:00"): 2.0,
+                    Timestamp("2012-02-13 00:00:00"): 3.0,
+                    Timestamp("2012-02-14 00:00:00"): 7.0,
+                    Timestamp("2012-02-15 00:00:00"): 5.0,
+                    Timestamp("2012-02-16 00:00:00"): 4.0,
+                    Timestamp("2012-02-17 00:00:00"): 1.0,
+                    Timestamp("2012-02-18 00:00:00"): 6.0,
+                    Timestamp("2012-02-19 00:00:00"): 1.0,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(expected_df, self.test_df.iloc[:10, 8:])
+
+    def test_create_tsi_opt_feature_count(self) -> None:
+        feat_columns = self.test_df.columns[8:]
+        test_count = {}
+        for column in feat_columns:
+            test_count[column] =  self.test_df[column].value_counts(bins=self.bins).to_dict()
+
+        expected_count = {
+            "TSI": {
+                Interval(-0.00951, 0.0148, closed="right"): 3493,
+                Interval(-0.0338, -0.00951, closed="right"): 513,
+                Interval(0.0148, 0.0391, closed="right"): 257,
+                Interval(0.0391, 0.0634, closed="right"): 34,
+                Interval(-0.0581, -0.0338, closed="right"): 26,
+                Interval(0.0634, 0.0878, closed="right"): 4,
+                Interval(0.0878, 0.112, closed="right"): 4,
+                Interval(-0.108, -0.0825, closed="right"): 3,
+                Interval(-0.0825, -0.0581, closed="right"): 2,
+            },
+            "TSI_feat": {
+                Interval(0.889, 1.778, closed="right"): 569,
+                Interval(5.333, 6.222, closed="right"): 555,
+                Interval(-0.009000000000000001, 0.889, closed="right"): 510,
+                Interval(2.667, 3.556, closed="right"): 481,
+                Interval(6.222, 7.111, closed="right"): 475,
+                Interval(1.778, 2.667, closed="right"): 448,
+                Interval(3.556, 4.444, closed="right"): 444,
+                Interval(4.444, 5.333, closed="right"): 432,
+                Interval(7.111, 8.0, closed="right"): 422,
+            },
+        }
+
+        assert_count_series(test_count, expected_count)
+
