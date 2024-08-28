@@ -2795,3 +2795,113 @@ class TestSMIO(unittest.TestCase):
 
         assert_count_series(test_count, expected_count)
 
+class TestSMIOOPT(unittest.TestCase):
+    def setUp(self) -> None:
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc[:"2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        source = self.dataframe["close"]
+
+        self.test_df = self.model_features.create_smio_opt_feature(
+            source
+        ).dropna()
+
+    def test_create_smio_opt_feature_columns(self) -> None:
+        expected_columns = pd.Index(
+            [
+                "SMIO",
+                "SMIO_feat",
+            ]
+        )
+
+        pd.testing.assert_index_equal(
+            self.test_df.columns[8:], expected_columns
+        )
+
+    def test_create_smio_opt_feature_values(self) -> None:
+        expected_df = pd.DataFrame(
+            {
+                "SMIO": {
+                    Timestamp("2012-02-01 00:00:00"): 0.02158229089865395,
+                    Timestamp("2012-02-02 00:00:00"): -0.0004268969842382876,
+                    Timestamp("2012-02-03 00:00:00"): -0.015246614895252315,
+                    Timestamp("2012-02-04 00:00:00"): 0.0036261980335655034,
+                    Timestamp("2012-02-05 00:00:00"): 0.006884088432290375,
+                    Timestamp("2012-02-06 00:00:00"): -0.011216322592673623,
+                    Timestamp("2012-02-07 00:00:00"): -0.006279520744347903,
+                    Timestamp("2012-02-08 00:00:00"): 0.00785573541957065,
+                    Timestamp("2012-02-09 00:00:00"): -0.004043591928205108,
+                    Timestamp("2012-02-10 00:00:00"): -0.0036610795575005607,
+                },
+                "SMIO_feat": {
+                    Timestamp("2012-02-01 00:00:00"): 7.0,
+                    Timestamp("2012-02-02 00:00:00"): 4.0,
+                    Timestamp("2012-02-03 00:00:00"): 1.0,
+                    Timestamp("2012-02-04 00:00:00"): 5.0,
+                    Timestamp("2012-02-05 00:00:00"): 8.0,
+                    Timestamp("2012-02-06 00:00:00"): 1.0,
+                    Timestamp("2012-02-07 00:00:00"): 2.0,
+                    Timestamp("2012-02-08 00:00:00"): 8.0,
+                    Timestamp("2012-02-09 00:00:00"): 3.0,
+                    Timestamp("2012-02-10 00:00:00"): 3.0,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(expected_df, self.test_df.iloc[:10, 8:])
+
+    def test_create_smio_opt_feature_count(self) -> None:
+        feat_columns = self.test_df.columns[8:]
+        test_count = {}
+        for column in feat_columns:
+            test_count[column] =  self.test_df[column].value_counts(bins=self.bins).to_dict()
+
+        expected_count = {
+            "SMIO": {
+                Interval(-0.014, 0.0237, closed="right"): 3060,
+                Interval(-0.0516, -0.014, closed="right"): 752,
+                Interval(0.0237, 0.0613, closed="right"): 383,
+                Interval(-0.0892, -0.0516, closed="right"): 74,
+                Interval(0.0613, 0.0989, closed="right"): 47,
+                Interval(-0.128, -0.0892, closed="right"): 14,
+                Interval(0.0989, 0.137, closed="right"): 13,
+                Interval(0.174, 0.212, closed="right"): 2,
+                Interval(0.137, 0.174, closed="right"): 0,
+            },
+            "SMIO_feat": {
+                Interval(6.222, 7.111, closed="right"): 617,
+                Interval(-0.009000000000000001, 0.889, closed="right"): 597,
+                Interval(1.778, 2.667, closed="right"): 486,
+                Interval(7.111, 8.0, closed="right"): 481,
+                Interval(5.333, 6.222, closed="right"): 453,
+                Interval(0.889, 1.778, closed="right"): 450,
+                Interval(3.556, 4.444, closed="right"): 444,
+                Interval(4.444, 5.333, closed="right"): 412,
+                Interval(2.667, 3.556, closed="right"): 405,
+            },
+        }
+
+        assert_count_series(test_count, expected_count)
+
