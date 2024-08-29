@@ -3971,3 +3971,630 @@ class TestIchimokuDistanceNegativeCase(unittest.TestCase):
         )
 
 
+class TestIchimokuPriceDistanceLeadingSpan(unittest.TestCase):
+    def setUp(self) -> None:
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc[:"2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        source = self.dataframe["close"].copy()
+
+        self.test_df = (
+            self.model_features.create_ichimoku_price_distance_feature(
+                source, 9, 26, 52, 26, based_on="leading_span"
+            ).dropna()
+        )
+
+    def test_create_ichimoku_price_distance_feature_columns(self) -> None:
+        expected_columns = pd.Index(
+            [
+                "ichimoku_distance",
+                "ichimoku_distance_feat",
+            ]
+        )
+
+        pd.testing.assert_index_equal(
+            self.test_df.columns[8:], expected_columns
+        )
+
+    def test_create_ichimoku_distance_feature_values(self) -> None:
+        expected_df = pd.DataFrame(
+            {
+                "ichimoku_distance": {
+                    Timestamp("2012-03-19 00:00:00"): -0.026269209405665572,
+                    Timestamp("2012-03-20 00:00:00"): 0.022630340689408363,
+                    Timestamp("2012-03-21 00:00:00"): 0.057617871428714856,
+                    Timestamp("2012-03-22 00:00:00"): -0.015980823414409623,
+                    Timestamp("2012-03-23 00:00:00"): 0.027254212182929116,
+                    Timestamp("2012-03-24 00:00:00"): -0.0033187150858822456,
+                    Timestamp("2012-03-25 00:00:00"): -0.0063106172731604016,
+                    Timestamp("2012-03-26 00:00:00"): 0.028071254132409934,
+                    Timestamp("2012-03-27 00:00:00"): 0.010620941822817809,
+                    Timestamp("2012-03-28 00:00:00"): 0.037773894681839615,
+                },
+                "ichimoku_distance_feat": {
+                    Timestamp("2012-03-19 00:00:00"): 0.0,
+                    Timestamp("2012-03-20 00:00:00"): 5.0,
+                    Timestamp("2012-03-21 00:00:00"): 6.0,
+                    Timestamp("2012-03-22 00:00:00"): 1.0,
+                    Timestamp("2012-03-23 00:00:00"): 5.0,
+                    Timestamp("2012-03-24 00:00:00"): 3.0,
+                    Timestamp("2012-03-25 00:00:00"): 2.0,
+                    Timestamp("2012-03-26 00:00:00"): 5.0,
+                    Timestamp("2012-03-27 00:00:00"): 4.0,
+                    Timestamp("2012-03-28 00:00:00"): 6.0,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(expected_df, self.test_df.iloc[:10, 8:])
+
+    def test_create_ichimoku_distance_feature_count(self) -> None:
+        feat_columns = self.test_df.columns[8:]
+        test_count = {}
+        for column in feat_columns:
+            test_count[column] = (
+                self.test_df[column].value_counts(bins=self.bins).to_dict()
+            )
+
+        expected_count = {
+            "ichimoku_distance": {
+                Interval(-0.0371, 0.0633, closed="right"): 3533,
+                Interval(-0.138, -0.0371, closed="right"): 404,
+                Interval(0.0633, 0.164, closed="right"): 304,
+                Interval(0.164, 0.264, closed="right"): 28,
+                Interval(-0.238, -0.138, closed="right"): 18,
+                Interval(0.264, 0.365, closed="right"): 5,
+                Interval(-0.338, -0.238, closed="right"): 3,
+                Interval(-0.441, -0.338, closed="right"): 2,
+                Interval(0.365, 0.465, closed="right"): 1,
+            },
+            "ichimoku_distance_feat": {
+                Interval(-0.009000000000000001, 0.889, closed="right"): 660,
+                Interval(7.111, 8.0, closed="right"): 555,
+                Interval(1.778, 2.667, closed="right"): 499,
+                Interval(0.889, 1.778, closed="right"): 478,
+                Interval(2.667, 3.556, closed="right"): 473,
+                Interval(3.556, 4.444, closed="right"): 472,
+                Interval(5.333, 6.222, closed="right"): 449,
+                Interval(4.444, 5.333, closed="right"): 433,
+                Interval(6.222, 7.111, closed="right"): 279,
+            },
+        }
+
+        assert_count_series(test_count, expected_count)
+
+
+class TestIchimokuPriceDistanceLeadLine(unittest.TestCase):
+    def setUp(self) -> None:
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc[:"2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        source = self.dataframe["close"].copy()
+
+        self.test_df = (
+            self.model_features.create_ichimoku_price_distance_feature(
+                source, 9, 26, 52, 26, based_on="lead_line"
+            ).dropna()
+        )
+
+    def test_create_ichimoku_price_distance_feature_columns(self) -> None:
+        expected_columns = pd.Index(
+            [
+                "ichimoku_distance",
+                "ichimoku_distance_feat",
+            ]
+        )
+
+        pd.testing.assert_index_equal(
+            self.test_df.columns[8:], expected_columns
+        )
+
+    def test_create_ichimoku_distance_feature_values(self) -> None:
+        expected_df = pd.DataFrame(
+            {
+                "ichimoku_distance": {
+                    Timestamp("2012-02-23 00:00:00"): 0.17224624561875204,
+                    Timestamp("2012-02-24 00:00:00"): 0.0020066526633000237,
+                    Timestamp("2012-02-25 00:00:00"): 0.032228276101750136,
+                    Timestamp("2012-02-26 00:00:00"): -0.009900178253119257,
+                    Timestamp("2012-02-27 00:00:00"): -0.0028519854820351354,
+                    Timestamp("2012-02-28 00:00:00"): 0.021984758848302643,
+                    Timestamp("2012-02-29 00:00:00"): 0.008762017474650302,
+                    Timestamp("2012-03-01 00:00:00"): -0.011774958115875284,
+                    Timestamp("2012-03-02 00:00:00"): 0.01173079059433435,
+                    Timestamp("2012-03-03 00:00:00"): -0.010048704051747792,
+                },
+                "ichimoku_distance_feat": {
+                    Timestamp("2012-02-23 00:00:00"): 7.0,
+                    Timestamp("2012-02-24 00:00:00"): 3.0,
+                    Timestamp("2012-02-25 00:00:00"): 8.0,
+                    Timestamp("2012-02-26 00:00:00"): 1.0,
+                    Timestamp("2012-02-27 00:00:00"): 2.0,
+                    Timestamp("2012-02-28 00:00:00"): 8.0,
+                    Timestamp("2012-02-29 00:00:00"): 4.0,
+                    Timestamp("2012-03-01 00:00:00"): 1.0,
+                    Timestamp("2012-03-02 00:00:00"): 5.0,
+                    Timestamp("2012-03-03 00:00:00"): 1.0,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(expected_df, self.test_df.iloc[:10, 8:])
+
+    def test_create_ichimoku_distance_feature_count(self) -> None:
+        feat_columns = self.test_df.columns[8:]
+        test_count = {}
+        for column in feat_columns:
+            test_count[column] = (
+                self.test_df[column].value_counts(bins=self.bins).to_dict()
+            )
+
+        expected_count = {
+            "ichimoku_distance": {
+                Interval(-0.0224, 0.0672, closed="right"): 3376,
+                Interval(-0.112, -0.0224, closed="right"): 660,
+                Interval(0.0672, 0.157, closed="right"): 233,
+                Interval(-0.202, -0.112, closed="right"): 23,
+                Interval(0.157, 0.246, closed="right"): 16,
+                Interval(0.246, 0.336, closed="right"): 8,
+                Interval(-0.291, -0.202, closed="right"): 3,
+                Interval(0.336, 0.426, closed="right"): 3,
+                Interval(-0.383, -0.291, closed="right"): 1,
+            },
+            "ichimoku_distance_feat": {
+                Interval(-0.009000000000000001, 0.889, closed="right"): 682,
+                Interval(0.889, 1.778, closed="right"): 552,
+                Interval(1.778, 2.667, closed="right"): 514,
+                Interval(2.667, 3.556, closed="right"): 510,
+                Interval(4.444, 5.333, closed="right"): 469,
+                Interval(5.333, 6.222, closed="right"): 455,
+                Interval(3.556, 4.444, closed="right"): 435,
+                Interval(7.111, 8.0, closed="right"): 419,
+                Interval(6.222, 7.111, closed="right"): 287,
+            },
+        }
+
+        assert_count_series(test_count, expected_count)
+
+
+class TestIchimokuPriceDistanceAbsolute(unittest.TestCase):
+    def setUp(self) -> None:
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc[:"2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        source = self.dataframe["close"].copy()
+
+        self.test_df = (
+            self.model_features.create_ichimoku_price_distance_feature(
+                source, 9, 26, 52, 26, method="absolute"
+            ).dropna()
+        )
+
+    def test_create_ichimoku_price_distance_feature_columns(self) -> None:
+        expected_columns = pd.Index(
+            [
+                "ichimoku_distance",
+                "ichimoku_distance_feat",
+            ]
+        )
+
+        pd.testing.assert_index_equal(
+            self.test_df.columns[8:], expected_columns
+        )
+
+    def test_create_ichimoku_price_distance_feature_values(self) -> None:
+        expected_df = pd.DataFrame(
+            {
+                "ichimoku_distance": {
+                    Timestamp("2012-03-19 00:00:00"): -0.026269209405665572,
+                    Timestamp("2012-03-20 00:00:00"): 0.022630340689408363,
+                    Timestamp("2012-03-21 00:00:00"): 0.057617871428714856,
+                    Timestamp("2012-03-22 00:00:00"): -0.015980823414409623,
+                    Timestamp("2012-03-23 00:00:00"): 0.027254212182929116,
+                    Timestamp("2012-03-24 00:00:00"): -0.0033187150858822456,
+                    Timestamp("2012-03-25 00:00:00"): -0.0063106172731604016,
+                    Timestamp("2012-03-26 00:00:00"): 0.028071254132409934,
+                    Timestamp("2012-03-27 00:00:00"): 0.010620941822817809,
+                    Timestamp("2012-03-28 00:00:00"): 0.037773894681839615,
+                },
+                "ichimoku_distance_feat": {
+                    Timestamp("2012-03-19 00:00:00"): 0.0,
+                    Timestamp("2012-03-20 00:00:00"): 5.0,
+                    Timestamp("2012-03-21 00:00:00"): 6.0,
+                    Timestamp("2012-03-22 00:00:00"): 1.0,
+                    Timestamp("2012-03-23 00:00:00"): 5.0,
+                    Timestamp("2012-03-24 00:00:00"): 3.0,
+                    Timestamp("2012-03-25 00:00:00"): 2.0,
+                    Timestamp("2012-03-26 00:00:00"): 5.0,
+                    Timestamp("2012-03-27 00:00:00"): 4.0,
+                    Timestamp("2012-03-28 00:00:00"): 6.0,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(expected_df, self.test_df.iloc[:10, 8:])
+
+    def test_create_ichimoku_price_distance_feature_count(self) -> None:
+        feat_columns = self.test_df.columns[8:]
+        test_count = {}
+        for column in feat_columns:
+            test_count[column] = (
+                self.test_df[column].value_counts(bins=self.bins).to_dict()
+            )
+
+        expected_count = {
+            "ichimoku_distance": {
+                Interval(-0.0371, 0.0633, closed="right"): 3533,
+                Interval(-0.138, -0.0371, closed="right"): 404,
+                Interval(0.0633, 0.164, closed="right"): 304,
+                Interval(0.164, 0.264, closed="right"): 28,
+                Interval(-0.238, -0.138, closed="right"): 18,
+                Interval(0.264, 0.365, closed="right"): 5,
+                Interval(-0.338, -0.238, closed="right"): 3,
+                Interval(-0.441, -0.338, closed="right"): 2,
+                Interval(0.365, 0.465, closed="right"): 1,
+            },
+            "ichimoku_distance_feat": {
+                Interval(-0.009000000000000001, 0.889, closed="right"): 660,
+                Interval(7.111, 8.0, closed="right"): 555,
+                Interval(1.778, 2.667, closed="right"): 499,
+                Interval(0.889, 1.778, closed="right"): 478,
+                Interval(2.667, 3.556, closed="right"): 473,
+                Interval(3.556, 4.444, closed="right"): 472,
+                Interval(5.333, 6.222, closed="right"): 449,
+                Interval(4.444, 5.333, closed="right"): 433,
+                Interval(6.222, 7.111, closed="right"): 279,
+            },
+        }
+
+        assert_count_series(test_count, expected_count)
+
+
+class TestIchimokuPriceDistanceRatio(unittest.TestCase):
+    def setUp(self) -> None:
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc[:"2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        source = self.dataframe["close"].copy()
+
+        self.test_df = (
+            self.model_features.create_ichimoku_price_distance_feature(
+                source, 9, 26, 52, 26, method="ratio"
+            ).dropna()
+        )
+
+    def test_create_ichimoku_price_distance_feature_columns(self) -> None:
+        expected_columns = pd.Index(
+            [
+                "ichimoku_distance",
+                "ichimoku_distance_feat",
+            ]
+        )
+
+        pd.testing.assert_index_equal(
+            self.test_df.columns[8:], expected_columns
+        )
+
+    def test_create_ichimoku_price_distance_feature_values(self) -> None:
+        expected_df = pd.DataFrame(
+            {
+                "ichimoku_distance": {
+                    Timestamp("2012-03-19 00:00:00"): -0.026269209405665572,
+                    Timestamp("2012-03-20 00:00:00"): 0.04544921709536953,
+                    Timestamp("2012-03-21 00:00:00"): 0.08922139602230927,
+                    Timestamp("2012-03-22 00:00:00"): 0.04365014543304413,
+                    Timestamp("2012-03-23 00:00:00"): 0.027254212182929116,
+                    Timestamp("2012-03-24 00:00:00"): 0.06419104164035938,
+                    Timestamp("2012-03-25 00:00:00"): -0.0063106172731604016,
+                    Timestamp("2012-03-26 00:00:00"): 0.09558101085865156,
+                    Timestamp("2012-03-27 00:00:00"): 0.07698660454782258,
+                    Timestamp("2012-03-28 00:00:00"): 0.07232583191664832,
+                },
+                "ichimoku_distance_feat": {
+                    Timestamp("2012-03-19 00:00:00"): 1.0,
+                    Timestamp("2012-03-20 00:00:00"): 4.0,
+                    Timestamp("2012-03-21 00:00:00"): 6.0,
+                    Timestamp("2012-03-22 00:00:00"): 4.0,
+                    Timestamp("2012-03-23 00:00:00"): 8.0,
+                    Timestamp("2012-03-24 00:00:00"): 5.0,
+                    Timestamp("2012-03-25 00:00:00"): 2.0,
+                    Timestamp("2012-03-26 00:00:00"): 6.0,
+                    Timestamp("2012-03-27 00:00:00"): 6.0,
+                    Timestamp("2012-03-28 00:00:00"): 5.0,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(expected_df, self.test_df.iloc[:10, 8:])
+
+    def test_create_ichimoku_price_distance_feature_count(self) -> None:
+        feat_columns = self.test_df.columns[8:]
+        test_count = {}
+        for column in feat_columns:
+            test_count[column] = (
+                self.test_df[column].value_counts(bins=self.bins).to_dict()
+            )
+
+        expected_count = {
+            "ichimoku_distance": {
+                Interval(-0.0185, 0.0866, closed="right"): 2643,
+                Interval(-0.124, -0.0185, closed="right"): 1160,
+                Interval(0.0866, 0.192, closed="right"): 403,
+                Interval(-0.229, -0.124, closed="right"): 46,
+                Interval(0.192, 0.297, closed="right"): 33,
+                Interval(-0.334, -0.229, closed="right"): 6,
+                Interval(0.297, 0.402, closed="right"): 4,
+                Interval(-0.441, -0.334, closed="right"): 2,
+                Interval(0.402, 0.507, closed="right"): 1,
+            },
+            "ichimoku_distance_feat": {
+                Interval(-0.009000000000000001, 0.889, closed="right"): 783,
+                Interval(0.889, 1.778, closed="right"): 580,
+                Interval(2.667, 3.556, closed="right"): 528,
+                Interval(3.556, 4.444, closed="right"): 479,
+                Interval(1.778, 2.667, closed="right"): 475,
+                Interval(7.111, 8.0, closed="right"): 454,
+                Interval(4.444, 5.333, closed="right"): 418,
+                Interval(5.333, 6.222, closed="right"): 349,
+                Interval(6.222, 7.111, closed="right"): 232,
+            },
+        }
+
+        assert_count_series(test_count, expected_count)
+
+
+class TestIchimokuPriceDistanceDTW(unittest.TestCase):
+    def setUp(self) -> None:
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc[:"2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        source = self.dataframe["close"].copy()
+
+        self.test_df = (
+            self.model_features.create_ichimoku_price_distance_feature(
+                source, 9, 26, 52, 26, method="dtw"
+            ).dropna()
+        )
+
+    def test_create_ichimoku_price_distance_feature_columns(self) -> None:
+        expected_columns = pd.Index(
+            [
+                "ichimoku_distance",
+                "ichimoku_distance_feat",
+            ]
+        )
+
+        pd.testing.assert_index_equal(
+            self.test_df.columns[8:], expected_columns
+        )
+
+    def test_create_ichimoku_price_distance_feature_values(self) -> None:
+        expected_df = pd.DataFrame(
+            {
+                "ichimoku_distance": {
+                    Timestamp("2012-03-08 00:00:00"): 0.05504420687066988,
+                    Timestamp("2012-03-09 00:00:00"): 0.025689675683105345,
+                    Timestamp("2012-03-13 00:00:00"): 0.12865211792248468,
+                    Timestamp("2012-03-15 00:00:00"): 0.08929826790746412,
+                    Timestamp("2012-03-16 00:00:00"): 0.026067536925923368,
+                    Timestamp("2012-03-17 00:00:00"): 0.08060452628094641,
+                    Timestamp("2012-03-18 00:00:00"): 0.0123029513856443,
+                    Timestamp("2012-03-19 00:00:00"): -0.06518169229699075,
+                    Timestamp("2012-03-20 00:00:00"): 0.04544921709536953,
+                    Timestamp("2012-03-21 00:00:00"): 0.08922139602230927,
+                },
+                "ichimoku_distance_feat": {
+                    Timestamp("2012-03-08 00:00:00"): 8.0,
+                    Timestamp("2012-03-09 00:00:00"): 5.0,
+                    Timestamp("2012-03-13 00:00:00"): 7.0,
+                    Timestamp("2012-03-15 00:00:00"): 6.0,
+                    Timestamp("2012-03-16 00:00:00"): 5.0,
+                    Timestamp("2012-03-17 00:00:00"): 6.0,
+                    Timestamp("2012-03-18 00:00:00"): 4.0,
+                    Timestamp("2012-03-19 00:00:00"): 0.0,
+                    Timestamp("2012-03-20 00:00:00"): 8.0,
+                    Timestamp("2012-03-21 00:00:00"): 6.0,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(expected_df, self.test_df.iloc[:10, 8:])
+
+    def test_create_ichimoku_price_distance_feature_count(self) -> None:
+        feat_columns = self.test_df.columns[8:]
+        test_count = {}
+        for column in feat_columns:
+            test_count[column] = (
+                self.test_df[column].value_counts(bins=self.bins).to_dict()
+            )
+
+        expected_count = {
+            "ichimoku_distance": {
+                Interval(-0.0185, 0.0866, closed="right"): 2902,
+                Interval(-0.124, -0.0185, closed="right"): 1027,
+                Interval(0.0866, 0.192, closed="right"): 297,
+                Interval(-0.229, -0.124, closed="right"): 46,
+                Interval(0.192, 0.297, closed="right"): 21,
+                Interval(-0.334, -0.229, closed="right"): 6,
+                Interval(0.297, 0.402, closed="right"): 3,
+                Interval(-0.441, -0.334, closed="right"): 2,
+                Interval(0.402, 0.507, closed="right"): 1,
+            },
+            "ichimoku_distance_feat": {
+                Interval(-0.009000000000000001, 0.889, closed="right"): 664,
+                Interval(0.889, 1.778, closed="right"): 613,
+                Interval(1.778, 2.667, closed="right"): 530,
+                Interval(3.556, 4.444, closed="right"): 523,
+                Interval(2.667, 3.556, closed="right"): 512,
+                Interval(7.111, 8.0, closed="right"): 494,
+                Interval(4.444, 5.333, closed="right"): 417,
+                Interval(5.333, 6.222, closed="right"): 299,
+                Interval(6.222, 7.111, closed="right"): 253,
+            },
+        }
+
+        assert_count_series(test_count, expected_count)
+
+
+class TestIchimokuPriceDistanceNegativeCases(unittest.TestCase):
+    def setUp(self) -> None:
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc[:"2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+    def test_create_ichimoku_price_distance_invalid_method(self) -> None:
+        source = self.dataframe["close"].copy()
+
+        self.assertRaises(
+            ValueError,
+            self.model_features.create_ichimoku_price_distance_feature,
+            source,
+            9,
+            26,
+            52,
+            26,
+            method="invalid",
+        )
+
+    def test_create_ichimoku_price_distance_invalid_based_on(self) -> None:
+        source = self.dataframe["close"].copy()
+
+        self.assertRaises(
+            ValueError,
+            self.model_features.create_ichimoku_price_distance_feature,
+            source,
+            9,
+            26,
+            52,
+            26,
+            based_on="invalid",
+        )
