@@ -39,7 +39,7 @@ def assert_count_series(
     pd.testing.assert_series_equal(test_count_concat, expected_count_concat)
 
 
-class AssertCountTests(unittest.TestCase):
+class TestAssertCount(unittest.TestCase):
     def setUp(self) -> None:
         self.test_count = {
             "count": {
