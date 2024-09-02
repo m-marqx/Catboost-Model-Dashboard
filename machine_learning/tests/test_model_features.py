@@ -1109,7 +1109,7 @@ class ModelFeaturesTests(unittest.TestCase):
             test_count_concat, expected_count_concat
         )
 
-    #test all moving averages without `all` keyword
+    # test all moving averages without `all` keyword
     def test_create_dtw_distance_feature_all_mas(self):
         source = self.dataframe["close"]
 
@@ -1440,9 +1440,7 @@ class ModelFeaturesTests(unittest.TestCase):
             self.dataframe.copy(), self.test_index, self.bins, False
         )
 
-        test_df = model_features.create_dtw_distance_feature(
-            source, "", 14
-        )
+        test_df = model_features.create_dtw_distance_feature(source, "", 14)
 
         pd.testing.assert_frame_equal(test_df, expected_df)
 
@@ -2228,6 +2226,7 @@ class TestDidiIndexOPT(unittest.TestCase):
 
         assert_count_series(test_count, expected_count)
 
+
 class TestMacd(unittest.TestCase):
     def setUp(self):
         btc_data = pd.read_parquet(r"data\assets\btc.parquet")
@@ -2255,9 +2254,7 @@ class TestMacd(unittest.TestCase):
 
         source = self.dataframe["close"]
 
-        self.test_df = self.model_features.create_macd_feature(
-            source
-        ).dropna()
+        self.test_df = self.model_features.create_macd_feature(source).dropna()
 
     def test_create_macd_feature_columns(self) -> None:
         expected_columns = pd.Index(
@@ -2340,6 +2337,7 @@ class TestMacd(unittest.TestCase):
         }
 
         assert_count_series(test_count, expected_count)
+
 
 class TestMacdOPT(unittest.TestCase):
     def setUp(self) -> None:
@@ -2454,6 +2452,17 @@ class TestMacdOPT(unittest.TestCase):
 
         assert_count_series(test_count, expected_count)
 
+    def test_create_macd_opt_feature_invalid_ma_method(self):
+        self.assertRaises(
+            ValueError,
+            self.model_features.create_macd_opt_feature,
+            self.dataframe["close"],
+            12,
+            26,
+            9,
+            "invalid",
+        )
+
 
 class TestTrix(unittest.TestCase):
     def setUp(self) -> None:
@@ -2482,9 +2491,7 @@ class TestTrix(unittest.TestCase):
 
         source = self.dataframe["close"]
 
-        self.test_df = self.model_features.create_trix_feature(
-            source
-        ).dropna()
+        self.test_df = self.model_features.create_trix_feature(source).dropna()
 
     def test_create_trix_feature_columns(self) -> None:
         expected_columns = pd.Index(
@@ -2597,7 +2604,7 @@ class TestTrixOPT(unittest.TestCase):
         source = self.dataframe["close"]
 
         with warnings.catch_warnings():
-            warnings.simplefilter(action='ignore', category=RuntimeWarning)
+            warnings.simplefilter(action="ignore", category=RuntimeWarning)
 
             self.test_df = self.model_features.create_trix_opt_feature(
                 source, 3, 2, "sma"
@@ -2685,6 +2692,7 @@ class TestTrixOPT(unittest.TestCase):
 
         assert_count_series(test_count, expected_count)
 
+
 class TestSMIO(unittest.TestCase):
     def setUp(self):
         btc_data = pd.read_parquet(r"data\assets\btc.parquet")
@@ -2712,9 +2720,7 @@ class TestSMIO(unittest.TestCase):
 
         source = self.dataframe["close"]
 
-        self.test_df = self.model_features.create_smio_feature(
-            source
-        ).dropna()
+        self.test_df = self.model_features.create_smio_feature(source).dropna()
 
     def test_create_smio_feature_columns(self) -> None:
         expected_columns = pd.Index(
@@ -2766,7 +2772,9 @@ class TestSMIO(unittest.TestCase):
         feat_columns = self.test_df.columns[8:]
         test_count = {}
         for column in feat_columns:
-            test_count[column] =  self.test_df[column].value_counts(bins=self.bins).to_dict()
+            test_count[column] = (
+                self.test_df[column].value_counts(bins=self.bins).to_dict()
+            )
 
         expected_count = {
             "SMIO": {
@@ -2794,6 +2802,7 @@ class TestSMIO(unittest.TestCase):
         }
 
         assert_count_series(test_count, expected_count)
+
 
 class TestSMIOOPT(unittest.TestCase):
     def setUp(self) -> None:
@@ -2876,7 +2885,9 @@ class TestSMIOOPT(unittest.TestCase):
         feat_columns = self.test_df.columns[8:]
         test_count = {}
         for column in feat_columns:
-            test_count[column] =  self.test_df[column].value_counts(bins=self.bins).to_dict()
+            test_count[column] = (
+                self.test_df[column].value_counts(bins=self.bins).to_dict()
+            )
 
         expected_count = {
             "SMIO": {
@@ -2905,6 +2916,7 @@ class TestSMIOOPT(unittest.TestCase):
 
         assert_count_series(test_count, expected_count)
 
+
 class TestTSI(unittest.TestCase):
     def setUp(self):
         btc_data = pd.read_parquet(r"data\assets\btc.parquet")
@@ -2932,9 +2944,7 @@ class TestTSI(unittest.TestCase):
 
         source = self.dataframe["close"]
 
-        self.test_df = self.model_features.create_tsi_feature(
-            source
-        ).dropna()
+        self.test_df = self.model_features.create_tsi_feature(source).dropna()
 
     def test_create_tsi_feature_columns(self) -> None:
         expected_columns = pd.Index(
@@ -2986,7 +2996,9 @@ class TestTSI(unittest.TestCase):
         feat_columns = self.test_df.columns[8:]
         test_count = {}
         for column in feat_columns:
-            test_count[column] =  self.test_df[column].value_counts(bins=self.bins).to_dict()
+            test_count[column] = (
+                self.test_df[column].value_counts(bins=self.bins).to_dict()
+            )
 
         expected_count = {
             "TSI": {
@@ -3014,6 +3026,7 @@ class TestTSI(unittest.TestCase):
         }
 
         assert_count_series(test_count, expected_count)
+
 
 class TestTSIOPT(unittest.TestCase):
     def setUp(self) -> None:
@@ -3096,7 +3109,9 @@ class TestTSIOPT(unittest.TestCase):
         feat_columns = self.test_df.columns[8:]
         test_count = {}
         for column in feat_columns:
-            test_count[column] =  self.test_df[column].value_counts(bins=self.bins).to_dict()
+            test_count[column] = (
+                self.test_df[column].value_counts(bins=self.bins).to_dict()
+            )
 
         expected_count = {
             "TSI": {
@@ -3124,6 +3139,7 @@ class TestTSIOPT(unittest.TestCase):
         }
 
         assert_count_series(test_count, expected_count)
+
 
 class TestBBTrend(unittest.TestCase):
     def setUp(self) -> None:
@@ -3206,7 +3222,9 @@ class TestBBTrend(unittest.TestCase):
         feat_columns = self.test_df.columns[8:]
         test_count = {}
         for column in feat_columns:
-            test_count[column] =  self.test_df[column].value_counts(bins=self.bins).to_dict()
+            test_count[column] = (
+                self.test_df[column].value_counts(bins=self.bins).to_dict()
+            )
 
         expected_count = {
             "bb_trend": {
@@ -3234,6 +3252,7 @@ class TestBBTrend(unittest.TestCase):
         }
 
         assert_count_series(test_count, expected_count)
+
 
 class TestBBTrendOPT(unittest.TestCase):
     def setUp(self) -> None:
