@@ -129,8 +129,97 @@ class TestAssertCount(unittest.TestCase):
         self.assertRaises(
             AssertionError,
             assert_count_series,
-            self.test_count, expected_count
+            self.test_count,
+            expected_count,
         )
+
+
+class TestFeatureBinning(unittest.TestCase):
+    def setUp(self):
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc[:"2023"]
+        self.test_index = 1030
+        self.bins = 9
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        source = self.dataframe["close"].copy()
+
+        self.test_df = feature_binning(
+            source,
+            self.test_index,
+            10,
+        )
+
+    def test_feature_binning_name(self):
+        self.assertEqual(self.test_df.name, "close")
+
+    def test_feature_binning_source_has_inf(self):
+        source = pd.Series([1, 2, 3, np.inf, 5, 6, 7, 8, 9, 10])
+
+        self.assertRaises(
+            ValueError,
+            feature_binning,
+            source,
+            3,
+            0,
+        )
+
+    def test_feature_binning_values(self):
+        expected_df = pd.Series(
+            {
+                Timestamp("2012-01-02 00:00:00"): 0,
+                Timestamp("2012-01-03 00:00:00"): 1,
+                Timestamp("2012-01-04 00:00:00"): 1,
+                Timestamp("2012-01-05 00:00:00"): 1,
+                Timestamp("2012-01-06 00:00:00"): 1,
+                Timestamp("2012-01-07 00:00:00"): 1,
+                Timestamp("2012-01-08 00:00:00"): 1,
+                Timestamp("2012-01-09 00:00:00"): 1,
+                Timestamp("2012-01-10 00:00:00"): 1,
+                Timestamp("2012-01-11 00:00:00"): 1,
+                Timestamp("2012-01-12 00:00:00"): 1,
+                Timestamp("2012-01-13 00:00:00"): 1,
+                Timestamp("2012-01-14 00:00:00"): 1,
+                Timestamp("2012-01-15 00:00:00"): 1,
+                Timestamp("2012-01-16 00:00:00"): 1,
+                Timestamp("2012-01-17 00:00:00"): 1,
+                Timestamp("2012-01-18 00:00:00"): 1,
+                Timestamp("2012-01-19 00:00:00"): 1,
+                Timestamp("2012-01-20 00:00:00"): 1,
+                Timestamp("2012-01-21 00:00:00"): 1,
+            },
+            name="close",
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_series_equal(expected_df, self.test_df.iloc[:20])
+
+    def test_feature_binning_counts(self):
+        test_count = {
+            "close": self.test_df.value_counts(bins=self.bins).to_dict()
+        }
+
+        expected_count = {
+            "close": {
+                Interval(8.0, 9.0, closed="right"): 2778,
+                Interval(5.0, 6.0, closed="right"): 550,
+                Interval(6.0, 7.0, closed="right"): 240,
+                Interval(-0.009999999999999998, 1.0, closed="right"): 206,
+                Interval(7.0, 8.0, closed="right"): 196,
+                Interval(1.0, 2.0, closed="right"): 103,
+                Interval(2.0, 3.0, closed="right"): 103,
+                Interval(3.0, 4.0, closed="right"): 103,
+                Interval(4.0, 5.0, closed="right"): 103,
+            }
+        }
+
+        assert_count_series(test_count, expected_count)
+
+
 
 
 class ModelFeaturesTests(unittest.TestCase):
