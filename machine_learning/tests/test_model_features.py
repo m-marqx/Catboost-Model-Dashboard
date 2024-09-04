@@ -608,6 +608,157 @@ class TestSlowStoch(unittest.TestCase):
         assert_count_series(test_count, expected_count)
 
 
+class TestSlowStochOpt(unittest.TestCase):
+    def setUp(self):
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe = btc_data.copy().loc[:"2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        self.test_df = self.model_features.create_slow_stoch_opt_feature(
+            "close"
+        ).dropna()
+
+    def test_create_slow_stoch_opt_feature_columns(self):
+        expected_columns = pd.Index(
+            ["stoch_k", "stoch_k_feat", "stoch_d", "stoch_d_feat"]
+        )
+        pd.testing.assert_index_equal(
+            self.test_df.columns[8:], expected_columns
+        )
+
+    def test_create_slow_stoch_opt_feature_values(self):
+        expected_df = pd.DataFrame(
+            {
+                "stoch_k": {
+                    Timestamp("2012-01-19 00:00:00"): 4.2702608334987495,
+                    Timestamp("2012-01-20 00:00:00"): -4.419989919970305,
+                    Timestamp("2012-01-21 00:00:00"): -20.909071486698963,
+                    Timestamp("2012-01-22 00:00:00"): -6.0826389779489825,
+                    Timestamp("2012-01-23 00:00:00"): 9.504123403045133,
+                    Timestamp("2012-01-24 00:00:00"): -9.123958466923778,
+                    Timestamp("2012-01-25 00:00:00"): 7.983463658558309,
+                    Timestamp("2012-01-26 00:00:00"): 20.909071486699013,
+                    Timestamp("2012-01-27 00:00:00"): 13.870913475273927,
+                    Timestamp("2012-01-28 00:00:00"): -23.42950827215129,
+                },
+                "stoch_k_feat": {
+                    Timestamp("2012-01-19 00:00:00"): 8.0,
+                    Timestamp("2012-01-20 00:00:00"): 2.0,
+                    Timestamp("2012-01-21 00:00:00"): 0.0,
+                    Timestamp("2012-01-22 00:00:00"): 1.0,
+                    Timestamp("2012-01-23 00:00:00"): 7.0,
+                    Timestamp("2012-01-24 00:00:00"): 0.0,
+                    Timestamp("2012-01-25 00:00:00"): 6.0,
+                    Timestamp("2012-01-26 00:00:00"): 7.0,
+                    Timestamp("2012-01-27 00:00:00"): 7.0,
+                    Timestamp("2012-01-28 00:00:00"): 0.0,
+                },
+                "stoch_d": {
+                    Timestamp("2012-01-19 00:00:00"): 10.242985064405225,
+                    Timestamp("2012-01-20 00:00:00"): -4.178710910106136,
+                    Timestamp("2012-01-21 00:00:00"): -4.072940244409965,
+                    Timestamp("2012-01-22 00:00:00"): 3.468814196259942,
+                    Timestamp("2012-01-23 00:00:00"): -1.7741030352350586,
+                    Timestamp("2012-01-24 00:00:00"): -2.6611545528526257,
+                    Timestamp("2012-01-25 00:00:00"): 3.2947627797222516,
+                    Timestamp("2012-01-26 00:00:00"): 6.589525559444504,
+                    Timestamp("2012-01-27 00:00:00"): -11.089846201276814,
+                    Timestamp("2012-01-28 00:00:00"): 0.6188555577068462,
+                },
+                "stoch_d_feat": {
+                    Timestamp("2012-01-19 00:00:00"): 7.0,
+                    Timestamp("2012-01-20 00:00:00"): 0.0,
+                    Timestamp("2012-01-21 00:00:00"): 0.0,
+                    Timestamp("2012-01-22 00:00:00"): 8.0,
+                    Timestamp("2012-01-23 00:00:00"): 2.0,
+                    Timestamp("2012-01-24 00:00:00"): 1.0,
+                    Timestamp("2012-01-25 00:00:00"): 8.0,
+                    Timestamp("2012-01-26 00:00:00"): 7.0,
+                    Timestamp("2012-01-27 00:00:00"): 0.0,
+                    Timestamp("2012-01-28 00:00:00"): 5.0,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(self.test_df.iloc[:10, 8:], expected_df)
+
+    def test_create_slow_stoch_opt_feature_count(self):
+        test_count = {}
+
+        for column in ["stoch_k", "stoch_k_feat", "stoch_d", "stoch_d_feat"]:
+            test_count[column] = (
+                self.test_df[column].value_counts(bins=self.bins).to_dict()
+            )
+
+        expected_count = {
+            "stoch_k": {
+                Interval(-2.929, 9.003, closed="right"): 2320,
+                Interval(-14.862, -2.929, closed="right"): 1194,
+                Interval(9.003, 20.935, closed="right"): 500,
+                Interval(-26.794, -14.862, closed="right"): 197,
+                Interval(20.935, 32.867, closed="right"): 82,
+                Interval(-38.726, -26.794, closed="right"): 38,
+                Interval(32.867, 44.8, closed="right"): 17,
+                Interval(-50.766999999999996, -38.726, closed="right"): 7,
+                Interval(44.8, 56.732, closed="right"): 3,
+            },
+            "stoch_k_feat": {
+                Interval(-0.009000000000000001, 0.889, closed="right"): 588,
+                Interval(6.222, 7.111, closed="right"): 575,
+                Interval(0.889, 1.778, closed="right"): 511,
+                Interval(5.333, 6.222, closed="right"): 508,
+                Interval(1.778, 2.667, closed="right"): 459,
+                Interval(7.111, 8.0, closed="right"): 455,
+                Interval(2.667, 3.556, closed="right"): 431,
+                Interval(3.556, 4.444, closed="right"): 420,
+                Interval(4.444, 5.333, closed="right"): 411,
+            },
+            "stoch_d": {
+                Interval(-2.932, 1.22, closed="right"): 2093,
+                Interval(1.22, 5.372, closed="right"): 1139,
+                Interval(-7.085, -2.932, closed="right"): 631,
+                Interval(5.372, 9.525, closed="right"): 264,
+                Interval(-11.237, -7.085, closed="right"): 141,
+                Interval(9.525, 13.677, closed="right"): 55,
+                Interval(-15.39, -11.237, closed="right"): 23,
+                Interval(13.677, 17.83, closed="right"): 9,
+                Interval(-19.581, -15.39, closed="right"): 3,
+            },
+            "stoch_d_feat": {
+                Interval(6.222, 7.111, closed="right"): 582,
+                Interval(-0.009000000000000001, 0.889, closed="right"): 525,
+                Interval(0.889, 1.778, closed="right"): 516,
+                Interval(1.778, 2.667, closed="right"): 505,
+                Interval(7.111, 8.0, closed="right"): 474,
+                Interval(2.667, 3.556, closed="right"): 473,
+                Interval(3.556, 4.444, closed="right"): 437,
+                Interval(5.333, 6.222, closed="right"): 428,
+                Interval(4.444, 5.333, closed="right"): 418,
+            },
+        }
+
+        assert_count_series(test_count, expected_count)
 
 
 class ModelFeaturesTests(unittest.TestCase):
