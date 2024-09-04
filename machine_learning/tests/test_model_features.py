@@ -220,6 +220,123 @@ class TestFeatureBinning(unittest.TestCase):
         assert_count_series(test_count, expected_count)
 
 
+class TestRSI(unittest.TestCase):
+    def setUp(self):
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe = btc_data.copy().loc[:"2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        source = self.dataframe["close"]
+        length = 14
+        ma_method = "ema"
+
+        self.test_df = self.model_features.create_rsi_feature(
+            source, length, ma_method
+        ).dropna()[["RSI", "RSI_feat"]]
+
+    def test_create_rsi_feature_columns(self):
+        expected_columns = pd.Index(["RSI", "RSI_feat"])
+
+        pd.testing.assert_index_equal(self.test_df.columns, expected_columns)
+
+    def test_create_rsi_feature_values(self):
+        expected_df = pd.DataFrame(
+            {
+                "RSI": {
+                    Timestamp("2012-01-16 00:00:00"): 65.53254437869822,
+                    Timestamp("2012-01-17 00:00:00"): 48.525446579036064,
+                    Timestamp("2012-01-18 00:00:00"): 60.38736258255023,
+                    Timestamp("2012-01-19 00:00:00"): 49.79513979849982,
+                    Timestamp("2012-01-20 00:00:00"): 57.012399646774654,
+                    Timestamp("2012-01-21 00:00:00"): 54.77221193135472,
+                    Timestamp("2012-01-22 00:00:00"): 54.99890776717075,
+                    Timestamp("2012-01-23 00:00:00"): 51.015778613199274,
+                    Timestamp("2012-01-24 00:00:00"): 51.46640660824145,
+                    Timestamp("2012-01-25 00:00:00"): 47.43806049658012,
+                },
+                "RSI_feat": {
+                    Timestamp("2012-01-16 00:00:00"): 5.0,
+                    Timestamp("2012-01-17 00:00:00"): 3.0,
+                    Timestamp("2012-01-18 00:00:00"): 4.0,
+                    Timestamp("2012-01-19 00:00:00"): 3.0,
+                    Timestamp("2012-01-20 00:00:00"): 4.0,
+                    Timestamp("2012-01-21 00:00:00"): 8.0,
+                    Timestamp("2012-01-22 00:00:00"): 8.0,
+                    Timestamp("2012-01-23 00:00:00"): 3.0,
+                    Timestamp("2012-01-24 00:00:00"): 8.0,
+                    Timestamp("2012-01-25 00:00:00"): 3.0,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(self.test_df.head(10), expected_df)
+
+    def test_create_rsi_feature_counts(self):
+        feat_columns = self.test_df.columns
+        test_count = {}
+
+        for column in feat_columns:
+            test_count[column] = (
+                self.test_df[column].value_counts(bins=self.bins).to_dict()
+            )
+
+        test_count = {}
+        test_count["RSI"] = self.test_df["RSI"].value_counts(bins=10).to_dict()
+        test_count["RSI_feat"] = (
+            self.test_df["RSI_feat"].value_counts(bins=10).to_dict()
+        )
+
+        expected_count = {
+            "RSI": {
+                Interval(42.538, 51.888, closed="right"): 918,
+                Interval(51.888, 61.237, closed="right"): 751,
+                Interval(33.189, 42.538, closed="right"): 700,
+                Interval(61.237, 70.586, closed="right"): 576,
+                Interval(70.586, 79.936, closed="right"): 433,
+                Interval(23.84, 33.189, closed="right"): 345,
+                Interval(79.936, 89.285, closed="right"): 322,
+                Interval(89.285, 98.634, closed="right"): 147,
+                Interval(14.49, 23.84, closed="right"): 126,
+                Interval(5.045999999999999, 14.49, closed="right"): 43,
+            },
+            "RSI_feat": {
+                Interval(0.8, 1.6, closed="right"): 637,
+                Interval(3.2, 4.0, closed="right"): 559,
+                Interval(4.8, 5.6, closed="right"): 550,
+                Interval(-0.009000000000000001, 0.8, closed="right"): 507,
+                Interval(7.2, 8.0, closed="right"): 474,
+                Interval(2.4, 3.2, closed="right"): 456,
+                Interval(1.6, 2.4, closed="right"): 455,
+                Interval(5.6, 6.4, closed="right"): 450,
+                Interval(6.4, 7.2, closed="right"): 273,
+                Interval(4.0, 4.8, closed="right"): 0,
+            },
+        }
+
+        assert_count_series(test_count, expected_count)
+
+
 
 
 class ModelFeaturesTests(unittest.TestCase):
