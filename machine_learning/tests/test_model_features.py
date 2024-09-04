@@ -1078,6 +1078,53 @@ class TestDTW(unittest.TestCase):
         assert_count_series(test_count, expected_count)
 
 
+class TestDTWNegativeCase(unittest.TestCase):
+    def setUp(self):
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc["2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 100
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+    def test_create_dtw_distance_feature_empty_mas(self):
+        expected_df = self.dataframe.copy()
+        source = self.dataframe["close"]
+
+        test_df = self.model_features.create_dtw_distance_feature(
+            source, "", 14
+        )
+        pd.testing.assert_frame_equal(test_df, expected_df)
+
+    def test_create_dtw_distance_feature_invalid_mas(self):
+        self.assertRaises(
+            AttributeError,
+            self.model_features.create_dtw_distance_feature,
+            self.dataframe["close"],
+            "invalid",
+            14,
+        )
+
 class ModelFeaturesTests(unittest.TestCase):
     def setUp(self):
         btc_data = pd.read_parquet(r"data\assets\btc.parquet")
