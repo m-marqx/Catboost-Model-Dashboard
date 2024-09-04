@@ -2406,24 +2406,8 @@ class TestDTWDistanceOpt(unittest.TestCase):
             },
         }
 
-        for test_count in [test_count_all, test_count_mas]:
-            test_count_series: dict[str, pd.Series] = {}
-
-            for key, value in zip(test_count.keys(), test_count.values()):
-                test_count_series[key] = pd.Series(value)
-
-            test_count_concat: pd.Series = pd.concat(test_count_series)
-
-            expected_count_series: dict[str, pd.Series] = {}
-
-            for key, value in zip(test_count.keys(), expected_count.values()):
-                expected_count_series[key] = pd.Series(value)
-
-            expected_count_concat: pd.Series = pd.concat(expected_count_series)
-
-            pd.testing.assert_series_equal(
-                test_count_concat, expected_count_concat
-            )
+        assert_count_series(test_count_all, expected_count)
+        assert_count_series(test_count_mas, expected_count)
 
 
 class TestCCI(unittest.TestCase):
