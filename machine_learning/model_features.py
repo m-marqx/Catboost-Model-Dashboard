@@ -897,7 +897,16 @@ class ModelFeatures:
         self.logger.info("Calculating TRIX...")
         start = time.perf_counter()
 
-        self.dataset["TRIX"] = ta.TRIX(source, length, signal_length, method)
+        if self.normalize:
+            source = source.copy().pct_change().rolling(2).std().iloc[2:]
+            self.dataset["TRIX"] = (
+                ta.TRIX(source, length, signal_length, method)
+                .rolling(2)
+                .std()
+                .diff()
+            )
+        else:
+            self.dataset["TRIX"] = ta.TRIX(source, length, signal_length, method)
 
         self.dataset.loc[:, "TRIX_feat"] = feature_binning(
             self.dataset["TRIX"],
