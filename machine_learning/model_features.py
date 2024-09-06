@@ -374,8 +374,8 @@ class ModelFeatures:
         """
         Create the DTW distance feature.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         source : pd.Series
             The source series for calculating the DTW distance.
         feats : Literal["sma", "ema", "dema", "tema", "rma", "all"]
@@ -384,11 +384,14 @@ class ModelFeatures:
         length : int
             The length of the moving average calculation.
 
-        Returns:
-        --------
+        Returns
+        -------
         pd.DataFrame
             The dataset with the DTW distance features added.
         """
+        if self.normalize:
+            source = source.copy().pct_change().rolling(2).std().iloc[2:]
+
         if feats == "all":
             feats = ["sma", "ema", "rma", "dema", "tema"]
 
@@ -406,15 +409,24 @@ class ModelFeatures:
                 dtw_distance_params.append(3)
                 ma = "sema"
 
+            self.logger.info("Calculating DTW distance for %s...", MA)
             start = time.perf_counter()
             method = getattr(ta, ma)
             moving_average = method(*dtw_distance_params)
 
-
-            self.dataset[f"{MA}_DTW"] = (
-                DynamicTimeWarping(source, moving_average)
-                .calculate_dtw_distance("absolute", True)
-            )
+            if self.normalize:
+                self.dataset[f"{MA}_DTW"] = (
+                    DynamicTimeWarping(source.dropna(), moving_average)
+                    .calculate_dtw_distance("ratio", True)
+                    .rolling(2)
+                    .std()
+                    .diff()
+                )
+            else:
+                self.dataset[f"{MA}_DTW"] = (
+                    DynamicTimeWarping(source, moving_average)
+                    .calculate_dtw_distance("absolute", True)
+                )
 
             self.dataset.loc[:, f"{MA}_DTW_feat"] = feature_binning(
                 self.dataset[f"{MA}_DTW"],
