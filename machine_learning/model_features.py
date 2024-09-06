@@ -1115,6 +1115,9 @@ class ModelFeatures:
             ma_method=ma_type,
         )
 
+        if self.normalize:
+            self.dataset["TSI"] = self.dataset["TSI"].rolling(2).std().diff()
+
         self.dataset.loc[:, "TSI_feat"] = feature_binning(
             self.dataset["TSI"],
             self.test_index,
