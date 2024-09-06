@@ -1010,6 +1010,9 @@ class ModelFeatures:
             ma_method=ma_type,
         )
 
+        if self.normalize:
+            self.dataset["SMIO"] = self.dataset["SMIO"].rolling(2).std().diff()
+
         self.dataset.loc[:, "SMIO_feat"] = feature_binning(
             self.dataset["SMIO"],
             self.test_index,
