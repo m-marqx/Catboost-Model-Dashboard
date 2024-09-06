@@ -183,6 +183,9 @@ class ModelFeatures:
         start = time.perf_counter()
 
         self.dataset["RSI"] = ta.RSI(source, length, ma_method)
+        if self.normalize:
+            self.dataset["RSI"] = self.dataset["RSI"].rolling(2).std().diff()
+
         self.dataset.loc[:, "RSI_feat"] = feature_binning(
             self.dataset["RSI"],
             self.test_index,
