@@ -604,21 +604,35 @@ class ModelFeatures:
         self.logger.info("Calculating new DIDI index...")
         start = time.perf_counter()
 
-        is_dtw_distance = False
+        if self.normalize:
+            source = source.copy().pct_change().rolling(2).std().iloc[2:]
 
-        if method == "dtw":
-            method = "absolute"
-            is_dtw_distance = True
+            self.dataset["DIDI"] = ta.didi_index(
+                source,
+                short_length,
+                medium_length,
+                long_length,
+                ma_type,
+                'ratio',
+                False,
+            ).rolling(2).std().diff()
+        else:
+            is_dtw_distance = False
 
-        self.dataset["DIDI"] = ta.didi_index(
-            source,
-            short_length,
-            medium_length,
-            long_length,
-            ma_type,
-            method,
-            is_dtw_distance,
-        )
+            if method == "dtw":
+                method = "absolute"
+                is_dtw_distance = True
+
+            self.dataset["DIDI"] = ta.didi_index(
+                source,
+                short_length,
+                medium_length,
+                long_length,
+                ma_type,
+                method,
+                is_dtw_distance,
+            )
+
 
         self.dataset.loc[:, "DIDI_feat"] = feature_binning(
             self.dataset["DIDI"],
