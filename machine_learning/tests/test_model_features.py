@@ -4269,3 +4269,37 @@ class TestIchimokuPriceDistanceNegativeCases(unittest.TestCase):
             26,
             based_on="invalid",
         )
+
+
+class TestAttributeSetters(unittest.TestCase):
+    def setUp(self) -> None:
+        btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+        self.dataframe: pd.DataFrame = btc_data.copy().loc["2023"]
+        self.dataframe["Return"] = self.dataframe["close"].pct_change(7) + 1
+        self.dataframe["Target"] = self.dataframe["Return"].shift(-7)
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"] > 1, 1, -1
+        )
+
+        self.dataframe["Target_bin"] = np.where(
+            self.dataframe["Target"].isna(),
+            np.nan,
+            self.dataframe["Target_bin"],
+        )
+
+        self.test_index = 1030
+        self.bins = 9
+
+        self.target = self.dataframe["Target_bin"].copy()
+
+        self.model_features = ModelFeatures(
+            self.dataframe, self.test_index, self.bins, False
+        )
+
+    def test_set_bins_value(self) -> None:
+        self.model_features.set_bins(10)
+        self.assertEqual(self.model_features.bins, 10)
+
+    def test_set_bins_return(self) -> None:
+        self.assertEqual(self.model_features.set_bins(10), self.model_features)
+
