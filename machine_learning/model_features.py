@@ -275,7 +275,12 @@ class ModelFeatures:
             )
         )
 
+        if self.normalize:
+            stoch_k = stoch_k.rolling(2).std().diff()
+            stoch_d = stoch_d.rolling(2).std().diff()
+
         self.dataset["stoch_k"] = stoch_k
+
         self.dataset.loc[:, "stoch_k_feat"] = feature_binning(
             self.dataset["stoch_k"],
             self.test_index,
