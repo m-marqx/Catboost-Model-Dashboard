@@ -1428,6 +1428,9 @@ class ModelFeatures:
         self.logger.info("Calculating BB Trend...")
         start = time.perf_counter()
 
+        if self.normalize:
+            source = source.copy().pct_change().rolling(2).std().iloc[2:]
+
         self.dataset["bb_trend"] = ta.bollinger_trends(
             source=source,
             short_length=short_length,
@@ -1438,6 +1441,14 @@ class ModelFeatures:
             diff_method=diff_method,
             based_on=based_on,
         )
+
+        if self.normalize:
+            self.dataset["bb_trend"] = (
+                self.dataset["bb_trend"]
+                .rolling(2)
+                .std()
+                .diff()
+            )
 
         self.dataset.loc[:, "bb_trend_feat"] = feature_binning(
             self.dataset["bb_trend"],
