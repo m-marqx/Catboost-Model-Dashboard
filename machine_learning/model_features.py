@@ -1,4 +1,5 @@
 from typing import Literal
+import warnings
 import logging
 import time
 
@@ -719,16 +720,19 @@ class ModelFeatures:
         """
         Create the MACD index feature.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         source : pd.Series
             The source series for calculating the MACD index.
         short_length : int, optional
-            The length of the short EMA. (default: 12)
+            The length of the short EMA.
+            (default: 12)
         long_length : int, optional
-            The length of the long EMA. (default: 26)
+            The length of the long EMA.
+            (default: 26)
         signal_length : int, optional
-            The length of the signal line. (default: 9)
+            The length of the signal line.
+            (default: 9)
         diff_method : Literal['absolute', 'ratio', 'dtw'], optional
             The method to use for calculating the MACD index.
             (default: 'absolute')
@@ -742,23 +746,42 @@ class ModelFeatures:
             The column to return from the MACD calculation.
             (default: 'histogram')
 
-        Returns:
-        --------
+        Returns
+        -------
         pd.DataFrame
             The dataset with the MACD index feature added.
         """
         self.logger.info("Calculating MACD index...")
         start = time.perf_counter()
 
-        self.dataset["MACD"] = ta.MACD(
-            source=source,
-            fast_length=fast_length,
-            slow_length=slow_length,
-            signal_length=signal_length,
-            diff_method=diff_method,
-            ma_method=ma_method,
-            signal_method=signal_method,
-        )[column]
+        if self.normalize:
+            if column != 'histogram':
+                warnings.warn(
+                    f"{column} isn't compatible with normalization"
+                    + " and will be set to 'histogram'."
+                )
+            source = source.copy().pct_change().rolling(2).std().iloc[2:]
+
+            self.dataset["MACD"] = ta.MACD(
+                source=source,
+                fast_length=fast_length,
+                slow_length=slow_length,
+                signal_length=signal_length,
+                diff_method='ratio',
+                ma_method=ma_method,
+                signal_method=signal_method,
+            )['histogram'].rolling(2).std().diff()
+
+        else:
+            self.dataset["MACD"] = ta.MACD(
+                source=source,
+                fast_length=fast_length,
+                slow_length=slow_length,
+                signal_length=signal_length,
+                diff_method=diff_method,
+                ma_method=ma_method,
+                signal_method=signal_method,
+            )[column]
 
         self.dataset.loc[:, "MACD_feat"] = feature_binning(
             self.dataset["MACD"],
