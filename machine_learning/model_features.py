@@ -425,130 +425,47 @@ class ModelFeatures:
         pd.DataFrame
             The dataset with the DTW distance features added.
         """
-        all_mas = feats == "all"
+
+        if feats == "all":
+            feats = ["sma", "ema", "rma", "dema", "tema"]
+
         self.logger.info("Calculating DTW distance for moving averages...\n")
         start_time_dtw = time.perf_counter()
         source = source.copy().pct_change().rolling(2).std().iloc[2:]
 
-        if any(feat.lower().startswith("sma") for feat in feats) or all_mas:
-            self.logger.info("Calculating DTW distance for SMA...")
+        for ma in feats:
+            dtw_distance_params = [source, length]
+            MA = ma.upper()
+
+            if ma == "dema":
+                dtw_distance_params.append(2)
+                ma = "sema"
+            elif ma == "tema":
+                dtw_distance_params.append(3)
+                ma = "sema"
+
+            self.logger.info("Calculating DTW distance for %s...", MA)
             start = time.perf_counter()
+            method = getattr(ta, ma)
+            moving_average = method(*dtw_distance_params).dropna()
 
-            sma = ta.sma(source, length).dropna()
-
-            self.dataset["SMA_DTW"] = (
-                DynamicTimeWarping(source, sma)
+            self.dataset[f"{MA}_DTW"] = (
+                DynamicTimeWarping(source, moving_average)
                 .calculate_dtw_distance("ratio", True)
                 .rolling(2)
                 .std()
                 .diff()
             )
 
-            self.dataset.loc[:, "SMA_DTW_feat"] = feature_binning(
-                self.dataset["SMA_DTW"],
-                self.test_index,
-                self.bins,
-            )
-            self.logger.info(
-                "DTW distance for SMA calculated in %.2f seconds.",
-                time.perf_counter() - start,
-            )
-
-        if any(feat.lower().startswith("ema") for feat in feats) or all_mas:
-            self.logger.info("Calculating DTW distance for EMA...")
-            start = time.perf_counter()
-
-            ema = ta.ema(source, length).dropna()
-
-            self.dataset["EMA_DTW"] = (
-                DynamicTimeWarping(source, ema)
-                .calculate_dtw_distance("ratio", True)
-                .rolling(2)
-                .std()
-                .diff()
-            )
-
-            self.dataset.loc[:, "EMA_DTW_feat"] = feature_binning(
-                self.dataset["EMA_DTW"],
+            self.dataset.loc[:, f"{MA}_DTW_feat"] = feature_binning(
+                self.dataset[f"{MA}_DTW"],
                 self.test_index,
                 self.bins,
             )
 
             self.logger.info(
-                "DTW distance for EMA calculated in %.2f seconds.",
-                time.perf_counter() - start,
-            )
-
-        if any(feat.lower().startswith("rma") for feat in feats) or all_mas:
-            self.logger.info("Calculating DTW distance for RMA...")
-            start = time.perf_counter()
-
-            rma = ta.rma(source, length).dropna()
-
-            self.dataset["RMA_DTW"] = (
-                DynamicTimeWarping(source, rma)
-                .calculate_dtw_distance("ratio", True)
-                .rolling(2)
-                .std()
-                .diff()
-            )
-
-            self.dataset.loc[:, "RMA_DTW_feat"] = feature_binning(
-                self.dataset["RMA_DTW"],
-                self.test_index,
-                self.bins,
-            )
-
-            self.logger.info(
-                "DTW distance for RMA calculated in %.2f seconds.",
-                time.perf_counter() - start,
-            )
-
-        if any(feat.lower().startswith("dema") for feat in feats) or all_mas:
-            self.logger.info("Calculating DTW distance for DEMA...")
-            start = time.perf_counter()
-
-            dema = ta.sema(source, length, 2).dropna()
-            self.dataset["DEMA_DTW"] = (
-                DynamicTimeWarping(source, dema)
-                .calculate_dtw_distance("ratio", True)
-                .rolling(2)
-                .std()
-                .diff()
-            )
-
-            self.dataset.loc[:, "DEMA_DTW_feat"] = feature_binning(
-                self.dataset["DEMA_DTW"],
-                self.test_index,
-                self.bins,
-            )
-
-            self.logger.info(
-                "DTW distance for DEMA calculated in %.2f seconds.",
-                time.perf_counter() - start,
-            )
-
-        if any(feat.lower().startswith("tema") for feat in feats) or all_mas:
-            self.logger.info("Calculating DTW distance for TEMA...")
-            start = time.perf_counter()
-
-            tema = ta.sema(source, length, 3).dropna()
-            self.dataset["TEMA_DTW"] = (
-                DynamicTimeWarping(source, tema)
-                .calculate_dtw_distance("ratio", True)
-                .rolling(2)
-                .std()
-                .diff()
-            )
-
-            self.dataset.loc[:, "TEMA_DTW_feat"] = feature_binning(
-                self.dataset["TEMA_DTW"],
-                self.test_index,
-                self.bins,
-            )
-
-            self.logger.info(
-                "DTW distance for TEMA calculated in %.2f seconds.",
+                "DTW distance for %s calculated in %.2f seconds.",
+                MA,
                 time.perf_counter() - start,
             )
 
