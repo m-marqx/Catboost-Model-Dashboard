@@ -108,10 +108,12 @@ class ModelFeatures:
         test_index: int,
         bins: int = 10,
         verbose: bool = True,
+        normalize: bool = False,
     ):
         self.dataset = dataset.copy()
         self.test_index = test_index
         self.bins = bins
+        self.normalize = normalize
 
         self.logger = logging.getLogger("Model_Features")
         formatter = logging.Formatter(
