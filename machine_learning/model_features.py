@@ -134,6 +134,18 @@ class ModelFeatures:
         else:
             self.logger.setLevel(logging.WARNING)
 
+    def set_normalize(self, normalize: bool):
+        """
+        Set value of normalize attribute.
+
+        Parameters
+        ----------
+        normalize : bool
+            The value to set the normalize attribute to.
+        """
+        self.normalize: bool = normalize
+        return self
+
     def set_bins(self, bins: int):
         """
         Set the number of bins to use for binning the features.

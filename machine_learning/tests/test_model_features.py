@@ -4303,3 +4303,11 @@ class TestAttributeSetters(unittest.TestCase):
     def test_set_bins_return(self) -> None:
         self.assertEqual(self.model_features.set_bins(10), self.model_features)
 
+    def test_set_normalize_value(self) -> None:
+        self.model_features.set_normalize(True)
+        self.assertEqual(self.model_features.normalize, True)
+
+    def test_set_normalize_return(self) -> None:
+        self.assertEqual(
+            self.model_features.set_normalize(True), self.model_features
+        )
