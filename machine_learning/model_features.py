@@ -1489,7 +1489,7 @@ class ModelFeatures:
         ma_type: Literal['sma', 'ema', 'dema', 'tema', 'rma'] = 'ema',
         stdev_method: Literal["absolute", "ratio", "dtw"] = "absolute",
         diff_method: Literal["absolute", "ratio", "normal"] = "normal",
-        based_on: Literal['close', 'open', 'high', 'low'] = 'close',
+        based_on: Literal["short_length", "long_length"] = "long_length",
     ):
         """
         Create the BB Trend (Bollinger Bands Trend) feature.
