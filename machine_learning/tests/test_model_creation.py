@@ -2,19 +2,18 @@ import unittest
 import warnings
 
 import pandas as pd
-from pandas  import Timestamp, Interval
+from pandas import Timestamp, Interval
 import numpy as np
 from machine_learning.model_builder import model_creation
 from machine_learning.tests.assert_functions import assert_count_series
+
 
 class TestModelCreationOPT(unittest.TestCase):
     btc_data = pd.read_parquet(r"data\assets\btc.parquet")
     dataframe = btc_data.copy().loc[:"2023"]
     dataframe["Return"] = dataframe["close"].pct_change(7) + 1
     dataframe["Target"] = dataframe["Return"].shift(-7)
-    dataframe["Target_bin"] = np.where(
-        dataframe["Target"] > 1, 1, -1
-    )
+    dataframe["Target_bin"] = np.where(dataframe["Target"] > 1, 1, -1)
 
     dataframe["Target_bin"] = np.where(
         dataframe["Target"].isna(),
@@ -28,17 +27,17 @@ class TestModelCreationOPT(unittest.TestCase):
     target = dataframe["Target_bin"].copy()
 
     hyperparams = {
-        'colsample_bylevel': 0.20,
-        'depth': 10,
-        'eval_metric': 'Logloss',
-        'iterations': 1000,
-        'learning_rate': 0.5,
-        'min_child_samples': 16,
-        'random_seed': 42,
-        'reg_lambda': 100,
-        'silent': True,
-        'subsample': 0.5,
-        'use_best_model': True
+        "colsample_bylevel": 0.20,
+        "depth": 10,
+        "eval_metric": "Logloss",
+        "iterations": 1000,
+        "learning_rate": 0.5,
+        "min_child_samples": 16,
+        "random_seed": 42,
+        "reg_lambda": 100,
+        "silent": True,
+        "subsample": 0.5,
+        "use_best_model": True,
     }
 
     feat_params = {
@@ -86,7 +85,7 @@ class TestModelCreationOPT(unittest.TestCase):
         "random_macd_fast_length": 113,
         "random_macd_slow_length": 68,
         "random_macd_signal_length": 14,
-        "random_macd_diff_method": "absolute",
+        "random_macd_diff_method": "ratio",
         "random_macd_ma_method": "ema",
         "random_macd_signal_method": "rma",
         "random_macd_column": "histogram",
@@ -154,37 +153,79 @@ class TestModelCreationOPT(unittest.TestCase):
             off_days=off_days,
         )
 
+    def test_warning_macd_diff_method(self):
+        params = self.feat_params
+
+        params["random_features"] = ("MACD_opt",)
+        params["random_macd_diff_method"] = "absolute"
+
+        with self.assertWarns(UserWarning):
+            model_creation(
+                params,
+                self.hyperparams,
+                self.test_index,
+                self.dataframe,
+                dev=False,
+                train_in_middle=self.train_in_mid,
+                cutoff_point=5,
+                side=self.side,
+                max_trades=self.max_trades,
+                off_days=self.off_days,
+            )
+
+    def test_warning_macd_column(self):
+        params = self.feat_params
+
+        params["random_features"] = ("MACD_opt",)
+        params["random_macd_column"] = "macd"
+
+        with self.assertWarns(UserWarning):
+            model_creation(
+                params,
+                self.hyperparams,
+                self.test_index,
+                self.dataframe,
+                dev=False,
+                train_in_middle=self.train_in_mid,
+                cutoff_point=5,
+                side=self.side,
+                max_trades=self.max_trades,
+                off_days=self.off_days,
+            )
+
     def test_features_column_creation(self):
         expected_columns = pd.Index(
             [
-                'RMA_DTW',
-                'RMA_DTW_feat',
-                'RSI',
-                'RSI_feat',
-                'stoch_k',
-                'stoch_k_feat',
-                'stoch_d',
-                'stoch_d_feat',
-                'CCI',
-                'CCI_feat',
-                'MACD',
-                'MACD_feat',
-                'TRIX',
-                'TRIX_feat',
-                'SMIO',
-                'SMIO_feat',
-                'DIDI',
-                'DIDI_feat',
-                'TSI',
-                'TSI_feat',
-                'ichimoku_distance',
-                'ichimoku_distance_feat',
-                'bb_trend',
-                'bb_trend_feat'
+                "RMA_DTW",
+                "RMA_DTW_feat",
+                "RSI",
+                "RSI_feat",
+                "stoch_k",
+                "stoch_k_feat",
+                "stoch_d",
+                "stoch_d_feat",
+                "CCI",
+                "CCI_feat",
+                "MACD",
+                "MACD_feat",
+                "TRIX",
+                "TRIX_feat",
+                "SMIO",
+                "SMIO_feat",
+                "DIDI",
+                "DIDI_feat",
+                "TSI",
+                "TSI_feat",
+                "ichimoku_distance",
+                "ichimoku_distance_feat",
+                "bb_trend",
+                "bb_trend_feat",
             ]
         )
 
-        pd.testing.assert_index_equal(self.features_df.columns[8:], expected_columns)
+        pd.testing.assert_index_equal(
+            self.features_df.columns[8:], expected_columns
+        )
 
     def test_features_first_values(self):
         expected_df = pd.DataFrame(
@@ -483,7 +524,8 @@ class TestModelCreationOPT(unittest.TestCase):
         expected_df.index.name = "date"
 
         pd.testing.assert_frame_equal(
-            expected_df.astype(float), self.features_df.dropna().iloc[:10, 8:].astype(float)
+            expected_df.astype(float),
+            self.features_df.dropna().iloc[:10, 8:].astype(float),
         )
 
     def test_features_values_count(self):
@@ -491,7 +533,9 @@ class TestModelCreationOPT(unittest.TestCase):
         test_count = {}
 
         for column in feat_columns:
-            test_count[column] =  self.features_df[column].value_counts(bins=self.bins).to_dict()
+            test_count[column] = (
+                self.features_df[column].value_counts(bins=self.bins).to_dict()
+            )
 
         expected_count = {
             "RMA_DTW": {
@@ -791,14 +835,18 @@ class TestModelCreationOPT(unittest.TestCase):
 
         expected_df.index.name = "date"
 
-        pd.testing.assert_frame_equal(expected_df, self.all_y.dropna().iloc[:10].astype(float))
+        pd.testing.assert_frame_equal(
+            expected_df, self.all_y.dropna().iloc[:10].astype(float)
+        )
 
     def test_all_y_values_count(self):
         feat_columns = self.all_y.columns
         test_count = {}
 
         for column in feat_columns:
-            test_count[column] =  self.all_y[column].value_counts(bins=self.bins).to_dict()
+            test_count[column] = (
+                self.all_y[column].value_counts(bins=self.bins).to_dict()
+            )
 
         expected_count = {
             "Target_bin": {
@@ -998,7 +1046,9 @@ class TestModelCreationOPT(unittest.TestCase):
         test_count = {}
 
         for column in feat_columns:
-            test_count[column] =  self.mh2[column].value_counts(bins=self.bins).to_dict()
+            test_count[column] = (
+                self.mh2[column].value_counts(bins=self.bins).to_dict()
+            )
 
         expected_count = {
             "y_pred_probs": {
@@ -1137,3 +1187,1188 @@ class TestModelCreationOPT(unittest.TestCase):
 
         assert_count_series(test_count, expected_count)
 
+
+class TestModelCreationNormal(unittest.TestCase):
+    btc_data = pd.read_parquet(r"data\assets\btc.parquet")
+    dataframe = btc_data.copy().loc[:"2023"]
+    dataframe["Return"] = dataframe["close"].pct_change(7) + 1
+    dataframe["Target"] = dataframe["Return"].shift(-7)
+    dataframe["Target_bin"] = np.where(dataframe["Target"] > 1, 1, -1)
+
+    dataframe["Target_bin"] = np.where(
+        dataframe["Target"].isna(),
+        np.nan,
+        dataframe["Target_bin"],
+    )
+
+    test_index = 1030
+    bins = 9
+
+    target = dataframe["Target_bin"].copy()
+
+    hyperparams = {
+        "colsample_bylevel": 0.20,
+        "depth": 10,
+        "eval_metric": "Logloss",
+        "iterations": 1000,
+        "learning_rate": 0.5,
+        "min_child_samples": 16,
+        "random_seed": 42,
+        "reg_lambda": 100,
+        "silent": True,
+        "subsample": 0.5,
+        "use_best_model": True,
+    }
+
+    feat_params = {
+        "random_features": (
+            "DTW",
+            "RSI",
+            "Stoch",
+            "CCI",
+            "MACD",
+            "TRIX",
+            "SMIO",
+            "DIDI",
+            "TSI",
+            "Ichimoku",
+            "Ichimoku Price Distance",
+            "BBTrend",
+        ),
+        "random_source_price_dtw": "high",
+        "random_binnings_qty_dtw": 13,
+        "random_moving_averages": ("rma",),
+        "random_moving_averages_length": 49,
+        "random_source_price_rsi": "open",
+        "random_binnings_qty_rsi": 29,
+        "random_rsi_length": 129,
+        "random_rsi_ma_method": "ema",
+        "random_source_price_stoch": "open",
+        "random_binnings_qty_stoch": 20,
+        "random_slow_stoch_length": 27,
+        "random_slow_stoch_k": 1,
+        "random_slow_stoch_d": 3,
+        "random_slow_stoch_ma_method": "rma",
+        "random_source_price_didi": "close",
+        "random_binnings_qty_didi": 28,
+        "random_didi_short_length": 50,
+        "random_didi_mid_length": 104,
+        "random_didi_long_length": 137,
+        "random_didi_ma_type": "rma",
+        "random_didi_method": "ratio",
+        "random_source_price_cci": "open",
+        "random_binnings_qty_cci": 30,
+        "random_cci_length": 117,
+        "random_cci_method": "rma",
+        "random_source_price_macd": "low",
+        "random_binnings_qty_macd": 27,
+        "random_macd_fast_length": 113,
+        "random_macd_slow_length": 68,
+        "random_macd_signal_length": 14,
+        "random_macd_diff_method": "absolute",
+        "random_macd_ma_method": "ema",
+        "random_macd_signal_method": "rma",
+        "random_macd_column": "histogram",
+        "random_source_price_trix": "low",
+        "random_binnings_qty_trix": 15,
+        "random_trix_length": 7,
+        "random_trix_signal_length": 2,
+        "random_trix_ma_method": "sma",
+        "random_source_price_smio": "high",
+        "random_binnings_qty_smio": 14,
+        "random_smio_short_length": 45,
+        "random_smio_long_length": 3,
+        "random_smio_signal_length": 41,
+        "random_smio_ma_method": "sma",
+        "random_source_price_tsi": "open",
+        "random_binnings_qty_tsi": 30,
+        "random_tsi_short_length": 54,
+        "random_tsi_long_length": 4,
+        "random_tsi_ma_method": "ema",
+        "random_binnings_qty_ichimoku": 18,
+        "random_ichimoku_conversion_periods": 146,
+        "random_ichimoku_base_periods": 23,
+        "random_ichimoku_lagging_span_2_periods": 17,
+        "random_ichimoku_displacement": 16,
+        "random_ichimoku_based_on": "lead_line",
+        "random_ichimoku_method": "absolute",
+        "random_source_ichimoku_price_distance": "low",
+        "random_binnings_qty_ichimoku_price_distance": 23,
+        "random_ichimoku_price_distance_conversion_periods": 142,
+        "random_ichimoku_price_distance_base_periods": 49,
+        "random_ichimoku_price_distance_lagging_span_2_periods": 13,
+        "random_ichimoku_price_distance_displacement": 24,
+        "random_ichimoku_price_distance_based_on": "lead_line",
+        "random_ichimoku_price_distance_method": "absolute",
+        "random_ichimoku_price_distance_use_pct": True,
+        "random_source_bb_trend": "open",
+        "random_binnings_qty_bb_trend": 21,
+        "random_bb_trend_short_length": 11,
+        "random_bb_trend_long_length": 12,
+        "random_bb_trend_stdev": 2.7000000000000015,
+        "random_bb_trend_ma_method": "ema",
+        "random_bb_trend_stdev_method": "absolute",
+        "random_bb_trend_diff_method": "normal",
+        "random_bb_trend_based_on": "long_length",
+    }
+    test_index = 1030
+    train_in_mid = True
+    side = 1
+    max_trades = 3
+    off_days = 7
+
+    with warnings.catch_warnings():
+        warnings.simplefilter(action="ignore", category=RuntimeWarning)
+
+        mh2, index_splits, all_y, features_df = model_creation(
+            feat_params,
+            hyperparams,
+            test_index,
+            dataframe,
+            dev=False,
+            train_in_middle=train_in_mid,
+            cutoff_point=5,
+            side=side,
+            max_trades=max_trades,
+            off_days=off_days,
+        )
+
+    def test_features_column_creation(self):
+        expected_columns = pd.Index(
+            [
+                "RMA_DTW",
+                "RMA_DTW_feat",
+                "RSI",
+                "RSI_feat",
+                # 'slow_stoch_source',
+                "stoch_k",
+                "stoch_k_feat",
+                "stoch_d",
+                "stoch_d_feat",
+                "CCI",
+                "CCI_feat",
+                "MACD",
+                "MACD_feat",
+                "TRIX",
+                "TRIX_feat",
+                "SMIO",
+                "SMIO_feat",
+                "DIDI",
+                "DIDI_feat",
+                "TSI",
+                "TSI_feat",
+                "ichimoku_distance",
+                "ichimoku_feat",
+                "ichimoku_distance_feat",
+                "bb_trend",
+                "bb_trend_feat",
+            ]
+        )
+
+        pd.testing.assert_index_equal(
+            self.features_df.columns[8:], expected_columns
+        )
+
+    def test_features_first_values(self):
+        expected_df = pd.DataFrame(
+            {
+                "RMA_DTW": {
+                    Timestamp("2012-05-26 00:00:00"): -0.01404203149678936,
+                    Timestamp("2012-05-27 00:00:00"): -0.00031493169918424073,
+                    Timestamp("2012-05-28 00:00:00"): -0.00039030076720219766,
+                    Timestamp("2012-05-29 00:00:00"): -0.0005045400158734991,
+                    Timestamp("2012-05-30 00:00:00"): -0.0004537508934245097,
+                    Timestamp("2012-05-31 00:00:00"): -0.004630927097106692,
+                    Timestamp("2012-06-01 00:00:00"): 0.007446156376184409,
+                    Timestamp("2012-06-02 00:00:00"): 0.0033863164030449745,
+                    Timestamp("2012-06-03 00:00:00"): 0.005338838520872958,
+                    Timestamp("2012-06-04 00:00:00"): -0.002539874486458102,
+                },
+                "RMA_DTW_feat": {
+                    Timestamp("2012-05-26 00:00:00"): 2.0,
+                    Timestamp("2012-05-27 00:00:00"): 7.0,
+                    Timestamp("2012-05-28 00:00:00"): 7.0,
+                    Timestamp("2012-05-29 00:00:00"): 7.0,
+                    Timestamp("2012-05-30 00:00:00"): 7.0,
+                    Timestamp("2012-05-31 00:00:00"): 4.0,
+                    Timestamp("2012-06-01 00:00:00"): 9.0,
+                    Timestamp("2012-06-02 00:00:00"): 9.0,
+                    Timestamp("2012-06-03 00:00:00"): 9.0,
+                    Timestamp("2012-06-04 00:00:00"): 5.0,
+                },
+                "RSI": {
+                    Timestamp("2012-05-26 00:00:00"): 50.56822355257558,
+                    Timestamp("2012-05-27 00:00:00"): 50.58266622841883,
+                    Timestamp("2012-05-28 00:00:00"): 48.04831769091295,
+                    Timestamp("2012-05-29 00:00:00"): 50.70009569922593,
+                    Timestamp("2012-05-30 00:00:00"): 49.341644833023295,
+                    Timestamp("2012-05-31 00:00:00"): 50.48718696502155,
+                    Timestamp("2012-06-01 00:00:00"): 50.02394501188874,
+                    Timestamp("2012-06-02 00:00:00"): 50.3993315521452,
+                    Timestamp("2012-06-03 00:00:00"): 49.96904116648523,
+                    Timestamp("2012-06-04 00:00:00"): 53.70502913624725,
+                },
+                "RSI_feat": {
+                    Timestamp("2012-05-26 00:00:00"): 23.0,
+                    Timestamp("2012-05-27 00:00:00"): 24.0,
+                    Timestamp("2012-05-28 00:00:00"): 0.0,
+                    Timestamp("2012-05-29 00:00:00"): 24.0,
+                    Timestamp("2012-05-30 00:00:00"): 3.0,
+                    Timestamp("2012-05-31 00:00:00"): 23.0,
+                    Timestamp("2012-06-01 00:00:00"): 14.0,
+                    Timestamp("2012-06-02 00:00:00"): 21.0,
+                    Timestamp("2012-06-03 00:00:00"): 13.0,
+                    Timestamp("2012-06-04 00:00:00"): 28.0,
+                },
+                # "slow_stoch_source": {
+                #     Timestamp("2012-05-26 00:00:00"): -0.0019646365422396617,
+                #     Timestamp("2012-05-27 00:00:00"): 0.0,
+                #     Timestamp("2012-05-28 00:00:00"): 0.0,
+                #     Timestamp("2012-05-29 00:00:00"): -0.0019685039370078705,
+                #     Timestamp("2012-05-30 00:00:00"): 0.0,
+                #     Timestamp("2012-05-31 00:00:00"): 0.01380670611439827,
+                #     Timestamp("2012-06-01 00:00:00"): 0.005836575875486361,
+                #     Timestamp("2012-06-02 00:00:00"): 0.005802707930367523,
+                #     Timestamp("2012-06-03 00:00:00"): -0.0019230769230769162,
+                #     Timestamp("2012-06-04 00:00:00"): -0.0019267822736032114,
+                # },
+                "stoch_k": {
+                    Timestamp("2012-05-26 00:00:00"): 75.86206896551715,
+                    Timestamp("2012-05-27 00:00:00"): 75.86206896551715,
+                    Timestamp("2012-05-28 00:00:00"): 74.99999999999991,
+                    Timestamp("2012-05-29 00:00:00"): 71.42857142857143,
+                    Timestamp("2012-05-30 00:00:00"): 71.42857142857143,
+                    Timestamp("2012-05-31 00:00:00"): 89.99999999999991,
+                    Timestamp("2012-06-01 00:00:00"): 81.08108108108101,
+                    Timestamp("2012-06-02 00:00:00"): 89.18918918918918,
+                    Timestamp("2012-06-03 00:00:00"): 86.48648648648654,
+                    Timestamp("2012-06-04 00:00:00"): 83.78378378378365,
+                },
+                "stoch_k_feat": {
+                    Timestamp("2012-05-26 00:00:00"): 12.0,
+                    Timestamp("2012-05-27 00:00:00"): 12.0,
+                    Timestamp("2012-05-28 00:00:00"): 11.0,
+                    Timestamp("2012-05-29 00:00:00"): 10.0,
+                    Timestamp("2012-05-30 00:00:00"): 10.0,
+                    Timestamp("2012-05-31 00:00:00"): 16.0,
+                    Timestamp("2012-06-01 00:00:00"): 13.0,
+                    Timestamp("2012-06-02 00:00:00"): 16.0,
+                    Timestamp("2012-06-03 00:00:00"): 15.0,
+                    Timestamp("2012-06-04 00:00:00"): 14.0,
+                },
+                "stoch_d": {
+                    Timestamp("2012-05-26 00:00:00"): 79.20892494929,
+                    Timestamp("2012-05-27 00:00:00"): 78.02569303583493,
+                    Timestamp("2012-05-28 00:00:00"): 75.57471264367807,
+                    Timestamp("2012-05-29 00:00:00"): 74.09688013136282,
+                    Timestamp("2012-05-30 00:00:00"): 72.61904761904759,
+                    Timestamp("2012-05-31 00:00:00"): 77.61904761904759,
+                    Timestamp("2012-06-01 00:00:00"): 80.83655083655078,
+                    Timestamp("2012-06-02 00:00:00"): 86.7567567567567,
+                    Timestamp("2012-06-03 00:00:00"): 85.58558558558559,
+                    Timestamp("2012-06-04 00:00:00"): 86.48648648648646,
+                },
+                "stoch_d_feat": {
+                    Timestamp("2012-05-26 00:00:00"): 12.0,
+                    Timestamp("2012-05-27 00:00:00"): 12.0,
+                    Timestamp("2012-05-28 00:00:00"): 11.0,
+                    Timestamp("2012-05-29 00:00:00"): 11.0,
+                    Timestamp("2012-05-30 00:00:00"): 10.0,
+                    Timestamp("2012-05-31 00:00:00"): 12.0,
+                    Timestamp("2012-06-01 00:00:00"): 13.0,
+                    Timestamp("2012-06-02 00:00:00"): 15.0,
+                    Timestamp("2012-06-03 00:00:00"): 15.0,
+                    Timestamp("2012-06-04 00:00:00"): 15.0,
+                },
+                "CCI": {
+                    Timestamp("2012-05-26 00:00:00"): -12.692581040530117,
+                    Timestamp("2012-05-27 00:00:00"): -7.049614455809643,
+                    Timestamp("2012-05-28 00:00:00"): -7.073447201597848,
+                    Timestamp("2012-05-29 00:00:00"): -13.401332347510339,
+                    Timestamp("2012-05-30 00:00:00"): -7.26115964083018,
+                    Timestamp("2012-05-31 00:00:00"): 36.84704214278942,
+                    Timestamp("2012-06-01 00:00:00"): 11.403988059194745,
+                    Timestamp("2012-06-02 00:00:00"): 11.453074044546433,
+                    Timestamp("2012-06-03 00:00:00"): -14.620402998251894,
+                    Timestamp("2012-06-04 00:00:00"): -14.816062459703828,
+                },
+                "CCI_feat": {
+                    Timestamp("2012-05-26 00:00:00"): 12.0,
+                    Timestamp("2012-05-27 00:00:00"): 14.0,
+                    Timestamp("2012-05-28 00:00:00"): 14.0,
+                    Timestamp("2012-05-29 00:00:00"): 12.0,
+                    Timestamp("2012-05-30 00:00:00"): 14.0,
+                    Timestamp("2012-05-31 00:00:00"): 21.0,
+                    Timestamp("2012-06-01 00:00:00"): 17.0,
+                    Timestamp("2012-06-02 00:00:00"): 17.0,
+                    Timestamp("2012-06-03 00:00:00"): 12.0,
+                    Timestamp("2012-06-04 00:00:00"): 12.0,
+                },
+                "MACD": {
+                    Timestamp("2012-05-26 00:00:00"): -0.00020574539499956866,
+                    Timestamp("2012-05-27 00:00:00"): -6.458535862991768e-05,
+                    Timestamp("2012-05-28 00:00:00"): -0.00021450618847258405,
+                    Timestamp("2012-05-29 00:00:00"): 5.32224501605923e-05,
+                    Timestamp("2012-05-30 00:00:00"): -0.0002193195456337044,
+                    Timestamp("2012-05-31 00:00:00"): -0.0002657007387757537,
+                    Timestamp("2012-06-01 00:00:00"): -0.00036837742756442085,
+                    Timestamp("2012-06-02 00:00:00"): -0.0003539939255798284,
+                    Timestamp("2012-06-03 00:00:00"): -0.00036086843647994786,
+                    Timestamp("2012-06-04 00:00:00"): -0.0002225703541232322,
+                },
+                "MACD_feat": {
+                    Timestamp("2012-05-26 00:00:00"): 12.0,
+                    Timestamp("2012-05-27 00:00:00"): 14.0,
+                    Timestamp("2012-05-28 00:00:00"): 12.0,
+                    Timestamp("2012-05-29 00:00:00"): 15.0,
+                    Timestamp("2012-05-30 00:00:00"): 12.0,
+                    Timestamp("2012-05-31 00:00:00"): 12.0,
+                    Timestamp("2012-06-01 00:00:00"): 10.0,
+                    Timestamp("2012-06-02 00:00:00"): 11.0,
+                    Timestamp("2012-06-03 00:00:00"): 10.0,
+                    Timestamp("2012-06-04 00:00:00"): 12.0,
+                },
+                "TRIX": {
+                    Timestamp("2012-05-26 00:00:00"): 46.5146294717389,
+                    Timestamp("2012-05-27 00:00:00"): 48.32649055378502,
+                    Timestamp("2012-05-28 00:00:00"): 46.72415081350856,
+                    Timestamp("2012-05-29 00:00:00"): 41.40147394973148,
+                    Timestamp("2012-05-30 00:00:00"): 33.72452068274745,
+                    Timestamp("2012-05-31 00:00:00"): 26.51814689626386,
+                    Timestamp("2012-06-01 00:00:00"): 20.956231175055517,
+                    Timestamp("2012-06-02 00:00:00"): 17.546876288847546,
+                    Timestamp("2012-06-03 00:00:00"): 17.431358361477134,
+                    Timestamp("2012-06-04 00:00:00"): 19.75046822109361,
+                },
+                "TRIX_feat": {
+                    Timestamp("2012-05-26 00:00:00"): 7.0,
+                    Timestamp("2012-05-27 00:00:00"): 7.0,
+                    Timestamp("2012-05-28 00:00:00"): 7.0,
+                    Timestamp("2012-05-29 00:00:00"): 7.0,
+                    Timestamp("2012-05-30 00:00:00"): 7.0,
+                    Timestamp("2012-05-31 00:00:00"): 6.0,
+                    Timestamp("2012-06-01 00:00:00"): 6.0,
+                    Timestamp("2012-06-02 00:00:00"): 6.0,
+                    Timestamp("2012-06-03 00:00:00"): 6.0,
+                    Timestamp("2012-06-04 00:00:00"): 6.0,
+                },
+                "SMIO": {
+                    Timestamp("2012-05-26 00:00:00"): 0.01417072475368927,
+                    Timestamp("2012-05-27 00:00:00"): 0.0034980223582337273,
+                    Timestamp("2012-05-28 00:00:00"): -0.0021444123705925584,
+                    Timestamp("2012-05-29 00:00:00"): 0.019549886707405213,
+                    Timestamp("2012-05-30 00:00:00"): 0.04244503857179735,
+                    Timestamp("2012-05-31 00:00:00"): 0.07246185123703855,
+                    Timestamp("2012-06-01 00:00:00"): 0.12641278691009403,
+                    Timestamp("2012-06-02 00:00:00"): 0.12981448024626738,
+                    Timestamp("2012-06-03 00:00:00"): 0.12389412555043977,
+                    Timestamp("2012-06-04 00:00:00"): 0.14081334325561654,
+                },
+                "SMIO_feat": {
+                    Timestamp("2012-05-26 00:00:00"): 7.0,
+                    Timestamp("2012-05-27 00:00:00"): 7.0,
+                    Timestamp("2012-05-28 00:00:00"): 7.0,
+                    Timestamp("2012-05-29 00:00:00"): 7.0,
+                    Timestamp("2012-05-30 00:00:00"): 8.0,
+                    Timestamp("2012-05-31 00:00:00"): 9.0,
+                    Timestamp("2012-06-01 00:00:00"): 10.0,
+                    Timestamp("2012-06-02 00:00:00"): 10.0,
+                    Timestamp("2012-06-03 00:00:00"): 10.0,
+                    Timestamp("2012-06-04 00:00:00"): 11.0,
+                },
+                "DIDI": {
+                    Timestamp("2012-05-26 00:00:00"): 0.031900722134555304,
+                    Timestamp("2012-05-27 00:00:00"): 0.031834976896052414,
+                    Timestamp("2012-05-28 00:00:00"): 0.0317665371307283,
+                    Timestamp("2012-05-29 00:00:00"): 0.03159696052450944,
+                    Timestamp("2012-05-30 00:00:00"): 0.031353549763059596,
+                    Timestamp("2012-05-31 00:00:00"): 0.031038297424208716,
+                    Timestamp("2012-06-01 00:00:00"): 0.030603927617816162,
+                    Timestamp("2012-06-02 00:00:00"): 0.030250713238720972,
+                    Timestamp("2012-06-03 00:00:00"): 0.029902648517329156,
+                    Timestamp("2012-06-04 00:00:00"): 0.029485798756289427,
+                },
+                "DIDI_feat": {
+                    Timestamp("2012-05-26 00:00:00"): 26.0,
+                    Timestamp("2012-05-27 00:00:00"): 25.0,
+                    Timestamp("2012-05-28 00:00:00"): 25.0,
+                    Timestamp("2012-05-29 00:00:00"): 25.0,
+                    Timestamp("2012-05-30 00:00:00"): 25.0,
+                    Timestamp("2012-05-31 00:00:00"): 25.0,
+                    Timestamp("2012-06-01 00:00:00"): 25.0,
+                    Timestamp("2012-06-02 00:00:00"): 25.0,
+                    Timestamp("2012-06-03 00:00:00"): 25.0,
+                    Timestamp("2012-06-04 00:00:00"): 25.0,
+                },
+                "TSI": {
+                    Timestamp("2012-05-26 00:00:00"): 0.03590602576828058,
+                    Timestamp("2012-05-27 00:00:00"): 0.03744130575467354,
+                    Timestamp("2012-05-28 00:00:00"): 0.03838639407037374,
+                    Timestamp("2012-05-29 00:00:00"): 0.0364146264784806,
+                    Timestamp("2012-05-30 00:00:00"): 0.03519716008415759,
+                    Timestamp("2012-05-31 00:00:00"): 0.051934419999623616,
+                    Timestamp("2012-06-01 00:00:00"): 0.0694253932274608,
+                    Timestamp("2012-06-02 00:00:00"): 0.08734870180571938,
+                    Timestamp("2012-06-03 00:00:00"): 0.09514286359571357,
+                    Timestamp("2012-06-04 00:00:00"): 0.0967945912784379,
+                },
+                "TSI_feat": {
+                    Timestamp("2012-05-26 00:00:00"): 12.0,
+                    Timestamp("2012-05-27 00:00:00"): 12.0,
+                    Timestamp("2012-05-28 00:00:00"): 12.0,
+                    Timestamp("2012-05-29 00:00:00"): 12.0,
+                    Timestamp("2012-05-30 00:00:00"): 12.0,
+                    Timestamp("2012-05-31 00:00:00"): 13.0,
+                    Timestamp("2012-06-01 00:00:00"): 14.0,
+                    Timestamp("2012-06-02 00:00:00"): 15.0,
+                    Timestamp("2012-06-03 00:00:00"): 15.0,
+                    Timestamp("2012-06-04 00:00:00"): 15.0,
+                },
+                "ichimoku_distance": {
+                    Timestamp("2012-05-26 00:00:00"): -0.0019045374204927357,
+                    Timestamp("2012-05-27 00:00:00"): -0.00990499689609381,
+                    Timestamp("2012-05-28 00:00:00"): 0.015952710613787557,
+                    Timestamp("2012-05-29 00:00:00"): 0.0017647494927570118,
+                    Timestamp("2012-05-30 00:00:00"): 0.03210060062789827,
+                    Timestamp("2012-05-31 00:00:00"): 0.0138144714159249,
+                    Timestamp("2012-06-01 00:00:00"): 0.016829199490218272,
+                    Timestamp("2012-06-02 00:00:00"): 0.007002478103989185,
+                    Timestamp("2012-06-03 00:00:00"): 0.008932965561443573,
+                    Timestamp("2012-06-04 00:00:00"): -0.004569417760150352,
+                },
+                "ichimoku_feat": {
+                    Timestamp("2012-05-26 00:00:00"): 17.0,
+                    Timestamp("2012-05-27 00:00:00"): 17.0,
+                    Timestamp("2012-05-28 00:00:00"): 17.0,
+                    Timestamp("2012-05-29 00:00:00"): 17.0,
+                    Timestamp("2012-05-30 00:00:00"): 17.0,
+                    Timestamp("2012-05-31 00:00:00"): 17.0,
+                    Timestamp("2012-06-01 00:00:00"): 17.0,
+                    Timestamp("2012-06-02 00:00:00"): 17.0,
+                    Timestamp("2012-06-03 00:00:00"): 17.0,
+                    Timestamp("2012-06-04 00:00:00"): 17.0,
+                },
+                "ichimoku_distance_feat": {
+                    Timestamp("2012-05-26 00:00:00"): 7.0,
+                    Timestamp("2012-05-27 00:00:00"): 5.0,
+                    Timestamp("2012-05-28 00:00:00"): 22.0,
+                    Timestamp("2012-05-29 00:00:00"): 9.0,
+                    Timestamp("2012-05-30 00:00:00"): 16.0,
+                    Timestamp("2012-05-31 00:00:00"): 22.0,
+                    Timestamp("2012-06-01 00:00:00"): 13.0,
+                    Timestamp("2012-06-02 00:00:00"): 11.0,
+                    Timestamp("2012-06-03 00:00:00"): 11.0,
+                    Timestamp("2012-06-04 00:00:00"): 6.0,
+                },
+                "bb_trend": {
+                    Timestamp("2012-05-26 00:00:00"): 0.08223185486564583,
+                    Timestamp("2012-05-27 00:00:00"): 0.08527149377148412,
+                    Timestamp("2012-05-28 00:00:00"): 0.08521413517963498,
+                    Timestamp("2012-05-29 00:00:00"): 0.07793633918893768,
+                    Timestamp("2012-05-30 00:00:00"): -0.059711623754353016,
+                    Timestamp("2012-05-31 00:00:00"): 0.0992122538902928,
+                    Timestamp("2012-06-01 00:00:00"): 0.02286273539331924,
+                    Timestamp("2012-06-02 00:00:00"): -0.04781409968964644,
+                    Timestamp("2012-06-03 00:00:00"): 0.1805233956929732,
+                    Timestamp("2012-06-04 00:00:00"): -0.10591433531385516,
+                },
+                "bb_trend_feat": {
+                    Timestamp("2012-05-26 00:00:00"): 10.0,
+                    Timestamp("2012-05-27 00:00:00"): 10.0,
+                    Timestamp("2012-05-28 00:00:00"): 10.0,
+                    Timestamp("2012-05-29 00:00:00"): 10.0,
+                    Timestamp("2012-05-30 00:00:00"): 7.0,
+                    Timestamp("2012-05-31 00:00:00"): 10.0,
+                    Timestamp("2012-06-01 00:00:00"): 9.0,
+                    Timestamp("2012-06-02 00:00:00"): 7.0,
+                    Timestamp("2012-06-03 00:00:00"): 11.0,
+                    Timestamp("2012-06-04 00:00:00"): 6.0,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(
+            expected_df, self.features_df.dropna().iloc[:10, 8:]
+        )
+
+    def test_features_values_count(self):
+        feat_columns = self.features_df.columns[8:]
+        test_count = {}
+
+        for column in feat_columns:
+            test_count[column] = (
+                self.features_df[column].value_counts(bins=self.bins).to_dict()
+            )
+
+        expected_count = {
+            "RMA_DTW": {
+                Interval(-0.0561, 0.0274, closed="right"): 3672,
+                Interval(0.0274, 0.111, closed="right"): 451,
+                Interval(-0.14, -0.0561, closed="right"): 151,
+                Interval(0.111, 0.194, closed="right"): 38,
+                Interval(-0.223, -0.14, closed="right"): 8,
+                Interval(0.194, 0.278, closed="right"): 8,
+                Interval(-0.392, -0.307, closed="right"): 2,
+                Interval(0.278, 0.361, closed="right"): 2,
+                Interval(-0.307, -0.223, closed="right"): 1,
+            },
+            "RMA_DTW_feat": {
+                Interval(2.667, 4.0, closed="right"): 667,
+                Interval(-0.013000000000000001, 1.333, closed="right"): 654,
+                Interval(6.667, 8.0, closed="right"): 649,
+                Interval(10.667, 12.0, closed="right"): 633,
+                Interval(8.0, 9.333, closed="right"): 442,
+                Interval(9.333, 10.667, closed="right"): 402,
+                Interval(5.333, 6.667, closed="right"): 325,
+                Interval(1.333, 2.667, closed="right"): 283,
+                Interval(4.0, 5.333, closed="right"): 278,
+            },
+            "RSI": {
+                Interval(49.81, 50.985, closed="right"): 2674,
+                Interval(48.634, 49.81, closed="right"): 1279,
+                Interval(50.985, 52.16, closed="right"): 194,
+                Interval(47.459, 48.634, closed="right"): 72,
+                Interval(52.16, 53.336, closed="right"): 19,
+                Interval(46.283, 47.459, closed="right"): 6,
+                Interval(45.096000000000004, 46.283, closed="right"): 4,
+                Interval(53.336, 54.511, closed="right"): 3,
+                Interval(54.511, 55.687, closed="right"): 1,
+            },
+            "RSI_feat": {
+                Interval(-0.029, 3.111, closed="right"): 540,
+                Interval(15.556, 18.667, closed="right"): 523,
+                Interval(18.667, 21.778, closed="right"): 512,
+                Interval(6.222, 9.333, closed="right"): 501,
+                Interval(21.778, 24.889, closed="right"): 481,
+                Interval(12.444, 15.556, closed="right"): 457,
+                Interval(9.333, 12.444, closed="right"): 434,
+                Interval(24.889, 28.0, closed="right"): 405,
+                Interval(3.111, 6.222, closed="right"): 399,
+            },
+            # "slow_stoch_source": {
+            #     Interval(-0.00034, 0.0996, closed="right"): 2267,
+            #     Interval(-0.1, -0.00034, closed="right"): 1949,
+            #     Interval(0.0996, 0.199, closed="right"): 83,
+            #     Interval(-0.2, -0.1, closed="right"): 60,
+            #     Interval(0.199, 0.299, closed="right"): 10,
+            #     Interval(-0.3, -0.2, closed="right"): 4,
+            #     Interval(0.299, 0.399, closed="right"): 4,
+            #     Interval(-0.4, -0.3, closed="right"): 3,
+            #     Interval(-0.502, -0.4, closed="right"): 1,
+            # },
+            "stoch_k": {
+                Interval(77.778, 88.889, closed="right"): 732,
+                Interval(66.667, 77.778, closed="right"): 548,
+                Interval(33.333, 44.444, closed="right"): 519,
+                Interval(44.444, 55.556, closed="right"): 498,
+                Interval(22.222, 33.333, closed="right"): 495,
+                Interval(88.889, 100.0, closed="right"): 492,
+                Interval(55.556, 66.667, closed="right"): 471,
+                Interval(11.111, 22.222, closed="right"): 452,
+                Interval(-0.101, 11.111, closed="right"): 149,
+            },
+            "stoch_k_feat": {
+                Interval(-0.02, 2.111, closed="right"): 932,
+                Interval(16.889, 19.0, closed="right"): 548,
+                Interval(6.333, 8.444, closed="right"): 491,
+                Interval(8.444, 10.556, closed="right"): 453,
+                Interval(12.667, 14.778, closed="right"): 410,
+                Interval(4.222, 6.333, closed="right"): 408,
+                Interval(14.778, 16.889, closed="right"): 375,
+                Interval(10.556, 12.667, closed="right"): 371,
+                Interval(2.111, 4.222, closed="right"): 368,
+            },
+            "stoch_d": {
+                Interval(77.425, 87.971, closed="right"): 853,
+                Interval(14.15, 24.696, closed="right"): 534,
+                Interval(24.696, 35.242, closed="right"): 505,
+                Interval(66.879, 77.425, closed="right"): 502,
+                Interval(45.788, 56.333, closed="right"): 495,
+                Interval(35.242, 45.788, closed="right"): 472,
+                Interval(56.333, 66.879, closed="right"): 429,
+                Interval(87.971, 98.517, closed="right"): 418,
+                Interval(3.508, 14.15, closed="right"): 146,
+            },
+            "stoch_d_feat": {
+                Interval(-0.02, 2.111, closed="right"): 964,
+                Interval(16.889, 19.0, closed="right"): 614,
+                Interval(6.333, 8.444, closed="right"): 502,
+                Interval(12.667, 14.778, closed="right"): 481,
+                Interval(8.444, 10.556, closed="right"): 473,
+                Interval(10.556, 12.667, closed="right"): 350,
+                Interval(2.111, 4.222, closed="right"): 346,
+                Interval(14.778, 16.889, closed="right"): 315,
+                Interval(4.222, 6.333, closed="right"): 309,
+            },
+            "CCI": {
+                Interval(-60.311, 148.278, closed="right"): 3240,
+                Interval(-268.899, -60.311, closed="right"): 695,
+                Interval(148.278, 356.866, closed="right"): 237,
+                Interval(-477.487, -268.899, closed="right"): 46,
+                Interval(356.866, 565.454, closed="right"): 31,
+                Interval(-686.075, -477.487, closed="right"): 8,
+                Interval(565.454, 774.042, closed="right"): 5,
+                Interval(-1105.129, -894.663, closed="right"): 2,
+                Interval(-894.663, -686.075, closed="right"): 1,
+            },
+            "CCI_feat": {
+                Interval(-0.030000000000000002, 3.222, closed="right"): 650,
+                Interval(19.333, 22.556, closed="right"): 560,
+                Interval(22.556, 25.778, closed="right"): 541,
+                Interval(12.889, 16.111, closed="right"): 488,
+                Interval(25.778, 29.0, closed="right"): 460,
+                Interval(16.111, 19.333, closed="right"): 440,
+                Interval(3.222, 6.444, closed="right"): 421,
+                Interval(9.667, 12.889, closed="right"): 374,
+                Interval(6.444, 9.667, closed="right"): 331,
+            },
+            "MACD": {
+                Interval(-0.000993, 0.000742, closed="right"): 2959,
+                Interval(0.000742, 0.00248, closed="right"): 660,
+                Interval(-0.00273, -0.000993, closed="right"): 527,
+                Interval(0.00248, 0.00421, closed="right"): 65,
+                Interval(-0.00446, -0.00273, closed="right"): 21,
+                Interval(0.00421, 0.00595, closed="right"): 15,
+                Interval(-0.00721, -0.00446, closed="right"): 4,
+                Interval(0.00595, 0.00768, closed="right"): 3,
+                Interval(0.00768, 0.00942, closed="right"): 2,
+            },
+            "MACD_feat": {
+                Interval(11.556, 14.444, closed="right"): 734,
+                Interval(17.333, 20.222, closed="right"): 675,
+                Interval(8.667, 11.556, closed="right"): 606,
+                Interval(14.444, 17.333, closed="right"): 552,
+                Interval(5.778, 8.667, closed="right"): 461,
+                Interval(20.222, 23.111, closed="right"): 386,
+                Interval(2.889, 5.778, closed="right"): 336,
+                Interval(23.111, 26.0, closed="right"): 289,
+                Interval(-0.027, 2.889, closed="right"): 217,
+            },
+            "TRIX": {
+                Interval(-129.692, 194.962, closed="right"): 2631,
+                Interval(194.962, 519.617, closed="right"): 809,
+                Interval(-454.347, -129.692, closed="right"): 693,
+                Interval(-779.002, -454.347, closed="right"): 88,
+                Interval(519.617, 844.271, closed="right"): 69,
+                Interval(844.271, 1168.926, closed="right"): 28,
+                Interval(-1103.656, -779.002, closed="right"): 23,
+                Interval(1168.926, 1493.581, closed="right"): 13,
+                Interval(-1431.234, -1103.656, closed="right"): 8,
+            },
+            "TRIX_feat": {
+                Interval(7.778, 9.333, closed="right"): 708,
+                Interval(1.556, 3.111, closed="right"): 673,
+                Interval(4.667, 6.222, closed="right"): 613,
+                Interval(10.889, 12.444, closed="right"): 522,
+                Interval(-0.015, 1.556, closed="right"): 466,
+                Interval(6.222, 7.778, closed="right"): 417,
+                Interval(3.111, 4.667, closed="right"): 388,
+                Interval(12.444, 14.0, closed="right"): 324,
+                Interval(9.333, 10.889, closed="right"): 251,
+            },
+            "SMIO": {
+                Interval(-0.0909, 0.0373, closed="right"): 1157,
+                Interval(0.0373, 0.165, closed="right"): 921,
+                Interval(-0.219, -0.0909, closed="right"): 824,
+                Interval(0.165, 0.294, closed="right"): 551,
+                Interval(-0.347, -0.219, closed="right"): 421,
+                Interval(0.294, 0.422, closed="right"): 267,
+                Interval(-0.476, -0.347, closed="right"): 92,
+                Interval(0.422, 0.55, closed="right"): 43,
+                Interval(-0.606, -0.476, closed="right"): 19,
+            },
+            "SMIO_feat": {
+                Interval(-0.013999999999999999, 1.444, closed="right"): 695,
+                Interval(8.667, 10.111, closed="right"): 672,
+                Interval(11.556, 13.0, closed="right"): 637,
+                Interval(2.889, 4.333, closed="right"): 607,
+                Interval(5.778, 7.222, closed="right"): 507,
+                Interval(10.111, 11.556, closed="right"): 405,
+                Interval(1.444, 2.889, closed="right"): 283,
+                Interval(4.333, 5.778, closed="right"): 265,
+                Interval(7.222, 8.667, closed="right"): 224,
+            },
+            "DIDI": {
+                Interval(-0.171, -0.0613, closed="right"): 1024,
+                Interval(-0.0613, 0.0481, closed="right"): 791,
+                Interval(-0.28, -0.171, closed="right"): 702,
+                Interval(0.158, 0.267, closed="right"): 541,
+                Interval(0.0481, 0.158, closed="right"): 436,
+                Interval(-0.39, -0.28, closed="right"): 305,
+                Interval(-0.499, -0.39, closed="right"): 247,
+                Interval(-0.609, -0.499, closed="right"): 115,
+                Interval(-0.72, -0.609, closed="right"): 85,
+            },
+            "DIDI_feat": {
+                Interval(24.0, 27.0, closed="right"): 1312,
+                Interval(21.0, 24.0, closed="right"): 712,
+                Interval(18.0, 21.0, closed="right"): 547,
+                Interval(15.0, 18.0, closed="right"): 493,
+                Interval(6.0, 9.0, closed="right"): 310,
+                Interval(3.0, 6.0, closed="right"): 297,
+                Interval(12.0, 15.0, closed="right"): 291,
+                Interval(9.0, 12.0, closed="right"): 144,
+                Interval(-0.028, 3.0, closed="right"): 140,
+            },
+            "TSI": {
+                Interval(-0.0773, 0.0851, closed="right"): 1294,
+                Interval(0.0851, 0.248, closed="right"): 988,
+                Interval(-0.24, -0.0773, closed="right"): 958,
+                Interval(0.248, 0.41, closed="right"): 480,
+                Interval(0.41, 0.572, closed="right"): 246,
+                Interval(-0.402, -0.24, closed="right"): 188,
+                Interval(0.572, 0.735, closed="right"): 122,
+                Interval(0.735, 0.897, closed="right"): 26,
+                Interval(-0.567, -0.402, closed="right"): 23,
+            },
+            "TSI_feat": {
+                Interval(-0.030000000000000002, 3.222, closed="right"): 706,
+                Interval(3.222, 6.444, closed="right"): 586,
+                Interval(16.111, 19.333, closed="right"): 574,
+                Interval(19.333, 22.556, closed="right"): 519,
+                Interval(6.444, 9.667, closed="right"): 503,
+                Interval(12.889, 16.111, closed="right"): 454,
+                Interval(22.556, 25.778, closed="right"): 431,
+                Interval(9.667, 12.889, closed="right"): 333,
+                Interval(25.778, 29.0, closed="right"): 219,
+            },
+            "ichimoku_distance": {
+                Interval(-0.145, 0.0178, closed="right"): 3204,
+                Interval(0.0178, 0.18, closed="right"): 1106,
+                Interval(0.18, 0.343, closed="right"): 29,
+                Interval(-0.307, -0.145, closed="right"): 22,
+                Interval(0.343, 0.505, closed="right"): 5,
+                Interval(-0.472, -0.307, closed="right"): 1,
+                Interval(0.505, 0.668, closed="right"): 1,
+                Interval(0.831, 0.993, closed="right"): 1,
+                Interval(0.668, 0.831, closed="right"): 0,
+            },
+            "ichimoku_feat": {
+                Interval(-0.018000000000000002, 1.889, closed="right"): 1555,
+                Interval(15.111, 17.0, closed="right"): 1273,
+                Interval(1.889, 3.778, closed="right"): 334,
+                Interval(11.333, 13.222, closed="right"): 232,
+                Interval(9.444, 11.333, closed="right"): 221,
+                Interval(13.222, 15.111, closed="right"): 214,
+                Interval(3.778, 5.667, closed="right"): 168,
+                Interval(5.667, 7.556, closed="right"): 130,
+                Interval(7.556, 9.444, closed="right"): 110,
+            },
+            "ichimoku_distance_feat": {
+                Interval(4.889, 7.333, closed="right"): 752,
+                Interval(9.778, 12.222, closed="right"): 651,
+                Interval(-0.023, 2.444, closed="right"): 563,
+                Interval(14.667, 17.111, closed="right"): 482,
+                Interval(2.444, 4.889, closed="right"): 472,
+                Interval(7.333, 9.778, closed="right"): 442,
+                Interval(19.556, 22.0, closed="right"): 428,
+                Interval(12.222, 14.667, closed="right"): 320,
+                Interval(17.111, 19.556, closed="right"): 259,
+            },
+            "bb_trend": {
+                Interval(0.0052, 0.925, closed="right"): 1805,
+                Interval(-0.915, 0.0052, closed="right"): 1777,
+                Interval(0.925, 1.845, closed="right"): 410,
+                Interval(-1.834, -0.915, closed="right"): 220,
+                Interval(1.845, 2.764, closed="right"): 74,
+                Interval(-2.754, -1.834, closed="right"): 43,
+                Interval(2.764, 3.684, closed="right"): 21,
+                Interval(3.684, 4.604, closed="right"): 13,
+                Interval(-3.683, -2.754, closed="right"): 8,
+            },
+            "bb_trend_feat": {
+                Interval(-0.021, 2.222, closed="right"): 680,
+                Interval(8.889, 11.111, closed="right"): 672,
+                Interval(4.444, 6.667, closed="right"): 481,
+                Interval(2.222, 4.444, closed="right"): 479,
+                Interval(15.556, 17.778, closed="right"): 455,
+                Interval(6.667, 8.889, closed="right"): 444,
+                Interval(11.111, 13.333, closed="right"): 423,
+                Interval(17.778, 20.0, closed="right"): 388,
+                Interval(13.333, 15.556, closed="right"): 349,
+            },
+        }
+
+        assert_count_series(test_count, expected_count)
+
+    def test_all_y_column_creation(self):
+        expected_columns = pd.Index(
+            [
+                "Target_bin",
+            ]
+        )
+
+        pd.testing.assert_index_equal(self.all_y.columns, expected_columns)
+
+    def test_all_y_first_values(self):
+        expected_df = pd.DataFrame(
+            {
+                "Target_bin": {
+                    Timestamp("2012-01-02 00:00:00"): 1.0,
+                    Timestamp("2012-01-03 00:00:00"): 1.0,
+                    Timestamp("2012-01-04 00:00:00"): 1.0,
+                    Timestamp("2012-01-05 00:00:00"): -1.0,
+                    Timestamp("2012-01-06 00:00:00"): 1.0,
+                    Timestamp("2012-01-07 00:00:00"): -1.0,
+                    Timestamp("2012-01-08 00:00:00"): 1.0,
+                    Timestamp("2012-01-09 00:00:00"): 1.0,
+                    Timestamp("2012-01-10 00:00:00"): -1.0,
+                    Timestamp("2012-01-11 00:00:00"): 1.0,
+                }
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(
+            expected_df, self.all_y.dropna().iloc[:10].astype(float)
+        )
+
+    def test_all_y_values_count(self):
+        feat_columns = self.all_y.columns
+        test_count = {}
+
+        for column in feat_columns:
+            test_count[column] = (
+                self.all_y[column].value_counts(bins=self.bins).to_dict()
+            )
+
+        expected_count = {
+            "Target_bin": {
+                Interval(0.778, 1.0, closed="right"): 2435,
+                Interval(-1.003, -0.778, closed="right"): 1940,
+                Interval(-0.778, -0.556, closed="right"): 0,
+                Interval(-0.556, -0.333, closed="right"): 0,
+                Interval(-0.333, -0.111, closed="right"): 0,
+                Interval(-0.111, 0.111, closed="right"): 0,
+                Interval(0.111, 0.333, closed="right"): 0,
+                Interval(0.333, 0.556, closed="right"): 0,
+                Interval(0.556, 0.778, closed="right"): 0,
+            }
+        }
+
+        assert_count_series(test_count, expected_count)
+
+    def test_results_column_creation(self):
+        expected_columns = pd.Index(
+            [
+                "y_pred_probs",
+                "target_Return",
+                "Predict",
+                "Position",
+                "Result",
+                "Liquid_Result",
+                "Liquid_Result_pct_adj",
+                "Liquid_Return",
+                "Liquid_Return_simple",
+                "Liquid_Return_pct_adj",
+                "Drawdown",
+                "Drawdown_pct_adj",
+            ]
+        )
+        pd.testing.assert_index_equal(self.mh2.columns, expected_columns)
+
+    def test_results_first_values(self):
+        expected_df = pd.DataFrame(
+            {
+                "y_pred_probs": {
+                    Timestamp("2012-01-02 00:00:00"): 0.5917006758872133,
+                    Timestamp("2012-01-03 00:00:00"): 0.5917006758872133,
+                    Timestamp("2012-01-04 00:00:00"): 0.5917006758872133,
+                    Timestamp("2012-01-05 00:00:00"): 0.5917006758872133,
+                    Timestamp("2012-01-06 00:00:00"): 0.5917006758872133,
+                    Timestamp("2012-01-07 00:00:00"): 0.5917006758872133,
+                    Timestamp("2012-01-08 00:00:00"): 0.5917006758872133,
+                    Timestamp("2012-01-09 00:00:00"): 0.0,
+                    Timestamp("2012-01-10 00:00:00"): 0.0,
+                    Timestamp("2012-01-11 00:00:00"): 0.0,
+                },
+                "target_Return": {
+                    Timestamp("2012-01-02 00:00:00"): 0.25999999046325684,
+                    Timestamp("2012-01-03 00:00:00"): 0.3497164249420166,
+                    Timestamp("2012-01-04 00:00:00"): 0.2567324638366699,
+                    Timestamp("2012-01-05 00:00:00"): -0.021052658557891846,
+                    Timestamp("2012-01-06 00:00:00"): 0.10000002384185791,
+                    Timestamp("2012-01-07 00:00:00"): -0.07352942228317261,
+                    Timestamp("2012-01-08 00:00:00"): 0.021428585052490234,
+                    Timestamp("2012-01-09 00:00:00"): 0.1269841194152832,
+                    Timestamp("2012-01-10 00:00:00"): -0.1596638560295105,
+                    Timestamp("2012-01-11 00:00:00"): 0.014285683631896973,
+                },
+                "Predict": {
+                    Timestamp("2012-01-02 00:00:00"): 1,
+                    Timestamp("2012-01-03 00:00:00"): 1,
+                    Timestamp("2012-01-04 00:00:00"): 1,
+                    Timestamp("2012-01-05 00:00:00"): 1,
+                    Timestamp("2012-01-06 00:00:00"): 1,
+                    Timestamp("2012-01-07 00:00:00"): 1,
+                    Timestamp("2012-01-08 00:00:00"): 1,
+                    Timestamp("2012-01-09 00:00:00"): 0,
+                    Timestamp("2012-01-10 00:00:00"): 0,
+                    Timestamp("2012-01-11 00:00:00"): 0,
+                },
+                "Position": {
+                    Timestamp("2012-01-02 00:00:00"): 0.0,
+                    Timestamp("2012-01-03 00:00:00"): 1.0,
+                    Timestamp("2012-01-04 00:00:00"): 1.0,
+                    Timestamp("2012-01-05 00:00:00"): 1.0,
+                    Timestamp("2012-01-06 00:00:00"): 1.0,
+                    Timestamp("2012-01-07 00:00:00"): 1.0,
+                    Timestamp("2012-01-08 00:00:00"): 1.0,
+                    Timestamp("2012-01-09 00:00:00"): 1.0,
+                    Timestamp("2012-01-10 00:00:00"): 0.0,
+                    Timestamp("2012-01-11 00:00:00"): 0.0,
+                },
+                "Result": {
+                    Timestamp("2012-01-02 00:00:00"): 0.25999999046325684,
+                    Timestamp("2012-01-03 00:00:00"): 0.3497164249420166,
+                    Timestamp("2012-01-04 00:00:00"): 0.2567324638366699,
+                    Timestamp("2012-01-05 00:00:00"): -0.021052658557891846,
+                    Timestamp("2012-01-06 00:00:00"): 0.10000002384185791,
+                    Timestamp("2012-01-07 00:00:00"): -0.07352942228317261,
+                    Timestamp("2012-01-08 00:00:00"): 0.021428585052490234,
+                    Timestamp("2012-01-09 00:00:00"): 0.1269841194152832,
+                    Timestamp("2012-01-10 00:00:00"): -0.1596638560295105,
+                    Timestamp("2012-01-11 00:00:00"): 0.014285683631896973,
+                },
+                "Liquid_Result": {
+                    Timestamp("2012-01-02 00:00:00"): 1.0866666634877522,
+                    Timestamp("2012-01-03 00:00:00"): 1.1165721416473389,
+                    Timestamp("2012-01-04 00:00:00"): 1.0855774879455566,
+                    Timestamp("2012-01-05 00:00:00"): 0.9929824471473694,
+                    Timestamp("2012-01-06 00:00:00"): 1.0333333412806194,
+                    Timestamp("2012-01-07 00:00:00"): 0.9754901925722758,
+                    Timestamp("2012-01-08 00:00:00"): 1.0071428616841633,
+                    Timestamp("2012-01-09 00:00:00"): 1.0,
+                    Timestamp("2012-01-10 00:00:00"): 1.0,
+                    Timestamp("2012-01-11 00:00:00"): 1.0,
+                },
+                "Liquid_Result_pct_adj": {
+                    Timestamp("2012-01-02 00:00:00"): 1.0433333317438762,
+                    Timestamp("2012-01-03 00:00:00"): 1.0582860708236694,
+                    Timestamp("2012-01-04 00:00:00"): 1.0427887439727783,
+                    Timestamp("2012-01-05 00:00:00"): 0.9964912235736847,
+                    Timestamp("2012-01-06 00:00:00"): 1.0166666706403096,
+                    Timestamp("2012-01-07 00:00:00"): 0.9877450962861379,
+                    Timestamp("2012-01-08 00:00:00"): 1.0035714308420818,
+                    Timestamp("2012-01-09 00:00:00"): 1.0,
+                    Timestamp("2012-01-10 00:00:00"): 1.0,
+                    Timestamp("2012-01-11 00:00:00"): 1.0,
+                },
+                "Liquid_Return": {
+                    Timestamp("2012-01-02 00:00:00"): 1.0866666634877522,
+                    Timestamp("2012-01-03 00:00:00"): 1.2133417237072877,
+                    Timestamp("2012-01-04 00:00:00"): 1.317176460441689,
+                    Timestamp("2012-01-05 00:00:00"): 1.3079331050142984,
+                    Timestamp("2012-01-06 00:00:00"): 1.3515308855759602,
+                    Timestamp("2012-01-07 00:00:00"): 1.3184051238378718,
+                    Timestamp("2012-01-08 00:00:00"): 1.3278223092811379,
+                    Timestamp("2012-01-09 00:00:00"): 1.3278223092811379,
+                    Timestamp("2012-01-10 00:00:00"): 1.3278223092811379,
+                    Timestamp("2012-01-11 00:00:00"): 1.3278223092811379,
+                },
+                "Liquid_Return_simple": {
+                    Timestamp("2012-01-02 00:00:00"): 0.0866666634877522,
+                    Timestamp("2012-01-03 00:00:00"): 0.20323880513509107,
+                    Timestamp("2012-01-04 00:00:00"): 0.2888162930806477,
+                    Timestamp("2012-01-05 00:00:00"): 0.2817987402280171,
+                    Timestamp("2012-01-06 00:00:00"): 0.3151320815086365,
+                    Timestamp("2012-01-07 00:00:00"): 0.29062227408091224,
+                    Timestamp("2012-01-08 00:00:00"): 0.2977651357650756,
+                    Timestamp("2012-01-09 00:00:00"): 0.2977651357650756,
+                    Timestamp("2012-01-10 00:00:00"): 0.2977651357650756,
+                    Timestamp("2012-01-11 00:00:00"): 0.2977651357650756,
+                },
+                "Liquid_Return_pct_adj": {
+                    Timestamp("2012-01-02 00:00:00"): 1.0433333317438762,
+                    Timestamp("2012-01-03 00:00:00"): 1.1041451322105948,
+                    Timestamp("2012-01-04 00:00:00"): 1.1513901155815434,
+                    Timestamp("2012-01-05 00:00:00"): 1.1473501450864985,
+                    Timestamp("2012-01-06 00:00:00"): 1.1664726520637665,
+                    Timestamp("2012-01-07 00:00:00"): 1.1521776420278718,
+                    Timestamp("2012-01-08 00:00:00"): 1.156292564794167,
+                    Timestamp("2012-01-09 00:00:00"): 1.156292564794167,
+                    Timestamp("2012-01-10 00:00:00"): 1.156292564794167,
+                    Timestamp("2012-01-11 00:00:00"): 1.156292564794167,
+                },
+                "Drawdown": {
+                    Timestamp("2012-01-02 00:00:00"): 0.0,
+                    Timestamp("2012-01-03 00:00:00"): 0.0,
+                    Timestamp("2012-01-04 00:00:00"): 0.0,
+                    Timestamp("2012-01-05 00:00:00"): 0.007017552852630615,
+                    Timestamp("2012-01-06 00:00:00"): 0.0,
+                    Timestamp("2012-01-07 00:00:00"): 0.02450980742772424,
+                    Timestamp("2012-01-08 00:00:00"): 0.017542015907922703,
+                    Timestamp("2012-01-09 00:00:00"): 0.017542015907922703,
+                    Timestamp("2012-01-10 00:00:00"): 0.017542015907922703,
+                    Timestamp("2012-01-11 00:00:00"): 0.017542015907922703,
+                },
+                "Drawdown_pct_adj": {
+                    Timestamp("2012-01-02 00:00:00"): 0.0,
+                    Timestamp("2012-01-03 00:00:00"): 0.0,
+                    Timestamp("2012-01-04 00:00:00"): 0.0,
+                    Timestamp("2012-01-05 00:00:00"): 0.0035087764263151966,
+                    Timestamp("2012-01-06 00:00:00"): 0.0,
+                    Timestamp("2012-01-07 00:00:00"): 0.012254903713862064,
+                    Timestamp("2012-01-08 00:00:00"): 0.008727240412870763,
+                    Timestamp("2012-01-09 00:00:00"): 0.008727240412870763,
+                    Timestamp("2012-01-10 00:00:00"): 0.008727240412870763,
+                    Timestamp("2012-01-11 00:00:00"): 0.008727240412870763,
+                },
+            }
+        )
+
+        expected_df.index.name = "date"
+
+        pd.testing.assert_frame_equal(
+            expected_df.astype(float),
+            self.mh2.dropna().iloc[:10].astype(float),
+        )
+
+    def test_results_values_count(self):
+        feat_columns = self.mh2.columns
+        test_count = {}
+
+        for column in feat_columns:
+            test_count[column] = (
+                self.mh2[column].value_counts(bins=self.bins).to_dict()
+            )
+
+        expected_count = {
+            "y_pred_probs": {
+                Interval(-0.0019190000000000001, 0.102, closed="right"): 2869,
+                Interval(0.613, 0.715, closed="right"): 561,
+                Interval(0.511, 0.613, closed="right"): 464,
+                Interval(0.715, 0.817, closed="right"): 375,
+                Interval(0.817, 0.919, closed="right"): 113,
+                Interval(0.102, 0.204, closed="right"): 0,
+                Interval(0.204, 0.306, closed="right"): 0,
+                Interval(0.306, 0.409, closed="right"): 0,
+                Interval(0.409, 0.511, closed="right"): 0,
+            },
+            "target_Return": {
+                Interval(-0.13, 0.0613, closed="right"): 2899,
+                Interval(0.0613, 0.252, closed="right"): 1037,
+                Interval(-0.321, -0.13, closed="right"): 274,
+                Interval(0.252, 0.443, closed="right"): 113,
+                Interval(0.443, 0.634, closed="right"): 19,
+                Interval(-0.512, -0.321, closed="right"): 16,
+                Interval(0.634, 0.825, closed="right"): 10,
+                Interval(0.825, 1.016, closed="right"): 5,
+                Interval(-0.705, -0.512, closed="right"): 2,
+            },
+            "Predict": {
+                Interval(-0.002, 0.111, closed="right"): 2869,
+                Interval(0.889, 1.0, closed="right"): 1513,
+                Interval(0.111, 0.222, closed="right"): 0,
+                Interval(0.222, 0.333, closed="right"): 0,
+                Interval(0.333, 0.444, closed="right"): 0,
+                Interval(0.444, 0.556, closed="right"): 0,
+                Interval(0.556, 0.667, closed="right"): 0,
+                Interval(0.667, 0.778, closed="right"): 0,
+                Interval(0.778, 0.889, closed="right"): 0,
+            },
+            "Position": {
+                Interval(-0.002, 0.111, closed="right"): 2869,
+                Interval(0.889, 1.0, closed="right"): 1513,
+                Interval(0.111, 0.222, closed="right"): 0,
+                Interval(0.222, 0.333, closed="right"): 0,
+                Interval(0.333, 0.444, closed="right"): 0,
+                Interval(0.444, 0.556, closed="right"): 0,
+                Interval(0.556, 0.667, closed="right"): 0,
+                Interval(0.667, 0.778, closed="right"): 0,
+                Interval(0.778, 0.889, closed="right"): 0,
+            },
+            "Result": {
+                Interval(-0.0648, 0.151, closed="right"): 3297,
+                Interval(-0.281, -0.0648, closed="right"): 577,
+                Interval(0.151, 0.368, closed="right"): 407,
+                Interval(0.368, 0.584, closed="right"): 41,
+                Interval(-0.497, -0.281, closed="right"): 31,
+                Interval(0.584, 0.8, closed="right"): 10,
+                Interval(-0.713, -0.497, closed="right"): 6,
+                Interval(0.8, 1.016, closed="right"): 4,
+                Interval(-0.933, -0.713, closed="right"): 2,
+            },
+            "Liquid_Result": {
+                Interval(0.957, 1.02, closed="right"): 3877,
+                Interval(1.02, 1.084, closed="right"): 370,
+                Interval(0.893, 0.957, closed="right"): 79,
+                Interval(1.084, 1.148, closed="right"): 36,
+                Interval(1.148, 1.211, closed="right"): 6,
+                Interval(0.829, 0.893, closed="right"): 3,
+                Interval(1.211, 1.275, closed="right"): 3,
+                Interval(1.275, 1.339, closed="right"): 3,
+                Interval(0.764, 0.829, closed="right"): 2,
+            },
+            "Liquid_Result_pct_adj": {
+                Interval(0.978, 1.01, closed="right"): 3877,
+                Interval(1.01, 1.042, closed="right"): 370,
+                Interval(0.947, 0.978, closed="right"): 79,
+                Interval(1.042, 1.074, closed="right"): 36,
+                Interval(1.074, 1.106, closed="right"): 6,
+                Interval(0.915, 0.947, closed="right"): 3,
+                Interval(1.106, 1.138, closed="right"): 3,
+                Interval(1.138, 1.169, closed="right"): 3,
+                Interval(0.882, 0.915, closed="right"): 2,
+            },
+            "Liquid_Return": {
+                Interval(-194.544, 21710.48, closed="right"): 2284,
+                Interval(21710.48, 43420.116, closed="right"): 682,
+                Interval(108549.023, 130258.659, closed="right"): 399,
+                Interval(65129.751, 86839.387, closed="right"): 263,
+                Interval(43420.116, 65129.751, closed="right"): 262,
+                Interval(86839.387, 108549.023, closed="right"): 164,
+                Interval(130258.659, 151968.295, closed="right"): 163,
+                Interval(151968.295, 173677.93, closed="right"): 119,
+                Interval(173677.93, 195387.566, closed="right"): 46,
+            },
+            "Liquid_Return_simple": {
+                Interval(11.787, 13.278, closed="right"): 1275,
+                Interval(10.296, 11.787, closed="right"): 985,
+                Interval(5.823, 7.314, closed="right"): 474,
+                Interval(4.333, 5.823, closed="right"): 462,
+                Interval(-0.155, 1.351, closed="right"): 400,
+                Interval(7.314, 8.805, closed="right"): 338,
+                Interval(2.842, 4.333, closed="right"): 221,
+                Interval(8.805, 10.296, closed="right"): 180,
+                Interval(1.351, 2.842, closed="right"): 47,
+            },
+            "Liquid_Return_pct_adj": {
+                Interval(0.348, 65.0, closed="right"): 1934,
+                Interval(193.149, 257.224, closed="right"): 594,
+                Interval(449.448, 513.522, closed="right"): 454,
+                Interval(257.224, 321.298, closed="right"): 344,
+                Interval(385.373, 449.448, closed="right"): 295,
+                Interval(321.298, 385.373, closed="right"): 232,
+                Interval(129.075, 193.149, closed="right"): 183,
+                Interval(513.522, 577.597, closed="right"): 174,
+                Interval(65.0, 129.075, closed="right"): 172,
+            },
+            "Drawdown": {
+                Interval(-0.001647, 0.0719, closed="right"): 1617,
+                Interval(0.288, 0.36, closed="right"): 554,
+                Interval(0.0719, 0.144, closed="right"): 469,
+                Interval(0.36, 0.432, closed="right"): 404,
+                Interval(0.216, 0.288, closed="right"): 395,
+                Interval(0.144, 0.216, closed="right"): 354,
+                Interval(0.575, 0.647, closed="right"): 240,
+                Interval(0.503, 0.575, closed="right"): 175,
+                Interval(0.432, 0.503, closed="right"): 174,
+            },
+            "Drawdown_pct_adj": {
+                Interval(-0.00139, 0.0433, closed="right"): 1763,
+                Interval(0.173, 0.216, closed="right"): 580,
+                Interval(0.0433, 0.0866, closed="right"): 536,
+                Interval(0.13, 0.173, closed="right"): 478,
+                Interval(0.0866, 0.13, closed="right"): 343,
+                Interval(0.216, 0.26, closed="right"): 204,
+                Interval(0.346, 0.39, closed="right"): 192,
+                Interval(0.303, 0.346, closed="right"): 178,
+                Interval(0.26, 0.303, closed="right"): 108,
+            },
+        }
+
+        assert_count_series(test_count, expected_count)
