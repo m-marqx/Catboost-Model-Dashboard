@@ -110,6 +110,7 @@ def calculate_model(
     short_only: bool = False,
     train_in_middle: bool = False,
     cutoff_point: float | None = None,
+    dev: bool = False,
     **hyperparams,
 ) -> pd.DataFrame:
     """
@@ -144,6 +145,7 @@ def calculate_model(
     """
     data_frame = klib.convert_datatypes(dataset)
 
+    #split the dataset into train, test, and validation sets
     train_set = data_frame.iloc[:test_index]
     test_set = data_frame.iloc[test_index : test_index * 2]
     validation_set = data_frame.iloc[test_index * 2 :]
@@ -226,37 +228,42 @@ def calculate_model(
         "test": pd.Interval(test_set.index[0], test_set.index[-1]),
         "validation": pd.Interval(validation_set.index[0], validation_set.index[-1]),
     }
-    if output == "All":
-        return (
-            mh2,
-            best_model,
-            X_train,
-            X_test,
-            y_train,
-            y_test,
-            y_pred_train,
-            y_pred_test,
-            all_x,
-            all_y,
-            index_splits,
-        )
-    elif output == "Return":
-        return mh2, index_splits
-    elif output == "Model":
-        return best_model
-    elif output == "Dataset":
-        return (
-            X_train,
-            X_test,
-            y_train,
-            y_test,
-            y_pred_train,
-            y_pred_test,
-            all_x,
-            all_y,
-        )
-    else:
-        raise ValueError("Invalid output parameter")
+
+    if dev:
+        index_splits["best_iteration"] = best_model.get_best_iteration()
+
+    match output:
+        case "All":
+            return (
+                mh2,
+                best_model,
+                X_train,
+                X_test,
+                y_train,
+                y_test,
+                y_pred_train,
+                y_pred_test,
+                all_x,
+                all_y,
+                index_splits,
+            )
+        case "Return":
+            return mh2, index_splits
+        case "Model":
+            return best_model
+        case "Dataset":
+            return (
+                X_train,
+                X_test,
+                y_train,
+                y_test,
+                y_pred_train,
+                y_pred_test,
+                all_x,
+                all_y,
+            )
+
+    raise ValueError("Invalid output parameter")
 
 def model_creation(
     feat_parameters: dict,
@@ -269,7 +276,8 @@ def model_creation(
     train_in_middle: bool = True,
     cutoff_point: float | None = None,
     side: int = 1,
-) -> tuple[pd.DataFrame, dict, pd.Series]:
+    dev: bool = False,
+):
     """
     Calculate and create the model based on the input parameters.
 
@@ -305,6 +313,10 @@ def model_creation(
     """
     data_frame = dataframe.copy()
 
+    model_features = ModelFeatures(
+        data_frame, test_index, verbose=False
+    )
+
     if "DTW" in feat_parameters["random_features"]:
         dtw_source = (
             data_frame[feat_parameters["random_source_price_dtw"]]
@@ -312,8 +324,8 @@ def model_creation(
             .iloc[1:]
         )
 
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_dtw"]
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_dtw"]
         ).create_dtw_distance_feature(
             dtw_source,
             feat_parameters["random_moving_averages"],
@@ -325,9 +337,9 @@ def model_creation(
             data_frame[feat_parameters["random_source_price_dtw"]]
         )
 
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_dtw"]
-        ).create_dtw_distance_opt_feature(
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_dtw"]
+        ).set_normalize(True).create_dtw_distance_feature(
             dtw_source,
             feat_parameters["random_moving_averages"],
             feat_parameters["random_moving_averages_length"],
@@ -340,8 +352,8 @@ def model_creation(
             .iloc[1:]
         )
 
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_rsi"]
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_rsi"]
         ).create_rsi_feature(rsi_source, feat_parameters["random_rsi_length"])
 
     if "RSI_opt" in feat_parameters["random_features"]:
@@ -349,9 +361,13 @@ def model_creation(
             data_frame[feat_parameters["random_source_price_rsi"]]
         )
 
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_rsi"]
-        ).create_rsi_opt_feature(rsi_source, feat_parameters["random_rsi_length"], feat_parameters["random_rsi_ma_method"])
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_rsi"]
+        ).set_normalize(True).create_rsi_feature(
+            rsi_source,
+            feat_parameters["random_rsi_length"],
+            feat_parameters["random_rsi_ma_method"],
+        )
 
     if "Stoch" in feat_parameters["random_features"]:
         data_frame["slow_stoch_source"] = (
@@ -359,8 +375,8 @@ def model_creation(
             .pct_change(1)
         )
 
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_stoch"]
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_stoch"]
         ).create_slow_stoch_feature(
             feat_parameters["random_source_price_stoch"],
             feat_parameters["random_slow_stoch_length"],
@@ -369,9 +385,9 @@ def model_creation(
         )
 
     if "Stoch_opt" in feat_parameters["random_features"]:
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_stoch"]
-        ).create_slow_stoch_opt_feature(
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_stoch"]
+        ).set_normalize(True).create_slow_stoch_feature(
             feat_parameters["random_source_price_stoch"],
             feat_parameters["random_slow_stoch_length"],
             feat_parameters["random_slow_stoch_k"],
@@ -386,8 +402,8 @@ def model_creation(
             .iloc[1:]
         )
 
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_cci"]
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_cci"]
         ).create_cci_feature(
             cci_source,
             feat_parameters["random_cci_length"],
@@ -401,8 +417,8 @@ def model_creation(
             .iloc[1:]
         )
 
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_macd"]
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_macd"]
         ).create_macd_feature(
             macd_source,
             feat_parameters["random_macd_fast_length"],
@@ -419,22 +435,24 @@ def model_creation(
             data_frame[feat_parameters["random_source_price_macd"]]
         )
 
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_macd"]
-        ).create_macd_opt_feature(
-            macd_source,
-            feat_parameters["random_macd_fast_length"],
-            feat_parameters["random_macd_slow_length"],
-            feat_parameters["random_macd_signal_length"],
-            feat_parameters["random_macd_ma_method"],
-            feat_parameters["random_macd_signal_method"],
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_macd"]
+        ).set_normalize(True).create_macd_feature(
+            source=macd_source,
+            fast_length=feat_parameters["random_macd_fast_length"],
+            slow_length=feat_parameters["random_macd_slow_length"],
+            signal_length=feat_parameters["random_macd_signal_length"],
+            ma_method=feat_parameters["random_macd_ma_method"],
+            signal_method=feat_parameters["random_macd_signal_method"],
+            diff_method=feat_parameters["random_macd_diff_method"],
+            column=feat_parameters["random_macd_column"],
         )
 
     if "TRIX" in feat_parameters["random_features"]:
         trix_source = data_frame[feat_parameters["random_source_price_trix"]]
 
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_trix"]
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_trix"]
         ).create_trix_feature(
             trix_source,
             feat_parameters["random_trix_length"],
@@ -445,9 +463,9 @@ def model_creation(
     if "TRIX_opt" in feat_parameters["random_features"]:
         trix_source = data_frame[feat_parameters["random_source_price_trix"]]
 
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_trix"]
-        ).create_trix_opt_feature(
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_trix"]
+        ).set_normalize(True).create_trix_feature(
             trix_source,
             feat_parameters["random_trix_length"],
             feat_parameters["random_trix_signal_length"],
@@ -457,8 +475,8 @@ def model_creation(
     if "SMIO" in feat_parameters["random_features"]:
         smio_source = data_frame[feat_parameters["random_source_price_smio"]]
 
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_smio"]
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_smio"]
         ).create_smio_feature(
             smio_source,
             feat_parameters["random_smio_short_length"],
@@ -470,9 +488,9 @@ def model_creation(
     if "SMIO_opt" in feat_parameters["random_features"]:
         smio_source = data_frame[feat_parameters["random_source_price_smio"]]
 
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_smio"]
-        ).create_smio_opt_feature(
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_smio"]
+        ).set_normalize(True).create_smio_feature(
             smio_source,
             feat_parameters["random_smio_short_length"],
             feat_parameters["random_smio_long_length"],
@@ -485,8 +503,8 @@ def model_creation(
             data_frame[feat_parameters["random_source_price_didi"]]
         )
 
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_didi"]
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_didi"]
         ).create_didi_index_feature(
             source=didi_source,
             short_length=feat_parameters["random_didi_short_length"],
@@ -501,9 +519,9 @@ def model_creation(
             data_frame[feat_parameters["random_source_price_didi"]]
         )
 
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_didi"]
-        ).create_didi_index_opt_feature(
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_didi"]
+        ).set_normalize(True).create_didi_index_feature(
             source=didi_source,
             short_length=feat_parameters["random_didi_short_length"],
             medium_length=feat_parameters["random_didi_mid_length"],
@@ -514,8 +532,8 @@ def model_creation(
     if "TSI" in feat_parameters["random_features"]:
         tsi_source = data_frame[feat_parameters["random_source_price_tsi"]]
 
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_tsi"]
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_tsi"]
         ).create_tsi_feature(
             tsi_source,
             feat_parameters["random_tsi_short_length"],
@@ -526,9 +544,9 @@ def model_creation(
     if "TSI_opt" in feat_parameters["random_features"]:
         tsi_source = data_frame[feat_parameters["random_source_price_tsi"]]
 
-        data_frame = ModelFeatures(
-            data_frame, test_index, feat_parameters["random_binnings_qty_tsi"]
-        ).create_tsi_opt_feature(
+        model_features.set_bins(
+            feat_parameters["random_binnings_qty_tsi"]
+        ).set_normalize(True).create_tsi_feature(
             tsi_source,
             feat_parameters["random_tsi_short_length"],
             feat_parameters["random_tsi_long_length"],
@@ -536,9 +554,7 @@ def model_creation(
         )
 
     if "Ichimoku" in feat_parameters["random_features"]:
-        data_frame = ModelFeatures(
-            data_frame,
-            test_index,
+        model_features.set_bins(
             feat_parameters["random_binnings_qty_ichimoku"],
         ).create_ichimoku_feature(
             feat_parameters["random_ichimoku_conversion_periods"],
@@ -552,9 +568,7 @@ def model_creation(
     if "Ichimoku Price Distance" in feat_parameters["random_features"]:
         ichimoku_source = data_frame[feat_parameters["random_source_ichimoku_price_distance"]]
 
-        data_frame = ModelFeatures(
-            data_frame,
-            test_index,
+        model_features.set_bins(
             feat_parameters["random_binnings_qty_ichimoku_price_distance"],
         ).create_ichimoku_price_distance_feature(
             ichimoku_source,
@@ -570,9 +584,7 @@ def model_creation(
     if "BBTrend" in feat_parameters["random_features"]:
         bb_source = data_frame[feat_parameters["random_source_bb_trend"]]
 
-        data_frame = ModelFeatures(
-            data_frame,
-            test_index,
+        model_features.set_bins(
             feat_parameters["random_binnings_qty_bb_trend"],
         ).create_bb_trend_feature(
             bb_source,
@@ -588,11 +600,9 @@ def model_creation(
     if "BBTrend_opt" in feat_parameters["random_features"]:
         bb_source = data_frame[feat_parameters["random_source_bb_trend"]]
 
-        data_frame = ModelFeatures(
-            data_frame,
-            test_index,
+        model_features.set_bins(
             feat_parameters["random_binnings_qty_bb_trend"],
-        ).create_bb_trend_feature_opt(
+        ).set_normalize(True).create_bb_trend_feature(
             bb_source,
             feat_parameters["random_bb_trend_short_length"],
             feat_parameters["random_bb_trend_long_length"],
@@ -602,6 +612,8 @@ def model_creation(
             feat_parameters["random_bb_trend_diff_method"],
             feat_parameters["random_bb_trend_based_on"],
         )
+
+    data_frame = model_features.dataset.copy()
 
     df_columns = data_frame.columns.tolist()
     features = [x for x in df_columns if "feat" in x]
@@ -615,6 +627,7 @@ def model_creation(
         long_only=False,
         train_in_middle=train_in_middle,
         cutoff_point=cutoff_point,
+        dev=dev,
         **hyperparams,
     )
 
@@ -623,5 +636,6 @@ def model_creation(
     return (
         max_trade_adj(mh2, off_days, max_trades, pct_adj, side),
         index_splits,
-        all_y
+        all_y,
+        data_frame,
     )

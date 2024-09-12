@@ -109,7 +109,7 @@ class ModelFeatures:
         dataset: pd.DataFrame,
         test_index: int,
         bins: int = 10,
-        verbose: bool = True,
+        verbose: bool = False,
         normalize: bool = False,
     ):
         self.dataset = dataset.copy()
@@ -199,48 +199,13 @@ class ModelFeatures:
 
         return self.dataset
 
-    def create_rsi_opt_feature(
-        self,
-        source: pd.Series,
-        length: int,
-        ma_method: Literal['sma', 'ema', 'dema', 'rma'] = 'sma'
-    ):
-        """
-        Create the RSI (Relative Strength Index) feature.
-
-        Parameters:
-        -----------
-        source : pd.Series
-            The source series for calculating RSI.
-        length : int
-            The length of the RSI calculation.
-
-        Returns:
-        --------
-        pd.DataFrame
-            The dataset with the RSI feature added.
-        """
-        self.logger.info("Calculating RSI...")
-        start = time.perf_counter()
-
-        self.dataset["RSI"] = ta.RSI(source, length, ma_method).rolling(2).std().diff()
-        self.dataset.loc[:, "RSI_feat"] = feature_binning(
-            self.dataset["RSI"],
-            self.test_index,
-            self.bins,
-        )
-        self.logger.info(
-            "RSI calculated in %.2f seconds.", time.perf_counter() - start
-        )
-
-        return self.dataset
-
     def create_slow_stoch_feature(
         self,
         source_column: str,
         k_length: int = 14,
         k_smoothing: int = 1,
         d_smoothing: int = 3,
+        ma_method: Literal["sma", "ema", "dema", "tema", "rma"] = "sma",
     ):
         """
         Create the slow stochastic feature.
@@ -272,7 +237,7 @@ class ModelFeatures:
             k_length,
             k_smoothing,
             d_smoothing,
-            "sma",
+            ma_method,
         )
 
         if self.normalize:
@@ -288,70 +253,6 @@ class ModelFeatures:
         )
 
         self.dataset["stoch_d"] = stoch_d
-        self.dataset.loc[:, "stoch_d_feat"] = feature_binning(
-            self.dataset["stoch_d"],
-            self.test_index,
-            self.bins,
-        )
-
-        self.logger.info(
-            "Slow stochastic calculated in %.2f seconds.",
-            time.perf_counter() - start,
-        )
-
-        return self.dataset
-
-    def create_slow_stoch_opt_feature(
-        self,
-        source_column: str,
-        k_length: int = 14,
-        k_smoothing: int = 1,
-        d_smoothing: int = 3,
-        ma_method: Literal['sma', 'ema', 'dema', 'tema', 'rma'] = 'sma',
-    ):
-        """
-        Create the slow stochastic feature.
-
-        Parameters:
-        -----------
-        source_column : str
-            The column name of the source data.
-        k_length : int, optional
-            The length of the %K calculation. (default: 14)
-        k_smoothing : int, optional
-            The smoothing factor for %K. (default: 1)
-        d_smoothing : int, optional
-            The smoothing factor for %D. (default: 3)
-
-        Returns:
-        --------
-        pd.DataFrame
-            The dataset with the slow stochastic feature added.
-        """
-
-        self.logger.info("Calculating slow stochastic...")
-        start = time.perf_counter()
-
-        stoch_k, stoch_d = (
-            ta.slow_stoch(
-                self.dataset[source_column],
-                self.dataset['high'],
-                self.dataset['low'],
-                k_length,
-                k_smoothing,
-                d_smoothing,
-                ma_method,
-            )
-        )
-
-        self.dataset["stoch_k"] = stoch_k.rolling(2).std().diff()
-        self.dataset.loc[:, "stoch_k_feat"] = feature_binning(
-            self.dataset["stoch_k"],
-            self.test_index,
-            self.bins,
-        )
-
-        self.dataset["stoch_d"] = stoch_d.rolling(2).std().diff()
         self.dataset.loc[:, "stoch_d_feat"] = feature_binning(
             self.dataset["stoch_d"],
             self.test_index,
@@ -427,81 +328,6 @@ class ModelFeatures:
                     DynamicTimeWarping(source, moving_average)
                     .calculate_dtw_distance("absolute", True)
                 )
-
-            self.dataset.loc[:, f"{MA}_DTW_feat"] = feature_binning(
-                self.dataset[f"{MA}_DTW"],
-                self.test_index,
-                self.bins,
-            )
-
-            self.logger.info(
-                "DTW distance for %s calculated in %.2f seconds.",
-                MA,
-                time.perf_counter() - start,
-            )
-
-        self.logger.info(
-            "\nDTW distance for moving averages calculated in %.2f seconds.\n",
-            time.perf_counter() - start_time_dtw,
-        )
-
-        return self.dataset
-
-    def create_dtw_distance_opt_feature(
-        self,
-        source: pd.Series,
-        feats: Literal["sma", "ema", "dema", "tema", "rma", "all"] | list,
-        length: int,
-    ) -> pd.DataFrame:
-        """
-        Create the DTW distance feature.
-
-        Parameters:
-        -----------
-        source : pd.Series
-            The source series for calculating the DTW distance.
-        feats : Literal["sma", "ema", "dema", "tema", "rma", "all"]
-        | list
-            The list of features to calculate the DTW distance for.
-        length : int
-            The length of the moving average calculation.
-
-        Returns:
-        --------
-        pd.DataFrame
-            The dataset with the DTW distance features added.
-        """
-
-        if feats == "all":
-            feats = ["sma", "ema", "rma", "dema", "tema"]
-
-        self.logger.info("Calculating DTW distance for moving averages...\n")
-        start_time_dtw = time.perf_counter()
-        source = source.copy().pct_change().rolling(2).std().iloc[2:]
-
-        for ma in feats:
-            dtw_distance_params = [source, length]
-            MA = ma.upper()
-
-            if ma == "dema":
-                dtw_distance_params.append(2)
-                ma = "sema"
-            elif ma == "tema":
-                dtw_distance_params.append(3)
-                ma = "sema"
-
-            self.logger.info("Calculating DTW distance for %s...", MA)
-            start = time.perf_counter()
-            method = getattr(ta, ma)
-            moving_average = method(*dtw_distance_params).dropna()
-
-            self.dataset[f"{MA}_DTW"] = (
-                DynamicTimeWarping(source, moving_average)
-                .calculate_dtw_distance("ratio", True)
-                .rolling(2)
-                .std()
-                .diff()
-            )
 
             self.dataset.loc[:, f"{MA}_DTW_feat"] = feature_binning(
                 self.dataset[f"{MA}_DTW"],
@@ -651,64 +477,6 @@ class ModelFeatures:
 
         return self.dataset
 
-    def create_didi_index_opt_feature(
-        self,
-        source: pd.Series,
-        short_length: int = 3,
-        medium_length: int = 18,
-        long_length: int = 20,
-        ma_type: Literal['sma', 'ema','dema', 'rma'] = 'sma',
-    ):
-        """
-        Create the Didi Index feature.
-
-        Parameters:
-        -----------
-
-        source : pd.Series
-            The source series for calculating the DIDI index.
-        short_length : int, optional
-            The length of the short EMA.
-            (default: 3)
-        medium_length : int, optional
-            The length of the medium EMA.
-            (default: 18)
-        long_length : int, optional
-            The length of the long EMA.
-            (default: 20)
-
-        Returns:
-        --------
-        pd.DataFrame
-            The dataset with the DIDI index feature added.
-        """
-        self.logger.info("Calculating new DIDI index...")
-        start = time.perf_counter()
-        source = source.copy().pct_change().rolling(2).std().iloc[2:]
-
-        self.dataset["DIDI"] = ta.didi_index(
-            source,
-            short_length,
-            medium_length,
-            long_length,
-            ma_type,
-            'ratio',
-            False,
-        ).rolling(2).std().diff()
-
-        self.dataset.loc[:, "DIDI_feat"] = feature_binning(
-            self.dataset["DIDI"],
-            self.test_index,
-            self.bins,
-        )
-
-        self.logger.info(
-            "DIDI index calculated in %.2f seconds.",
-            time.perf_counter() - start
-        )
-
-        return self.dataset
-
     def create_macd_feature(
         self,
         source: pd.Series,
@@ -758,38 +526,41 @@ class ModelFeatures:
         start = time.perf_counter()
 
         if self.normalize:
+            if ma_method not in ['sma', 'ema','dema', 'rma']:
+                raise ValueError(
+                    "Invalid moving average method provided."
+                    " Use 'sma', 'ema', 'dema', or 'rma'."
+                )
+
             if column != "histogram":
                 warnings.warn(
                     f"{column} isn't compatible with normalization"
                     + " and will be set to 'histogram'."
                 )
+
+            if diff_method != "ratio":
+                warnings.warn(
+                    f"{diff_method} isn't compatible with normalization"
+                    + " and will be set to 'ratio'."
+                )
+
+            column = "histogram"
+            diff_method = "ratio"
+
             source = source.copy().pct_change().rolling(2).std().iloc[2:]
 
-            self.dataset["MACD"] = (
-                ta.MACD(
-                    source=source,
-                    fast_length=fast_length,
-                    slow_length=slow_length,
-                    signal_length=signal_length,
-                    diff_method="ratio",
-                    ma_method=ma_method,
-                    signal_method=signal_method,
-                )["histogram"]
-                .rolling(2)
-                .std()
-                .diff()
-            )
+        self.dataset["MACD"] = ta.MACD(
+            source=source,
+            fast_length=fast_length,
+            slow_length=slow_length,
+            signal_length=signal_length,
+            diff_method=diff_method,
+            ma_method=ma_method,
+            signal_method=signal_method,
+        )[column]
 
-        else:
-            self.dataset["MACD"] = ta.MACD(
-                source=source,
-                fast_length=fast_length,
-                slow_length=slow_length,
-                signal_length=signal_length,
-                diff_method=diff_method,
-                ma_method=ma_method,
-                signal_method=signal_method,
-            )[column]
+        if self.normalize:
+            self.dataset["MACD"] = self.dataset["MACD"].rolling(2).std().diff()
 
         self.dataset.loc[:, "MACD_feat"] = feature_binning(
             self.dataset["MACD"],
@@ -800,75 +571,6 @@ class ModelFeatures:
         self.logger.info(
             "MACD index calculated in %.2f seconds.",
             time.perf_counter() - start,
-        )
-
-        return self.dataset
-
-    def create_macd_opt_feature(
-        self,
-        source: pd.Series,
-        fast_length: int = 12,
-        slow_length: int = 26,
-        signal_length: int = 9,
-        ma_method: Literal['sma', 'ema','dema', 'rma'] = 'ema',
-        signal_method: Literal['sma', 'ema','dema','tema', 'rma'] = 'ema',
-    ):
-        """
-        Create the MACD index feature.
-
-        Parameters:
-        -----------
-        source : pd.Series
-            The source series for calculating the MACD index.
-        short_length : int, optional
-            The length of the short EMA. (default: 12)
-        long_length : int, optional
-            The length of the long EMA. (default: 26)
-        signal_length : int, optional
-            The length of the signal line. (default: 9)
-        diff_method : Literal['absolute', 'ratio', 'dtw'], optional
-            The method to use for calculating the MACD index.
-            (default: 'absolute')
-        ma_method : Literal['sma', 'ema','dema','tema', 'rma'], optional
-            The moving average method to use for MACD calculation.
-            (default: 'ema')
-        signal_method : Literal['sma', 'ema','dema','tema', 'rma'], optional
-            The moving average method to use for signal line calculation.
-            (default: 'ema')
-
-        Returns:
-        --------
-        pd.DataFrame
-            The dataset with the MACD index feature added.
-        """
-        if ma_method not in ['sma', 'ema','dema', 'rma']:
-            raise ValueError(
-                "Invalid moving average method provided."
-                " Use 'sma', 'ema', 'dema', or 'rma'."
-            )
-        self.logger.info("Calculating MACD index...")
-        start = time.perf_counter()
-        source = source.copy().pct_change().rolling(2).std().iloc[2:]
-
-        self.dataset["MACD"] = ta.MACD(
-            source=source,
-            fast_length=fast_length,
-            slow_length=slow_length,
-            signal_length=signal_length,
-            diff_method='ratio',
-            ma_method=ma_method,
-            signal_method=signal_method,
-        )['histogram'].rolling(2).std().diff()
-
-        self.dataset.loc[:, "MACD_feat"] = feature_binning(
-            self.dataset["MACD"],
-            self.test_index,
-            self.bins,
-        )
-
-        self.logger.info(
-            "MACD index calculated in %.2f seconds.",
-            time.perf_counter() - start
         )
 
         return self.dataset
@@ -920,57 +622,6 @@ class ModelFeatures:
                 signal_length,
                 method,
             )
-
-        self.dataset.loc[:, "TRIX_feat"] = feature_binning(
-            self.dataset["TRIX"],
-            self.test_index,
-            self.bins,
-        )
-
-        self.logger.info(
-            "TRIX calculated in %.2f seconds.", time.perf_counter() - start
-        )
-
-        return self.dataset
-
-    def create_trix_opt_feature(
-        self,
-        source: pd.Series,
-        length: int = 15,
-        signal_length: int = 1,
-        method: Literal['sma', 'ema', 'dema', 'tema', 'rma'] = 'ema',
-    ):
-        """
-        Create the TRIX (Triple Exponential Moving Average) feature.
-
-        Parameters:
-        -----------
-        source : pd.Series
-            The source series for calculating the TRIX.
-        length : int, optional
-            The length of the TRIX calculation.
-            (default: 15)
-        signal_length : int, optional
-            The length of the signal line.
-            (default: 1)
-        method : Literal['sma', 'ema', 'dema', 'tema', 'rma'], optional
-            The moving average method to use for TRIX calculation.
-            (default: 'ema')
-
-        Returns:
-        --------
-        pd.DataFrame
-            The dataset with the TRIX feature added.
-        """
-        self.logger.info("Calculating TRIX...")
-        start = time.perf_counter()
-        source = source.copy().pct_change().rolling(2).std().iloc[2:]
-
-        self.dataset["TRIX"] = (
-            ta.TRIX(source, length, signal_length, method)
-            .rolling(2).std()
-            .diff()
-        )
 
         self.dataset.loc[:, "TRIX_feat"] = feature_binning(
             self.dataset["TRIX"],
@@ -1038,57 +689,6 @@ class ModelFeatures:
 
         return self.dataset
 
-    def create_smio_opt_feature(
-        self,
-        source: pd.Series,
-        short_length: int = 20,
-        long_length: int = 5,
-        signal_length: int = 5,
-        ma_type: Literal['sma', 'ema', 'dema', 'tema', 'rma'] = 'ema',
-    ):
-        """
-        Create the SMIO (SMI Ergotic Oscillator) feature.
-
-        Parameters:
-        -----------
-        source : pd.Series
-            The source series for calculating the SMIO.
-        short_length : int, optional
-            The length of the faster moving average. (default: 3)
-        long_length : int, optional
-            The length of the slower moving average. (default: 18)
-        ma_type : Literal['sma', 'ema', 'dema', 'tema', 'rma'], optional
-            The moving average method to use for SMIO calculation.
-            (default: 'ema')
-
-        Returns:
-        --------
-        pd.DataFrame
-            The dataset with the SMIO feature added.
-        """
-        self.logger.info("Calculating SMIO...")
-        start = time.perf_counter()
-
-        self.dataset["SMIO"] = ta.SMIO(
-            source=source,
-            long_length=long_length,
-            short_length=short_length,
-            signal_length=signal_length,
-            ma_method=ma_type,
-        ).rolling(2).std().diff()
-
-        self.dataset.loc[:, "SMIO_feat"] = feature_binning(
-            self.dataset["SMIO"],
-            self.test_index,
-            self.bins,
-        )
-
-        self.logger.info(
-            "SMIO calculated in %.2f seconds.", time.perf_counter() - start
-        )
-
-        return self.dataset
-
     def create_tsi_feature(
         self,
         source: pd.Series,
@@ -1130,57 +730,6 @@ class ModelFeatures:
 
         if self.normalize:
             self.dataset["TSI"] = self.dataset["TSI"].rolling(2).std().diff()
-
-        self.dataset.loc[:, "TSI_feat"] = feature_binning(
-            self.dataset["TSI"],
-            self.test_index,
-            self.bins,
-        )
-
-        self.logger.info(
-            "TSI calculated in %.2f seconds.", time.perf_counter() - start
-        )
-
-        return self.dataset
-
-    def create_tsi_opt_feature(
-        self,
-        source: pd.Series,
-        short_length: int = 13,
-        long_length: int = 25,
-        ma_type: Literal['sma', 'ema', 'dema', 'tema', 'rma'] = 'ema',
-    ):
-        """
-        Create the TSI (True Strength Index) feature.
-
-        Parameters:
-        -----------
-        source : pd.Series
-            The source series for calculating the TSI.
-        short_length : int, optional
-            The length of the faster MA.
-            (default: 13)
-        long_length : int, optional
-            The length of the slower MA.
-            (default: 25)
-        ma_type : Literal['sma', 'ema', 'dema', 'tema', 'rma'], optional
-            The moving average method to use for TSI calculation.
-            (default: 'ema')
-
-        Returns:
-        --------
-        pd.DataFrame
-            The dataset with the TSI feature added.
-        """
-        self.logger.info("Calculating TSI...")
-        start = time.perf_counter()
-
-        self.dataset["TSI"] = ta.tsi(
-            source=source,
-            short_length=short_length,
-            long_length=long_length,
-            ma_method=ma_type,
-        ).rolling(2).std().diff()
 
         self.dataset.loc[:, "TSI_feat"] = feature_binning(
             self.dataset["TSI"],
@@ -1467,65 +1016,6 @@ class ModelFeatures:
             self.dataset["bb_trend"] = (
                 self.dataset["bb_trend"].rolling(2).std().diff()
             )
-
-        self.dataset.loc[:, "bb_trend_feat"] = feature_binning(
-            self.dataset["bb_trend"],
-            self.test_index,
-            self.bins,
-        )
-
-        self.logger.info(
-            "BB Trend calculated in %.2f seconds.", time.perf_counter() - start
-        )
-
-        return self.dataset
-
-    def create_bb_trend_feature_opt(
-        self,
-        source: pd.Series,
-        short_length: int = 13,
-        long_length: int = 25,
-        stdev_multiplier: float = 2.0,
-        ma_type: Literal['sma', 'ema', 'dema', 'tema', 'rma'] = 'ema',
-        stdev_method: Literal["absolute", "ratio", "dtw"] = "absolute",
-        diff_method: Literal["absolute", "ratio", "normal"] = "normal",
-        based_on: Literal["short_length", "long_length"] = "long_length",
-    ):
-        """
-        Create the BB Trend (Bollinger Bands Trend) feature.
-
-        Parameters:
-        -----------
-        source : pd.Series
-            The source series for calculating the BB Trend.
-        short_length : int, optional
-            The length of the faster MA.
-            (default: 13)
-        long_length : int, optional
-            The length of the slower MA.
-            (default: 25)
-        ma_type : Literal['sma', 'ema', 'dema', 'tema', 'rma'], optional
-            The moving average method to use for BB Trend calculation.
-            (default: 'ema')
-
-        Returns:
-        --------
-        pd.DataFrame
-            The dataset with the BB Trend feature added.
-        """
-        self.logger.info("Calculating BB Trend...")
-        start = time.perf_counter()
-
-        self.dataset["bb_trend"] = ta.bollinger_trends(
-            source=source.copy().pct_change().rolling(2).std().iloc[2:],
-            short_length=short_length,
-            long_length=long_length,
-            mult=stdev_multiplier,
-            ma_method=ma_type,
-            stdev_method=stdev_method,
-            diff_method=diff_method,
-            based_on=based_on,
-        ).rolling(2).std().diff()
 
         self.dataset.loc[:, "bb_trend_feat"] = feature_binning(
             self.dataset["bb_trend"],

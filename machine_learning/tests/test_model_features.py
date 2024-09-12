@@ -7,6 +7,7 @@ from pandas import Timestamp, Interval
 import numpy as np
 
 from machine_learning.model_features import feature_binning, ModelFeatures
+from machine_learning.tests.assert_functions import assert_count_series
 
 
 class TestFeatureBinning(unittest.TestCase):
@@ -234,10 +235,10 @@ class TestRSIOpt(unittest.TestCase):
         self.target = self.dataframe["Target_bin"].copy()
 
         self.model_features = ModelFeatures(
-            self.dataframe, self.test_index, self.bins, False
+            self.dataframe, self.test_index, self.bins, False, True
         )
 
-        self.test_df = self.model_features.create_rsi_opt_feature(
+        self.test_df = self.model_features.create_rsi_feature(
             self.dataframe["close"].copy(), 14, "ema"
         ).dropna()
 
@@ -505,10 +506,10 @@ class TestSlowStochOpt(unittest.TestCase):
         self.target = self.dataframe["Target_bin"].copy()
 
         self.model_features = ModelFeatures(
-            self.dataframe, self.test_index, self.bins, False
+            self.dataframe, self.test_index, self.bins, False, True
         )
 
-        self.test_df = self.model_features.create_slow_stoch_opt_feature(
+        self.test_df = self.model_features.create_slow_stoch_feature(
             "close"
         ).dropna()
 
@@ -1023,16 +1024,16 @@ class TestDTWDistanceOpt(unittest.TestCase):
         self.target = self.dataframe["Target_bin"].copy()
 
         self.model_features = ModelFeatures(
-            self.dataframe, self.test_index, self.bins, False
+            self.dataframe, self.test_index, self.bins, False, True
         )
 
         source = self.dataframe["close"]
 
-        self.test_df_all = self.model_features.create_dtw_distance_opt_feature(
+        self.test_df_all = self.model_features.create_dtw_distance_feature(
             source, "all", 14
         ).dropna()
 
-        self.test_df_mas = self.model_features.create_dtw_distance_opt_feature(
+        self.test_df_mas = self.model_features.create_dtw_distance_feature(
             source, ["sma", "ema", "rma", "dema", "tema"], 14
         ).dropna()
 
@@ -1662,12 +1663,12 @@ class TestDidiIndexOPT(unittest.TestCase):
         self.target = self.dataframe["Target_bin"].copy()
 
         self.model_features = ModelFeatures(
-            self.dataframe, self.test_index, self.bins, False
+            self.dataframe, self.test_index, self.bins, False, True
         )
 
         source = self.dataframe["close"]
 
-        self.test_df = self.model_features.create_didi_index_opt_feature(
+        self.test_df = self.model_features.create_didi_index_feature(
             source, 4, 19, 21, "sma"
         ).dropna()
 
@@ -1888,14 +1889,26 @@ class TestMacdOPT(unittest.TestCase):
         self.target = self.dataframe["Target_bin"].copy()
 
         self.model_features = ModelFeatures(
-            self.dataframe, self.test_index, self.bins, False
+            self.dataframe, self.test_index, self.bins, False, True
         )
 
-        source = self.dataframe["close"]
+        self.source = self.dataframe["close"]
 
-        self.test_df = self.model_features.create_macd_opt_feature(
-            source
+        self.test_df = self.model_features.create_macd_feature(
+            self.source, diff_method="ratio",
         ).dropna()
+
+    def test_macd_opt_diff_method_warning(self) -> None:
+        with self.assertWarns(UserWarning):
+            self.model_features.create_macd_feature(
+                self.source, diff_method="absolute",
+            )
+
+    def test_macd_opt_column_warning(self) -> None:
+        with self.assertWarns(UserWarning):
+            self.model_features.create_macd_feature(
+                self.source, diff_method="ratio", column="macd",
+            )
 
     def test_create_macd_opt_feature_columns(self) -> None:
         expected_columns = pd.Index(
@@ -1980,15 +1993,14 @@ class TestMacdOPT(unittest.TestCase):
         assert_count_series(test_count, expected_count)
 
     def test_create_macd_opt_feature_invalid_ma_method(self):
-        self.assertRaises(
-            ValueError,
-            self.model_features.create_macd_opt_feature,
-            self.dataframe["close"],
-            12,
-            26,
-            9,
-            "invalid",
-        )
+        with self.assertWarns(UserWarning):
+            self.model_features.create_macd_feature(
+                self.dataframe["close"],
+                12,
+                26,
+                9,
+                column="invalid",
+            )
 
 
 class TestTrix(unittest.TestCase):
@@ -2125,7 +2137,7 @@ class TestTrixOPT(unittest.TestCase):
         self.target = self.dataframe["Target_bin"].copy()
 
         self.model_features = ModelFeatures(
-            self.dataframe, self.test_index, self.bins, False
+            self.dataframe, self.test_index, self.bins, False, True
         )
 
         source = self.dataframe["close"]
@@ -2133,7 +2145,7 @@ class TestTrixOPT(unittest.TestCase):
         with warnings.catch_warnings():
             warnings.simplefilter(action="ignore", category=RuntimeWarning)
 
-            self.test_df = self.model_features.create_trix_opt_feature(
+            self.test_df = self.model_features.create_trix_feature(
                 source, 3, 2, "sma"
             ).dropna()
 
@@ -2353,14 +2365,12 @@ class TestSMIOOPT(unittest.TestCase):
         self.target = self.dataframe["Target_bin"].copy()
 
         self.model_features = ModelFeatures(
-            self.dataframe, self.test_index, self.bins, False
+            self.dataframe, self.test_index, self.bins, False, True
         )
 
         source = self.dataframe["close"]
 
-        self.test_df = self.model_features.create_smio_opt_feature(
-            source
-        ).dropna()
+        self.test_df = self.model_features.create_smio_feature(source).dropna()
 
     def test_create_smio_opt_feature_columns(self) -> None:
         expected_columns = pd.Index(
@@ -2577,14 +2587,12 @@ class TestTSIOPT(unittest.TestCase):
         self.target = self.dataframe["Target_bin"].copy()
 
         self.model_features = ModelFeatures(
-            self.dataframe, self.test_index, self.bins, False
+            self.dataframe, self.test_index, self.bins, False, True
         )
 
         source = self.dataframe["close"]
 
-        self.test_df = self.model_features.create_tsi_opt_feature(
-            source
-        ).dropna()
+        self.test_df = self.model_features.create_tsi_feature(source).dropna()
 
     def test_create_tsi_opt_feature_columns(self) -> None:
         expected_columns = pd.Index(
@@ -2803,12 +2811,12 @@ class TestBBTrendOPT(unittest.TestCase):
         self.target = self.dataframe["Target_bin"].copy()
 
         self.model_features = ModelFeatures(
-            self.dataframe, self.test_index, self.bins, False
+            self.dataframe, self.test_index, self.bins, False, True
         )
 
         source = self.dataframe["close"]
 
-        self.test_df = self.model_features.create_bb_trend_feature_opt(
+        self.test_df = self.model_features.create_bb_trend_feature(
             source
         ).dropna()
 
