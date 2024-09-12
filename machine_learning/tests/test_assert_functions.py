@@ -126,3 +126,6 @@ class TestAssertCount(unittest.TestCase):
             self.test_count,
             expected_count,
         )
+
+if __name__ == '__main__':
+    unittest.main()

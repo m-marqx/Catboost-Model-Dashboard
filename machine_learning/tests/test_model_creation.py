@@ -5,7 +5,7 @@ import pandas as pd
 from pandas import Timestamp, Interval
 import numpy as np
 from machine_learning.model_builder import model_creation
-from machine_learning.tests.assert_functions import assert_count_series
+from machine_learning.tests.test_assert_functions import assert_count_series
 
 
 class TestModelCreationOPT(unittest.TestCase):
@@ -2372,3 +2372,6 @@ class TestModelCreationNormal(unittest.TestCase):
         }
 
         assert_count_series(test_count, expected_count)
+
+if __name__ == '__main__':
+    unittest.main()

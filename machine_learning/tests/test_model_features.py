@@ -7,7 +7,7 @@ from pandas import Timestamp, Interval
 import numpy as np
 
 from machine_learning.model_features import feature_binning, ModelFeatures
-from machine_learning.tests.assert_functions import assert_count_series
+from machine_learning.tests.test_assert_functions import assert_count_series
 
 
 class TestFeatureBinning(unittest.TestCase):
@@ -4194,3 +4194,6 @@ class TestAttributeSetters(unittest.TestCase):
         self.assertEqual(
             self.model_features.set_normalize(True), self.model_features
         )
+
+if __name__ == '__main__':
+    unittest.main()
