@@ -444,8 +444,8 @@ def model_creation(
             signal_length=feat_parameters["random_macd_signal_length"],
             ma_method=feat_parameters["random_macd_ma_method"],
             signal_method=feat_parameters["random_macd_signal_method"],
-            diff_method=feat_parameters["random_macd_diff_method"],
-            column=feat_parameters["random_macd_column"],
+            diff_method=feat_parameters.get("random_macd_diff_method", "ratio"),
+            column=feat_parameters.get("random_macd_column", "histogram"),
         )
 
     if "TRIX" in feat_parameters["random_features"]:
