@@ -160,13 +160,154 @@ class ModelMiner:
             "off_days": None,
         }
 
-    def __generate_feat_parameters(self):
+    def generate_feat_parameters(self):
+        """
+        Generate a dictionary of random feature parameters for the model.
+        Returns
+        -------
+        dict
+            A dictionary containing the randomly generated feature
+            parameters for the model.
+        Notes
+        -----
+        This method generates random values for various feature
+        parameters used in the model. The generated parameters include:
+        - General parameters:
+            - random_features: A list of randomly chosen features.
+        - DTW parameters:
+            - random_source_price_dtw: A randomly chosen source price
+            for DTW.
+            - random_binnings_qty_dtw: A randomly chosen number of
+            binnings for DTW.
+            - random_moving_averages: A randomly chosen moving average
+            type for DTW.
+            - random_moving_averages_length: A randomly chosen length
+            for moving averages in DTW.
+        - RSI parameters:
+            - random_source_price_rsi: A randomly chosen source price
+            for RSI.
+            - random_binnings_qty_rsi: A randomly chosen number of
+            binnings for RSI.
+            - random_rsi_length: A randomly chosen length for RSI.
+            - random_rsi_ma_method: A randomly chosen moving average
+            method for RSI.
+        - STOCH parameters:
+            - random_source_price_stoch: A randomly chosen source price
+            for STOCH.
+            - random_binnings_qty_stoch: A randomly chosen number of
+            binnings for STOCH.
+            - random_slow_stoch_length: A randomly chosen length for
+            slow STOCH.
+            - random_slow_stoch_k: A randomly chosen value for K in
+            slow STOCH.
+            - random_slow_stoch_d: A randomly chosen value for D in
+            slow STOCH.
+            - random_slow_stoch_ma_method: A randomly chosen moving
+            average method for slow STOCH.
+        - DIDI parameters:
+            - random_source_price_didi: A randomly chosen source price
+            for DIDI.
+            - random_binnings_qty_didi: A randomly chosen number of
+            binnings for DIDI.
+            - random_didi_short_length: The minimum length among
+            randomly chosen lengths for DIDI.
+            - random_didi_mid_length: The median length among randomly
+            chosen lengths for DIDI.
+            - random_didi_long_length: The maximum length among randomly
+            chosen lengths for DIDI.
+            - random_didi_ma_type: A randomly chosen moving average type
+            for DIDI.
+            - random_didi_method: A randomly chosen distance method for
+            DIDI.
+        - CCI parameters:
+            - random_source_price_cci: A randomly chosen source price
+            for CCI.
+            - random_binnings_qty_cci: A randomly chosen number of
+            binnings for CCI.
+            - random_cci_length: A randomly chosen length for CCI.
+            - random_cci_method: A randomly chosen moving average method
+            for CCI.
+        - MACD parameters:
+            - random_source_price_macd: A randomly chosen source price
+            for MACD.
+            - random_binnings_qty_macd: A randomly chosen number of
+            binnings for MACD.
+            - random_macd_fast_length: The maximum length among randomly
+            chosen lengths for MACD.
+            - random_macd_slow_length: The minimum length among randomly
+            chosen lengths for MACD.
+            - random_macd_signal_length: A randomly chosen length for
+            MACD signal.
+            - random_macd_ma_method: A randomly chosen moving average
+            method for MACD.
+            - random_macd_signal_method: A randomly chosen moving
+            average method for MACD signal.
+            - random_macd_column: A randomly chosen column for MACD.
+        - TRIX parameters:
+            - random_source_price_trix: A randomly chosen source price
+            for TRIX.
+            - random_binnings_qty_trix: A randomly chosen number of
+            binnings for TRIX.
+            - random_trix_length: A randomly chosen length for TRIX.
+            - random_trix_signal_length: A randomly chosen length for
+            TRIX signal.
+            - random_trix_ma_method: A randomly chosen moving average
+            method for TRIX.
+        - SMIO parameters:
+            - random_source_price_smio: A randomly chosen source price
+            for SMIO.
+            - random_binnings_qty_smio: A randomly chosen number of
+            binnings for SMIO.
+            - random_smio_short_length: The maximum length among
+            randomly chosen lengths for SMIO.
+            - random_smio_long_length: The minimum length among randomly
+            chosen lengths for SMIO.
+            - random_smio_signal_length: A randomly chosen length for
+            SMIO signal.
+            - random_smio_ma_method: A randomly chosen moving average
+            method for SMIO.
+        - TSI parameters:
+            - random_source_price_tsi: A randomly chosen source price
+            for TSI.
+            - random_binnings_qty_tsi: A randomly chosen number of
+            binnings for TSI.
+            - random_tsi_short_length: The maximum length among randomly
+            chosen lengths for TSI.
+            - random_tsi_long_length: The minimum length among randomly
+            chosen lengths for TSI.
+            - random_tsi_ma_method: A randomly chosen moving average
+            method for TSI.
+        - BB Trend parameters:
+            - random_source_bb_trend: A randomly chosen source price for
+            BB Trend.
+            - random_binnings_qty_bb_trend: A randomly chosen number of
+            binnings for BB Trend.
+            - random_bb_trend_short_length: A randomly chosen short
+            length for BB Trend.
+            - random_bb_trend_long_length: A randomly chosen long length
+            for BB Trend.
+            - random_bb_trend_stdev: A randomly chosen standard
+            deviation for BB Trend.
+            - random_bb_trend_ma_method: A randomly chosen moving
+            average method for BB Trend.
+            - random_bb_trend_stdev_method: A randomly chosen standard
+            deviation method for BB Trend.
+            - random_bb_trend_diff_method: A randomly chosen difference
+            method for BB Trend.
+            - random_bb_trend_based_on: A randomly chosen base method
+            for BB Trend.
+        """
         macd_lengths = np.random.choice(range(2, 151), 2, replace=False)
         smio_lengths = np.random.choice(range(2, 151), 2, replace=False)
         tsi_lengths = np.random.choice(range(2, 151), 2, replace=False)
         didi_ma_lengths = np.random.choice(range(2, 151), 3, replace=False)
         ichimoku_lengths = np.random.choice(range(2, 151), 2, replace=False)
         ichimoku_price_distance_lengths = np.random.choice(range(2, 151), 2, replace=False)
+        bb_trend_short_length = np.random.choice(range(10, 20))
+        bb_trend_long_length = (
+            np.random.choice(range(1, 3))
+            + bb_trend_short_length
+        )
 
         fast_length = max(macd_lengths)
         slow_length = min(macd_lengths)
