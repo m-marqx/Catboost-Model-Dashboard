@@ -399,9 +399,41 @@ class ModelMiner:
             "random_ichimoku_price_distance_based_on": np.random.choice(['lead_line', 'leading_span']),
             "random_ichimoku_price_distance_method": np.random.choice(distance_types),
             "random_ichimoku_price_distance_use_pct": True,
-        }
+    def generate_hyperparameters(self):
+        """
+        Generate a dictionary of hyperparameters for the model.
 
-    def __generate_hyperparameters(self):
+        Returns
+        -------
+        dict
+            A dictionary containing the following hyperparameters:
+            - iterations : int
+                The number of iterations for the model.
+            - learning_rate : float
+                The learning rate for the model.
+            - depth : int
+                The depth of the model.
+            - min_child_samples : int
+                The minimum number of samples required to create a new
+                node in the model.
+            - colsample_bylevel : float
+                The fraction of columns to be randomly selected for
+                each level in the model.
+            - subsample : float
+                The fraction of samples to be randomly selected for
+                each tree in the model.
+            - reg_lambda : int
+                The regularization lambda value for the model.
+            - use_best_model : bool
+                Whether to use the best model found during training.
+            - eval_metric : str
+                The evaluation metric to be used during training.
+            - random_seed : int
+                The random seed value for the model.
+            - silent : bool
+                Whether to print messages during training.
+
+        """
         return {
             "iterations": 1000,
             "learning_rate": np.random.choice(np.arange(0.01, 1.01, 0.01)),
