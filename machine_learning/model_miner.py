@@ -1,17 +1,18 @@
+from typing import Any
 import itertools
-from ast import literal_eval
-from typing import Literal
+import time
 
 import pandas as pd
 import numpy as np
-import plotly.express as px
 
 from machine_learning.ml_utils import DataHandler
 from machine_learning.model_builder import model_creation
 from machine_learning.model_creator import (
     adjust_predict_one_side,
 )
+from machine_learning.ols_data import calculate_r2, calculate_coef
 
+from return_statistics import Statistics
 
 class ModelMiner:
     """
@@ -151,10 +152,11 @@ class ModelMiner:
             "total_operations_pct_val": None,
             "r2_in_2023": None,
             "r2_val": None,
-            "ols_coef_2023": None,
+            "ols_coef_2022": None,
             "ols_coef_val": None,
             "test_index": None,
             "total_time": None,
+            "return_ratios": None,
             "side": None,
             "max_trades": None,
             "off_days": None,
@@ -450,52 +452,45 @@ class ModelMiner:
             "silent": True,
         }
 
-    def search_model(
+    def create_and_calculate_metrics(
         self,
+        feat_parameters: dict,
+        hyperparams: dict,
         test_index: int,
         pct_adj: float = 0.5,
         train_in_middle: bool = True,
         cutoff_point: float | None = None,
-    ):
+    ) -> dict[str, None] | dict[str, Any]:
         """
-        Search for the best model parameters.
+        create catboost catboost model and return the metrics.
 
         Parameters:
         ----------
+        feat_parameters : dict
+            The feature parameters for model creation.
+        hyperparams : dict
+            The hyperparameters for model creation.
         test_index : int
             The test index.
         pct_adj : float, optional
             The percentage to adjust the target
-            (default : 0.5).
+            (default: 0.5).
         train_in_middle : bool, optional
-            The train in the middle parameter
-            (default : True).
+            Whether to train in the middle
+            (default: True).
+        cutoff_point : float or None, optional
+            The cutoff point for the model
+            (default: None).
 
         Returns:
         -------
         dict
             The dictionary containing the best model parameters.
         """
-        start = time.perf_counter()
-        feat_parameters = self.__generate_feat_parameters()
-        hyperparams = self.__generate_hyperparameters()
+        start: float = time.perf_counter()
 
         try:
-            selected_features = feat_parameters["random_features"]
-            features = []
-
-            for r in range(1, len(selected_features) + 1):
-                features += list(itertools.combinations(selected_features, r))
-
-            features = np.array(features, dtype="object")
-            if len(features) > 1:
-                feat_parameters["random_features"] = np.random.choice(
-                    features
-                )
-            else:
-                feat_parameters["random_features"] = list(features[0])
-
-            mta, index_splits, all_y = model_creation(
+            mta, index_splits, all_y, _ = model_creation(
                 feat_parameters,
                 hyperparams,
                 test_index,
@@ -506,6 +501,7 @@ class ModelMiner:
                 train_in_middle,
                 cutoff_point,
                 self.side,
+                dev=True,
             )
 
             val_periods = (
@@ -533,70 +529,83 @@ class ModelMiner:
             ):
                 return self.empty_dict
 
-            #Filter the results that doesn't have profit in bear market
-            bearmarket_2022 = mta.loc["2021-08-11":"2023-01-01", "Liquid_Result"].cumprod()
-            if bearmarket_2022.iloc[-1] < 1:
-                return self.empty_dict
-            if (bearmarket_2022 == 1).all():
-                return self.empty_dict
+            # Criação do modelo
+            y_test = all_y.loc[test_periods[0] : test_periods[1]]
+            y_val = all_y.loc[val_periods[0] : val_periods[1]][:-7]
 
-            bearmarket_2019 = mta.loc["2019-06-24":"2020-03-09", "Liquid_Result"].cumprod()
-            if bearmarket_2019.iloc[-1] < 1:
-                return self.empty_dict
-            if (bearmarket_2019 == 1).all():
-                return self.empty_dict
-
-            bearmarket_2018 = mta.loc["2017-11-17":"2019-01-01", "Liquid_Result"].cumprod()
-            if bearmarket_2018.iloc[-1] < 1:
-                return self.empty_dict
-            if (bearmarket_2018 == 1).all():
-                return self.empty_dict
-
-
-            try:
-                r2_2023 = literal_eval(
-                    px.scatter(bearmarket_2022, trendline="ols")
-                    .data[1]["hovertemplate"]
-                    .split(">=")[1]
-                    .split("<br>")[0]
-                )
-
-                ols_coef_2023 = literal_eval(
-                    px.scatter(bearmarket_2022, trendline="ols")
-                    .data[1]['hovertemplate']
-                    .split('<br>')[1]
-                    .split('*')[0]
-                    .split(' ')[-2]
-                )
-
-                r2_val = literal_eval(
-                    px.scatter(mta_val["Liquid_Result"].cumprod(), trendline="ols")
-                    .data[1]["hovertemplate"]
-                    .split(">=")[1]
-                    .split("<br>")[0]
-                )
-
-                ols_coef_val = literal_eval(
-                    px.scatter(mta_val["Liquid_Result"].cumprod(), trendline="ols")
-                    .data[1]['hovertemplate']
-                    .split('<br>')[1]
-                    .split('*')[0]
-                    .split(' ')[-2]
-                )
-
-            except Exception:
-                r2_2023 = -404
-                r2_val = -404
-
-            total_operations = (
-                test_buys[1],
-                val_buys[1],
+            y_pred_test = (
+                mta[["Predict"]]
+                .loc[test_periods[0] : test_periods[1]]
+                .query("Predict != 0")
+                .where(mta["Predict"] == 1, 0)
+            )
+            y_pred_val = (
+                mta[["Predict"]]
+                .loc[val_periods[0] : val_periods[1]][:-7]
+                .query("Predict != 0")
+                .where(mta["Predict"] == 1, 0)
             )
 
-            total_operations_test_pct = test_buys[1] / (test_index // 3) * 100
-            total_operations_val_pct = val_buys[1] / (test_index // 3) * 100
+            y_test_adj = y_test.reindex(y_pred_test.index)
+            y_val_adj = y_val.reindex(y_pred_val.index)
 
-            total_operations_pct = (
+            result_metrics_test = DataHandler(mta.reindex(y_test_adj.index)).result_metrics(
+                "Liquid_Result", is_percentage_data=True, output_format="Series"
+            )
+
+            result_metrics_val = DataHandler(mta.reindex(y_val_adj.index)).result_metrics(
+                "Liquid_Result", is_percentage_data=True, output_format="Series"
+            )
+
+            precisions = (
+                result_metrics_test["Win_Rate"],
+                result_metrics_val["Win_Rate"],
+            )
+
+            expected_return = (
+                result_metrics_test["Expected_Return"],
+                result_metrics_val["Expected_Return"],
+            )
+
+            metrics_results = {
+                "expected_return_test": expected_return[0],
+                "expected_return_val": expected_return[1],
+                "precisions_test": precisions[0],
+                "precisions_val": precisions[1],
+                "precisions": precisions,
+            }
+
+            if min(precisions) < 0.52:
+                return self.empty_dict
+
+            #Filter the results that doesn't have profit in bear market
+            bearmarket_2022 = (
+                mta.loc["2021-08-11":"2023-01-01", "Liquid_Result"]
+                .cumprod()
+            )
+
+            try:
+                r2_2022 = calculate_r2(bearmarket_2022)
+                ols_coef_2022 = calculate_coef(bearmarket_2022)
+
+                r2_val = calculate_r2(mta_val["Liquid_Result"].cumprod())
+                ols_coef_val = calculate_coef(mta_val["Liquid_Result"].cumprod())
+
+            except Exception:
+                r2_2022 = -404
+                r2_val = -404
+                ols_coef_2022 = -404
+                ols_coef_val = -404
+
+            total_operations = (
+                test_buys.loc[self.side],
+                val_buys.loc[self.side],
+            )
+
+            total_operations_test_pct: float = total_operations[0] / (test_index // self.off_days)
+            total_operations_val_pct: float = total_operations[1] / (test_index // self.off_days)
+
+            total_operations_pct: tuple[float, float] = (
                 total_operations_test_pct,
                 total_operations_val_pct,
             )
@@ -629,25 +638,26 @@ class ModelMiner:
                 drawdown_adj_val.quantile(0.95),
             )
 
-            # Criação do modelo
-            y_test = all_y.loc[test_periods[0] : test_periods[1]]
-            y_val = all_y.loc[val_periods[0] : val_periods[1]][:-7]
+            _, sharpe_test, sortino_test =  Statistics(
+                dataframe = (mta_test["Liquid_Result"] - 1).drop_duplicates(),
+                time_span = "Y",
+                risk_free_rate = (1.12) ** (1/365.25) - 1,
+                is_percent = True,
+            ).calculate_all_statistics().mean()
 
-            y_pred_test = (
-                mta[["Predict"]]
-                .loc[test_periods[0] : test_periods[1]]
-                .query("Predict != 0")
-                .where(mta["Predict"] == 1, 0)
-            )
-            y_pred_val = (
-                mta[["Predict"]]
-                .loc[val_periods[0] : val_periods[1]][:-7]
-                .query("Predict != 0")
-                .where(mta["Predict"] == 1, 0)
-            )
+            _, sharpe_val, sortino_val =  Statistics(
+                dataframe = (mta_val["Liquid_Result"] - 1).drop_duplicates(),
+                time_span = "Y",
+                risk_free_rate = (1.12) ** (1/365.25) - 1,
+                is_percent = True,
+            ).calculate_all_statistics().mean()
 
-            y_test_adj = y_test.reindex(y_pred_test.index)
-            y_val_adj = y_val.reindex(y_pred_val.index)
+            return_ratios = {
+                "sharpe_test" : sharpe_test,
+                "sharpe_val" : sharpe_val,
+                "sortino_test" : sortino_test,
+                "sortino_val" : sortino_val,
+            }
 
             test_predict_adj = self.adj_targets.loc[test_periods[0] : test_periods[1]]
             val_predict_adj = self.adj_targets.loc[val_periods[0] : val_periods[1]]
@@ -655,43 +665,14 @@ class ModelMiner:
             support_diff_test = (
                 test_predict_adj.value_counts(normalize=True)
                 - mta_test["Predict"].value_counts(normalize=True)
-            )[1]
+            )[self.side]
 
             support_diff_val = (
                 val_predict_adj.value_counts(normalize=True)
                 - mta_val["Predict"].value_counts(normalize=True)
-            )[1]
+            )[self.side]
 
             support_diffs = (support_diff_test, support_diff_val)
-
-            result_metrics_test = DataHandler(mta.loc[y_test_adj.index]).result_metrics(
-                "Liquid_Result", is_percentage_data=True
-            )
-
-            result_metrics_val = DataHandler(mta.loc[y_val_adj.index]).result_metrics(
-                "Liquid_Result", is_percentage_data=True
-            )
-
-            precisions = (
-                result_metrics_test.loc["Win_Rate"][0],
-                result_metrics_val.loc["Win_Rate"][0],
-            )
-
-            expected_return = (
-                result_metrics_test.loc["Expected_Return"][0],
-                result_metrics_val.loc["Expected_Return"][0],
-            )
-
-            metrics_results = {
-                "expected_return_test": expected_return[0],
-                "expected_return_val": expected_return[1],
-                "precisions_test": precisions[0],
-                "precisions_val": precisions[1],
-                "precisions": precisions,
-            }
-
-            if min(precisions) < 0.52:
-                return self.empty_dict
 
             return {
                 "feat_parameters": [feat_parameters],
@@ -711,16 +692,70 @@ class ModelMiner:
                 "total_operations_val": total_operations[1],
                 "total_operations_pct_test": total_operations_pct[0],
                 "total_operations_pct_val": total_operations_pct[1],
-                "r2_in_2023": r2_2023,
+                "r2_in_2023": r2_2022,
                 "r2_val": r2_val,
-                "ols_coef_2023": ols_coef_2023,
+                "ols_coef_2022": ols_coef_2022,
                 "ols_coef_val": ols_coef_val,
                 "test_index": test_index,
                 "train_in_middle": train_in_middle,
                 "total_time": time.perf_counter() - start,
+                "return_ratios": return_ratios,
                 "side": self.side,
                 "max_trades": self.max_trades,
                 "off_days": self.off_days,
             }
         except Exception as e:
             raise ValueError(f"Error: {e} \n {feat_parameters} \n\n  {hyperparams}") from e
+
+
+    def search_model(
+        self,
+        test_index: int,
+        pct_adj: float = 0.5,
+        train_in_middle: bool = True,
+        cutoff_point: float | None = None,
+    ) -> dict[str, None] | dict[str, Any]:
+        """
+        Search for the best model parameters.
+
+        Parameters:
+        ----------
+        test_index : int
+            The test index.
+        pct_adj : float, optional
+            The percentage to adjust the target
+            (default : 0.5).
+        train_in_middle : bool, optional
+            The train in the middle parameter
+            (default : True).
+
+        Returns:
+        -------
+        dict
+            The dictionary containing the best model parameters.
+        """
+        feat_parameters = self.generate_feat_parameters()
+        hyperparams = self.generate_hyperparameters()
+
+        selected_features = feat_parameters["random_features"]
+        features = []
+
+        for r in range(1, len(selected_features) + 1):
+            features += list(itertools.combinations(selected_features, r))
+
+        features = np.array(features, dtype="object")
+        if len(features) > 1:
+            feat_parameters["random_features"] = np.random.choice(
+                features
+            )
+        else:
+            feat_parameters["random_features"] = list(features[0])
+
+        return self.create_and_calculate_metrics(
+            feat_parameters,
+            hyperparams,
+            test_index,
+            pct_adj,
+            train_in_middle,
+            cutoff_point
+        )
