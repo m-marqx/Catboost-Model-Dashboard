@@ -452,7 +452,7 @@ class ModelMiner:
         return {
             "iterations": 1000,
             "learning_rate": np.random.choice(np.arange(0.01, 1.01, 0.01)),
-            "depth": np.random.choice(range(1, 17, 1)),
+            "depth": np.random.choice(range(1, 12, 1)),
             "min_child_samples": np.random.choice(range(1, 21, 1)),
             "colsample_bylevel": np.random.choice(np.arange(0.1, 1.01, 0.01)),
             "subsample": np.random.choice(np.arange(0.1, 1.01, 0.01)),
