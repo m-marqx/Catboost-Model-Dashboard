@@ -315,10 +315,10 @@ class ModelMiner:
         signal_length = (
             signal_length + 1 if signal_length in macd_lengths else signal_length
         )
-        distance_types = [
+        distance_types: list[str] = [
             "absolute",
             "ratio",
-            "dtw",
+            # "dtw",
         ]
 
         return {
