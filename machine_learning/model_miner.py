@@ -326,7 +326,7 @@ class ModelMiner:
         return {
             # General
             "random_features": list(np.random.choice(self.random_features)),
-            "train_in_middle": self.train_in_middle,
+            # DTW
             "random_source_price_dtw": np.random.choice(self.ohlc),
             "random_binnings_qty_dtw": np.random.choice(range(10, 31)),
             "random_moving_averages": np.random.choice(self.ma_type_combinations),
@@ -335,11 +335,14 @@ class ModelMiner:
             "random_source_price_rsi": np.random.choice(self.ohlc),
             "random_binnings_qty_rsi": np.random.choice(range(10, 31)),
             "random_rsi_length": np.random.choice(range(2, 151)),
+            "random_rsi_ma_method": np.random.choice(self.ma_types),
+            # STOCH
             "random_source_price_stoch": np.random.choice(['open', 'close']),
             "random_binnings_qty_stoch": np.random.choice(range(10, 31)),
             "random_slow_stoch_length": np.random.choice(range(2, 51)),
             "random_slow_stoch_k": np.random.choice(range(1, 11)),
             "random_slow_stoch_d": np.random.choice(range(2, 11)),
+            "random_slow_stoch_ma_method": np.random.choice(self.ma_types),
             # DIDI
             "random_source_price_didi": np.random.choice(self.ohlc),
             "random_binnings_qty_didi": np.random.choice(range(10, 31)),
@@ -351,7 +354,7 @@ class ModelMiner:
             # CCI
             "random_source_price_cci": np.random.choice(self.ohlc),
             "random_binnings_qty_cci": np.random.choice(range(10, 31)),
-            "random_cci_length": np.random.choice(range(2, 151)),
+            "random_cci_length": np.random.choice(range(10, 151)),
             "random_cci_method": np.random.choice(self.ma_types),
             # MACD
             "random_source_price_macd": np.random.choice(self.ohlc),
@@ -359,14 +362,13 @@ class ModelMiner:
             "random_macd_fast_length": fast_length,
             "random_macd_slow_length": slow_length,
             "random_macd_signal_length": signal_length,
-            "random_macd_diff_method": np.random.choice(distance_types),
             "random_macd_ma_method": np.random.choice(self.ma_types),
             "random_macd_signal_method": np.random.choice(self.ma_types),
             "random_macd_column": np.random.choice(["macd", "signal", "histogram"]),
             # TRIX
             "random_source_price_trix": np.random.choice(self.ohlc),
             "random_binnings_qty_trix": np.random.choice(range(10, 31)),
-            "random_trix_length": np.random.choice(range(2, 51)),
+            "random_trix_length": np.random.choice(range(2, 11)),
             "random_trix_signal_length": np.random.choice(range(2, 51)),
             "random_trix_ma_method": np.random.choice(self.ma_types),
             # SMIO
@@ -381,17 +383,16 @@ class ModelMiner:
             "random_binnings_qty_tsi": np.random.choice(range(10, 31)),
             "random_tsi_short_length": max(tsi_lengths),
             "random_tsi_long_length": min(tsi_lengths),
-            "random_tsi_ma_method": np.random.choice(self.ma_types),
-            # Ichimoku
+            "random_tsi_ma_method": np.random.choice(["sma", "ema"]),
+            # Ichimoku #Removed
             "random_binnings_qty_ichimoku": np.random.choice(range(10, 31)),
             "random_ichimoku_conversion_periods": ichimoku_lengths[0],
             "random_ichimoku_base_periods": ichimoku_lengths[1],
             "random_ichimoku_lagging_span_2_periods": np.random.choice(range(2, 31)),
             "random_ichimoku_displacement": np.random.choice(range(2, 31)),
-            "random_ichimoku_based_on": np.random.choice(['lead_line', 'lagging_span']),
+            "random_ichimoku_based_on": np.random.choice(['lead_line', 'leading_span']),
             "random_ichimoku_method": np.random.choice(distance_types),
-
-            # Ichimoku Price Distance
+            # Ichimoku Price Distance #Removed
             "random_source_ichimoku_price_distance": np.random.choice(self.ohlc),
             "random_binnings_qty_ichimoku_price_distance": np.random.choice(range(10, 31)),
             "random_ichimoku_price_distance_conversion_periods": ichimoku_price_distance_lengths[0],
@@ -401,6 +402,18 @@ class ModelMiner:
             "random_ichimoku_price_distance_based_on": np.random.choice(['lead_line', 'leading_span']),
             "random_ichimoku_price_distance_method": np.random.choice(distance_types),
             "random_ichimoku_price_distance_use_pct": True,
+            # BB Trend
+            "random_source_bb_trend": np.random.choice(self.ohlc),
+            "random_binnings_qty_bb_trend": np.random.choice(range(10, 31)),
+            "random_bb_trend_short_length": bb_trend_short_length,
+            "random_bb_trend_long_length": bb_trend_long_length,
+            "random_bb_trend_stdev": np.random.choice(np.arange(1, 3.1, 0.1)),
+            "random_bb_trend_ma_method": np.random.choice(['sma', 'ema']),
+            "random_bb_trend_stdev_method": np.random.choice(['absolute']),
+            "random_bb_trend_diff_method": np.random.choice(['normal']),
+            "random_bb_trend_based_on": np.random.choice(['long_length']),
+        }
+
     def generate_hyperparameters(self):
         """
         Generate a dictionary of hyperparameters for the model.
