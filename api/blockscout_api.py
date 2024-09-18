@@ -108,3 +108,65 @@ class BlockscoutAPI:
             "USD Price": usd_price,
         }
 
+    def get_account_transactions(self, wallet: str):
+        """
+        Retrieves all transactions for a given wallet address.
+
+        Parameters
+        ----------
+        wallet : str
+            The wallet address to retrieve transactions for.
+
+        Returns
+        -------
+        list of dict
+            A list of dictionaries, each containing details of a swap
+            transaction.
+        """
+        url = f"{self.blockscout_api_url}/addresses/{wallet}/transactions"
+
+        response = requests.get(
+            url, params={"filter": "to | from"}, timeout=10
+        )
+        items = response.json()["items"]
+
+        swap_name = "processRouteWithTransferValueOutput"
+
+        swap_count = 0
+        swaps_df = pd.DataFrame(items).query(f"method == {swap_name}")
+
+        swap_qty = swaps_df.shape[0]
+
+        swaps = []
+
+        self.logger.info("searching swaps...")
+
+        for x in swaps_df.index.tolist():
+            is_swap = items[x]["method"] == swap_name
+
+            if is_swap:
+                txn_fee = literal_eval(items[x]["priority_fee"]) / 10**18
+
+                swap = self.get_transactions(items[x]["hash"], False)
+                swap_count += 1
+
+                self.logger.info(
+                    "%.2f%% complete", (swap_count / swap_qty) * 100
+                )
+
+                swap["txn_fee"] = txn_fee
+                swaps.append(swap)
+
+            if swap_count == 0:
+                logging.info("no swaps found")
+
+            elif swap_count < swap_qty:
+                logging.info("not all swaps found")
+
+            else:
+                logging.info("all swaps found")
+
+            logging.info("swaps total: %d", swap_qty)
+            logging.info("all searches complete")
+
+        return swaps
