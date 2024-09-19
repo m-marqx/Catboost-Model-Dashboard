@@ -98,17 +98,18 @@ class BlockscoutAPI:
         else:
             usd_price = None
 
-        if not coin_name:
-            first_coin_name = "from"
-            second_coin_name = "to"
-
-        return {
-            first_coin_name: first_coin_total,
-            second_coin_name: second_coin_total,
+        transaction = {
+            "from": first_coin_total,
+            "to": second_coin_total,
             "USD Price": usd_price,
         }
 
-    def get_account_transactions(self, wallet: str):
+        if coin_name:
+            transaction["from_coin_name"] = first_coin_name
+            transaction["to_coin_name"] = second_coin_name
+
+        return transaction
+
         """
         Retrieves all transactions for a given wallet address.
 
