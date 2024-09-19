@@ -110,6 +110,7 @@ class BlockscoutAPI:
 
         return transaction
 
+    def get_account_transactions(self, wallet: str, coin_names: bool = False):
         """
         Retrieves all transactions for a given wallet address.
 
@@ -134,7 +135,7 @@ class BlockscoutAPI:
         swap_name = "processRouteWithTransferValueOutput"
 
         swap_count = 0
-        swaps_df = pd.DataFrame(items).query(f"method == {swap_name}")
+        swaps_df = pd.DataFrame(items).query("method == 'processRouteWithTransferValueOutput'")
 
         swap_qty = swaps_df.shape[0]
 
@@ -148,7 +149,7 @@ class BlockscoutAPI:
             if is_swap:
                 txn_fee = literal_eval(items[x]["priority_fee"]) / 10**18
 
-                swap = self.get_transactions(items[x]["hash"], False)
+                swap = self.get_transactions(items[x]["hash"], coin_names)
                 swap_count += 1
 
                 self.logger.info(
