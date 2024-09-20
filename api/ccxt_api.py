@@ -115,8 +115,8 @@ class CcxtAPI:
             else None
         )
 
-        self.data_frame = None
-        self.klines_list = None
+        self.data_frame: pd.DataFrame = pd.DataFrame()
+        self.klines_list = []
 
         self.logger = logging.getLogger("CCXT_API")
         formatter = logging.Formatter(
@@ -286,7 +286,7 @@ class CcxtAPI:
         self.klines_list = klines_list
         return self
 
-    def to_OHLCV(self) -> pd.DataFrame:
+    def to_OHLCV(self):
         """
         Convert the fetched K-line data into a pandas DataFrame in
         OHLCV format.
