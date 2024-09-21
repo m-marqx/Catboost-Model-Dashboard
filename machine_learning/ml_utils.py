@@ -962,3 +962,65 @@ class DataHandler:
                 if x:
                     variable |= self.data_frame[column] <= x
         return variable
+
+def get_recommendation(
+    predict_series,
+    return_dtype: Literal["string", "normal", "int", "bool"] = "string",
+):
+    """
+    Generate trading recommendations based on the prediction series.
+
+    This function takes a series of predictions and generates trading
+    recommendations in different formats based on the specified return
+    data type.
+
+    Parameters
+    ----------
+    predict_series : pd.Series
+        A pandas Series containing the prediction values.
+    return_dtype : {'string', 'normal', 'int', 'bool'}, optional
+        The desired return data type for the recommendations.
+        - 'string': Returns recommendations as strings
+        ('Long', 'Do Nothing', 'Short').
+        - 'normal': Returns the original prediction series.
+        - 'int': Returns the predictions as integers.
+        - 'bool': Returns the predictions as boolean values
+        (True for positive, False otherwise).
+
+        (default:'string')
+
+    Returns
+    -------
+    pd.Series
+        A pandas Series containing the trading recommendations in the
+        specified format.
+    """
+    predict = predict_series.copy()
+    predict.index = predict.index.date
+    predict = predict.rename_axis("date")
+
+    confirmed_signals = pd.Series(predict.iloc[:-1], name=predict.name)
+    unconfirmed_signal = pd.Series(
+        predict.iloc[-1],
+        index=["Unconfirmed"],
+        name=predict.name,
+    )
+    signals = pd.concat([confirmed_signals, unconfirmed_signal])
+
+    match return_dtype:
+        case "string":
+            recommendation = np.where(
+                signals > 0,
+                "Long",
+                np.where(signals == 0, "Do Nothing", "Short"),
+            )
+            return pd.Series(recommendation, index=signals.index)
+
+        case "normal":
+            return signals
+
+        case "int":
+            return signals.astype(int)
+
+        case "bool":
+            return signals > 0
