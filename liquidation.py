@@ -9,7 +9,7 @@ class Liquidation:
     """
     Class for calculating liquidation values.
 
-    Parameters:
+    Parameters
     ----------
     taker_fee : float
         The taker fee percentage.
@@ -17,7 +17,7 @@ class Liquidation:
     maintenance_margin : float
         The maintenance margin percentage.
 
-    Methods:
+    Methods
     -------
     _initial_margin(leverage, funding_rate)
         Calculates the initial margin.
@@ -58,7 +58,7 @@ class Liquidation:
         """
         Calculates the initial margin.
 
-        Parameters:
+        Parameters
         ----------
         leverage : float
             The leverage value.
@@ -66,7 +66,7 @@ class Liquidation:
         funding_rate : float
             The funding rate.
 
-        Returns:
+        Returns
         -------
         float
             The initial margin value.
@@ -82,7 +82,7 @@ class Liquidation:
         """
         Calculates the liquidation value for a short position.
 
-        Parameters:
+        Parameters
         ----------
         entry : float
             The entry price.
@@ -93,7 +93,7 @@ class Liquidation:
         funding_rate : float
             The funding rate.
 
-        Returns:
+        Returns
         -------
         float
             The liquidation value.
@@ -116,7 +116,7 @@ class Liquidation:
         Calculates the liquidation value and bankrupt price for a long
         position.
 
-        Parameters:
+        Parameters
         ----------
         entry : float
             The entry price.
@@ -127,7 +127,7 @@ class Liquidation:
         funding_rate : float
             The funding rate.
 
-        Returns:
+        Returns
         -------
         tuple
             The liquidation value and bankrupt price.
