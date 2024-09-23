@@ -135,7 +135,16 @@ class BlockscoutAPI:
         swap_name = "processRouteWithTransferValueOutput"
 
         swap_count = 0
-        swaps_df = pd.DataFrame(items).query("method == 'processRouteWithTransferValueOutput'")
+        swaps_df = pd.DataFrame(items).query(
+            "method == 'processRouteWithTransferValueOutput'"
+        )
+
+        fees_df = (
+            pd.DataFrame(
+                swaps_df["fee"].to_list(),
+                index=swaps_df.index,
+            )["value"].astype(float) / 10**18
+        )
 
         swap_qty = swaps_df.shape[0]
 
@@ -147,8 +156,6 @@ class BlockscoutAPI:
             is_swap = items[x]["method"] == swap_name
 
             if is_swap:
-                txn_fee = literal_eval(items[x]["priority_fee"]) / 10**18
-
                 swap = self.get_transactions(items[x]["hash"], coin_names)
                 swap_count += 1
 
@@ -156,7 +163,7 @@ class BlockscoutAPI:
                     "%.2f%% complete", (swap_count / swap_qty) * 100
                 )
 
-                swap["txn_fee"] = txn_fee
+                swap["txn_fee"] = fees_df.loc[x]
                 swaps.append(swap)
 
             if swap_count == 0:
