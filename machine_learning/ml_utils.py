@@ -1016,10 +1016,13 @@ def get_recommendation(
     if add_span_tag:
         long_color = "<b><span style='color: #00e676'>Open Position</span></b>"
         do_nothing_color = "——————"
-        short_color = "<b><span style='color: #ef5350'>Close Position</span></b>"
+        short_color = (
+            "<b><span style='color: #ef5350'>Close Position</span></b>"
+        )
+
     else:
         long_color = "Open Position"
-        do_nothing_color = ""
+        do_nothing_color = "——————"
         short_color = "Close Position"
 
     match return_dtype:
@@ -1034,10 +1037,8 @@ def get_recommendation(
             )
 
             recommendation_array = np.where(
-                np.logical_and(
-                    recommendation_series.shift(7) == long_color,
-                    recommendation_series == do_nothing_color,
-                ),
+                (recommendation_series.shift(7) == long_color)
+                & (recommendation_series == do_nothing_color),
                 short_color,
                 recommendation_series,
             )
