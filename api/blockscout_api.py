@@ -179,3 +179,15 @@ class BlockscoutAPI:
             logging.info("all searches complete")
 
         return swaps
+
+    def get_sells(self, transactions_df: pd.DataFrame):
+        def is_sale(row, df):
+            is_exact_same_amout = df["from"] == row["to"]
+            is_same_coin = df["from_coin_name"] == row["to_coin_name"]
+            return (is_exact_same_amout & is_same_coin).any()
+
+        sells_mask = transactions_df.apply(is_sale, df=transactions_df, axis=1)
+        sells = transactions_df[sells_mask].reset_index(drop=True)
+
+        return sells[["from", "to", "from_coin_name", "to_coin_name"]]
+
