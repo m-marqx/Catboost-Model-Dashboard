@@ -181,6 +181,28 @@ class BlockscoutAPI:
         return swaps
 
     def get_sells(self, transactions_df: pd.DataFrame):
+        """
+        Identify and return sell transactions from a DataFrame of
+        transactions. This method examines each transaction in the
+        provided DataFrame to determine if it represents a sale. A sale
+        is defined as a transaction where the 'from' address of one
+        transaction matches the 'to' address of another transaction, and
+        the 'from_coin_name' matches the 'to_coin_name'.
+
+        Parameters
+        ----------
+        transactions_df : pd.DataFrame
+            A DataFrame containing transaction data. The DataFrame must
+            include the following columns: 'from', 'to',
+            'from_coin_name', and 'to_coin_name'.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing only the transactions identified as
+            sells. The returned DataFrame includes the columns: 'from',
+            'to', 'from_coin_name', and 'to_coin_name'.
+        """
         def is_sale(row, df):
             is_exact_same_amout = df["from"] == row["to"]
             is_same_coin = df["from_coin_name"] == row["to_coin_name"]
