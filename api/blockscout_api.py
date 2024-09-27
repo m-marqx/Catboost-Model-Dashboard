@@ -180,7 +180,7 @@ class BlockscoutAPI:
 
         return swaps
 
-    def get_sells(self, transactions_df: pd.DataFrame):
+    def find_sells(self, transactions_df: pd.DataFrame) -> pd.DataFrame:
         """
         Identify and return sell transactions from a DataFrame of
         transactions. This method examines each transaction in the
