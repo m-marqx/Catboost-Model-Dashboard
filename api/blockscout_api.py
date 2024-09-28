@@ -203,6 +203,7 @@ class BlockscoutAPI:
             sells. The returned DataFrame includes the columns: 'from',
             'to', 'from_coin_name', and 'to_coin_name'.
         """
+
         def is_sale(row, df):
             is_exact_same_amout = df["from"] == row["to"]
             is_same_coin = df["from_coin_name"] == row["to_coin_name"]
@@ -212,4 +213,37 @@ class BlockscoutAPI:
         sells = transactions_df[sells_mask].reset_index(drop=True)
 
         return sells[["from", "to", "from_coin_name", "to_coin_name"]]
+
+    def find_buys(self, transactions_df: pd.DataFrame):
+        """
+        Identify buy transactions from a DataFrame of transactions.
+        This method analyzes a DataFrame of transactions and identifies
+        which transactions are buy transactions. A buy transaction is
+        defined as a transaction where the 'to' address of one
+        transaction matches the 'from' address of another transaction
+        and the 'to_coin_name' matches the 'from_coin_name'.
+
+        Parameters
+        ----------
+        transactions_df : pd.DataFrame
+            A DataFrame containing transaction data. The DataFrame must
+            include the following columns: 'from', 'to',
+            'from_coin_name', and 'to_coin_name'.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing only the buy transactions. The
+            returned DataFrame includes the columns: 'from', 'to',
+            'from_coin_name', and 'to_coin_name'.
+        """
+        def is_buy(row, df):
+            is_exact_same_amout = df["to"] == row["from"]
+            is_same_coin = df["to_coin_name"] == row["from_coin_name"]
+            return (is_exact_same_amout & is_same_coin).any()
+
+        buys_mask = transactions_df.apply(is_buy, df=transactions_df, axis=1)
+        buys = transactions_df[buys_mask].reset_index(drop=True)
+
+        return buys[["from", "to", "from_coin_name", "to_coin_name"]]
 
