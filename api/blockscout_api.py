@@ -247,3 +247,31 @@ class BlockscoutAPI:
 
         return buys[["from", "to", "from_coin_name", "to_coin_name"]]
 
+    def find_trades(self, transactions_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Identify and return all trade transactions from a DataFrame of
+        transactions. This method combines sell and buy transactions
+        into a single DataFrame.
+
+        Parameters
+        ----------
+        transactions_df : pd.DataFrame
+            A DataFrame containing transaction data. The DataFrame must
+            include the following columns: 'from', 'to',
+            'from_coin_name', and 'to_coin_name'.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing all identified trade transactions,
+            sorted by their original index. The returned DataFrame
+            includes the columns: 'from', 'to', 'from_coin_name', and
+            'to_coin_name', and has an index named 'Trade Number'.
+        """
+        sells = self.find_sells(transactions_df)
+        buys = self.find_buys(transactions_df)
+
+        trades = pd.concat([sells, buys]).sort_index()
+        trades.index.name = "Trade Number"
+
+        return trades
