@@ -324,7 +324,7 @@
     color 0.08s ease-in-out;
 }
 
-.btn.btn-outline-primary:active {
+.btn-outline-primary:active {
   background: transparent !important;
   color: rgba(255, 255, 255, 0.85) !important;
   padding: 1rem 1.5rem;
@@ -334,7 +334,7 @@
     color 0.08s ease-in-out;
 }
 
-.btn.btn-outline-primary:hover {
+.btn-outline-primary:hover {
   background: #2e3c10 !important;
   color: rgba(255, 255, 255, 0.85) !important;
   padding: 1rem 1.5rem;
@@ -344,7 +344,7 @@
     color 0.08s ease-in-out;
 }
 
-.btn.btn-outline-primary:focus {
+.btn-outline-primary:focus {
   background-color: transparent;
   padding: 1rem 1.5rem;
   color: rgba(255, 255, 255, 0.85) !important;
