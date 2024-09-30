@@ -639,3 +639,378 @@ def model_creation(
         all_y,
         data_frame,
     )
+
+def base_model_creation(
+    feat_parameters: dict,
+    hyperparams: dict,
+    test_index: int,
+    dataframe: pd.DataFrame,
+    max_trades: int = 3,
+    off_days: int = 7,
+    pct_adj: float = 0.5,
+    train_in_middle: bool = True,
+    cutoff_point: float | None = None,
+    side: int = 1,
+    dev: bool = False,
+):
+    """
+    Calculate and create the model based on the input parameters.
+
+    Parameters
+    ----------
+    feat_parameters : dict
+        Dictionary containing the parameters for the random features.
+    hyperparams : dict
+        Dictionary containing the hyperparameters for the model.
+    test_index : int
+        Index to split the dataset into train and test sets.
+    dataframe : pd.DataFrame
+        Input dataset.
+    max_trades : int, optional
+        Maximum number of trades to consider before waiting for off days
+        (default: 3)
+    off_days : int, optional
+        When max_trades is reached, the number of days to wait before
+        opening a new trade.
+        (default: 7)
+    pct_adj : float, optional
+        Percentage adjustment to apply to the liquid results.
+        (default: 0.5)
+    train_in_middle : bool, optional
+        Whether to train the model in the middle of the dataset
+        (default: True)
+
+    Returns
+    -------
+    tuple : pd.DataFrame, dict, pd.Series
+        A tuple containing the adjusted model, index splits, and target
+        values.
+    """
+    data_frame = dataframe.copy()
+
+    model_features = ModelFeatures(
+        data_frame, test_index, verbose=False
+    )
+
+    if "DTW" in feat_parameters["features"]:
+        dtw_source = (
+            data_frame[feat_parameters["dtw_source_price"]]
+            .pct_change(1)
+            .iloc[1:]
+        )
+
+        model_features.set_bins(
+            feat_parameters["dtw_binnings_qty"]
+        ).create_dtw_distance_feature(
+            dtw_source,
+            feat_parameters["dtw_moving_averages"],
+            feat_parameters["dtw_moving_averages_length"],
+        )
+
+    if "DTW_opt" in feat_parameters["features"]:
+        dtw_source = (
+            data_frame[feat_parameters["dtw_source_price"]]
+        )
+
+        model_features.set_bins(
+            feat_parameters["dtw_binnings_qty"]
+        ).set_normalize(True).create_dtw_distance_feature(
+            dtw_source,
+            feat_parameters["dtw_moving_averages"],
+            feat_parameters["dtw_moving_averages_length"],
+        )
+
+    if "RSI" in feat_parameters["features"]:
+        rsi_source = (
+            data_frame[feat_parameters["rsi_source_price"]]
+            .pct_change(1)
+            .iloc[1:]
+        )
+
+        model_features.set_bins(
+            feat_parameters["rsi_binnings_qty"]
+        ).create_rsi_feature(rsi_source, feat_parameters["rsi_length"])
+
+    if "RSI_opt" in feat_parameters["features"]:
+        rsi_source = (
+            data_frame[feat_parameters["rsi_source_price"]]
+        )
+
+        model_features.set_bins(
+            feat_parameters["rsi_binnings_qty"]
+        ).set_normalize(True).create_rsi_feature(
+            rsi_source,
+            feat_parameters["rsi_length"],
+            feat_parameters["rsi_ma_method"],
+        )
+
+    if "Stoch" in feat_parameters["features"]:
+        data_frame["slow_stoch_source"] = (
+            data_frame[feat_parameters["slow_stoch_source_price"]]
+            .pct_change(1)
+        )
+
+        model_features.set_bins(
+            feat_parameters["slow_stoch_binnings_qty"]
+        ).create_slow_stoch_feature(
+            feat_parameters["slow_stoch_source_price"],
+            feat_parameters["slow_stoch_length"],
+            feat_parameters["slow_stoch_k"],
+            feat_parameters["slow_stoch_d"],
+        )
+
+    if "Stoch_opt" in feat_parameters["features"]:
+        model_features.set_bins(
+            feat_parameters["slow_stoch_binnings_qty"]
+        ).set_normalize(True).create_slow_stoch_feature(
+            feat_parameters["slow_stoch_source_price"],
+            feat_parameters["slow_stoch_length"],
+            feat_parameters["slow_stoch_k"],
+            feat_parameters["slow_stoch_d"],
+            feat_parameters["slow_stoch_ma_method"],
+        )
+
+    if "CCI" in feat_parameters["features"]:
+        cci_source = (
+            data_frame[feat_parameters["cci_source_price"]]
+            .pct_change(1)
+            .iloc[1:]
+        )
+
+        model_features.set_bins(
+            feat_parameters["cci_binnings_qty"]
+        ).create_cci_feature(
+            cci_source,
+            feat_parameters["cci_length"],
+            feat_parameters["cci_method"],
+        )
+
+    if "MACD" in feat_parameters["features"]:
+        macd_source = (
+            data_frame[feat_parameters["macd_source_price"]]
+            .pct_change(1)
+            .iloc[1:]
+        )
+
+        model_features.set_bins(
+            feat_parameters["macd_binnings_qty"]
+        ).create_macd_feature(
+            macd_source,
+            feat_parameters["macd_fast_length"],
+            feat_parameters["macd_slow_length"],
+            feat_parameters["macd_signal_length"],
+            feat_parameters["macd_diff_method"],
+            feat_parameters["macd_ma_method"],
+            feat_parameters["macd_signal_method"],
+            feat_parameters["macd_column"],
+        )
+
+    if "MACD_opt" in feat_parameters["features"]:
+        macd_source = (
+            data_frame[feat_parameters["macd_source_price"]]
+        )
+
+        model_features.set_bins(
+            feat_parameters["macd_binnings_qty"]
+        ).set_normalize(True).create_macd_feature(
+            source=macd_source,
+            fast_length=feat_parameters["macd_fast_length"],
+            slow_length=feat_parameters["macd_slow_length"],
+            signal_length=feat_parameters["macd_signal_length"],
+            ma_method=feat_parameters["macd_ma_method"],
+            signal_method=feat_parameters["macd_signal_method"],
+            diff_method=feat_parameters.get("macd_diff_method", "ratio"),
+            column=feat_parameters.get("macd_column", "histogram"),
+        )
+
+    if "TRIX" in feat_parameters["features"]:
+        trix_source = data_frame[feat_parameters["trix_source_price"]]
+
+        model_features.set_bins(
+            feat_parameters["trix_binnings_qty"]
+        ).create_trix_feature(
+            trix_source,
+            feat_parameters["trix_length"],
+            feat_parameters["trix_signal_length"],
+            feat_parameters["trix_ma_method"],
+        )
+
+    if "TRIX_opt" in feat_parameters["features"]:
+        trix_source = data_frame[feat_parameters["trix_source_price"]]
+
+        model_features.set_bins(
+            feat_parameters["trix_binnings_qty"]
+        ).set_normalize(True).create_trix_feature(
+            trix_source,
+            feat_parameters["trix_length"],
+            feat_parameters["trix_signal_length"],
+            feat_parameters["trix_ma_method"],
+        )
+
+    if "SMIO" in feat_parameters["features"]:
+        smio_source = data_frame[feat_parameters["smio_source_price"]]
+
+        model_features.set_bins(
+            feat_parameters["smio_binnings_qty"]
+        ).create_smio_feature(
+            smio_source,
+            feat_parameters["smio_short_length"],
+            feat_parameters["smio_long_length"],
+            feat_parameters["smio_signal_length"],
+            feat_parameters["smio_ma_method"],
+        )
+
+    if "SMIO_opt" in feat_parameters["features"]:
+        smio_source = data_frame[feat_parameters["smio_source_price"]]
+
+        model_features.set_bins(
+            feat_parameters["smio_binnings_qty"]
+        ).set_normalize(True).create_smio_feature(
+            smio_source,
+            feat_parameters["smio_short_length"],
+            feat_parameters["smio_long_length"],
+            feat_parameters["smio_signal_length"],
+            feat_parameters["smio_ma_method"],
+        )
+
+    if "DIDI" in feat_parameters["features"]:
+        didi_source = (
+            data_frame[feat_parameters["didi_source_price"]]
+        )
+
+        model_features.set_bins(
+            feat_parameters["didi_binnings_qty"]
+        ).create_didi_index_feature(
+            source=didi_source,
+            short_length=feat_parameters["didi_short_length"],
+            medium_length=feat_parameters["didi_mid_length"],
+            long_length=feat_parameters["didi_long_length"],
+            ma_type=feat_parameters["didi_ma_type"],
+            method=feat_parameters["didi_method"],
+        )
+
+    if "DIDI_opt" in feat_parameters["features"]:
+        didi_source = (
+            data_frame[feat_parameters["didi_source_price"]]
+        )
+
+        model_features.set_bins(
+            feat_parameters["didi_binnings_qty"]
+        ).set_normalize(True).create_didi_index_feature(
+            source=didi_source,
+            short_length=feat_parameters["didi_short_length"],
+            medium_length=feat_parameters["didi_mid_length"],
+            long_length=feat_parameters["didi_long_length"],
+            ma_type=feat_parameters["didi_ma_type"],
+        )
+
+    if "TSI" in feat_parameters["features"]:
+        tsi_source = data_frame[feat_parameters["tsi_source_price"]]
+
+        model_features.set_bins(
+            feat_parameters["tsi_binnings_qty"]
+        ).create_tsi_feature(
+            tsi_source,
+            feat_parameters["tsi_short_length"],
+            feat_parameters["tsi_long_length"],
+            feat_parameters["tsi_ma_method"],
+        )
+
+    if "TSI_opt" in feat_parameters["features"]:
+        tsi_source = data_frame[feat_parameters["tsi_source_price"]]
+
+        model_features.set_bins(
+            feat_parameters["tsi_binnings_qty"]
+        ).set_normalize(True).create_tsi_feature(
+            tsi_source,
+            feat_parameters["tsi_short_length"],
+            feat_parameters["tsi_long_length"],
+            feat_parameters["tsi_ma_method"],
+        )
+
+    if "Ichimoku" in feat_parameters["features"]:
+        model_features.set_bins(
+            feat_parameters["ichimoku_binnings_qty"],
+        ).create_ichimoku_feature(
+            feat_parameters["ichimoku_conversion_periods"],
+            feat_parameters["ichimoku_base_periods"],
+            feat_parameters["ichimoku_lagging_span_2_periods"],
+            feat_parameters["ichimoku_displacement"],
+            feat_parameters["ichimoku_based_on"],
+            feat_parameters["ichimoku_method"],
+        )
+
+    if "Ichimoku Price Distance" in feat_parameters["features"]:
+        ichimoku_source = data_frame[feat_parameters["ichimoku_price_distance_source"]]
+
+        model_features.set_bins(
+            feat_parameters["ichimoku_price_distance_binnings_qty"],
+        ).create_ichimoku_price_distance_feature(
+            ichimoku_source,
+            feat_parameters["ichimoku_price_distance_conversion_periods"],
+            feat_parameters["ichimoku_price_distance_base_periods"],
+            feat_parameters["ichimoku_price_distance_lagging_span_2_periods"],
+            feat_parameters["ichimoku_price_distance_displacement"],
+            feat_parameters["ichimoku_price_distance_based_on"],
+            feat_parameters["ichimoku_price_distance_method"],
+            feat_parameters["ichimoku_price_distance_use_pct"],
+        )
+
+    if "BBTrend" in feat_parameters["features"]:
+        bb_source = data_frame[feat_parameters["bb_trend_source"]]
+
+        model_features.set_bins(
+            feat_parameters["bb_trend_binnings_qty"],
+        ).create_bb_trend_feature(
+            bb_source,
+            feat_parameters["bb_trend_short_length"],
+            feat_parameters["bb_trend_long_length"],
+            feat_parameters["bb_trend_stdev"],
+            feat_parameters["bb_trend_ma_method"],
+            feat_parameters["bb_trend_stdev_method"],
+            feat_parameters["bb_trend_diff_method"],
+            feat_parameters["bb_trend_based_on"],
+        )
+
+    if "BBTrend_opt" in feat_parameters["features"]:
+        bb_source = data_frame[feat_parameters["bb_trend_source"]]
+
+        model_features.set_bins(
+            feat_parameters["bb_trend_binnings_qty"],
+        ).set_normalize(True).create_bb_trend_feature(
+            bb_source,
+            feat_parameters["bb_trend_short_length"],
+            feat_parameters["bb_trend_long_length"],
+            feat_parameters["bb_trend_stdev"],
+            feat_parameters["bb_trend_ma_method"],
+            feat_parameters["bb_trend_stdev_method"],
+            feat_parameters["bb_trend_diff_method"],
+            feat_parameters["bb_trend_based_on"],
+        )
+
+    data_frame = model_features.dataset.copy()
+
+    df_columns = data_frame.columns.tolist()
+    features = [x for x in df_columns if "feat" in x]
+
+    mh2, _, _, _, _, _, _, _, _, all_y, index_splits = calculate_model(
+        dataset=data_frame,
+        feats=features,
+        test_index=test_index,
+        plot=False,
+        output="All",
+        long_only=False,
+        train_in_middle=train_in_middle,
+        cutoff_point=cutoff_point,
+        dev=dev,
+        **hyperparams,
+    )
+
+    mh2["Liquid_Result"] = np.where(mh2["Predict"] != side, 0, mh2["Liquid_Result"])
+
+    return (
+        max_trade_adj(mh2, off_days, max_trades, pct_adj, side),
+        index_splits,
+        all_y,
+        data_frame,
+    )
