@@ -199,6 +199,13 @@
     box-shadow 0.15s ease-in-out, color 0.15s ease-in-out;
 }
 
+.btn-primary:disabled {
+  background: #0D113B;
+  color: rgba(255,255,255, .45);
+  cursor: not-allowed;
+}
+
+
 .btn-outline-secondary {
   background: none;
   border-radius: 2svh !important;
