@@ -160,37 +160,6 @@
   text-align: center;
 }
 
-.btn {
-  position: relative;
-  border-radius: 1vh;
-  color: rgba(255, 255, 255, 0.85) !important;
-  padding: 1rem 1.5rem;
-  border: none;
-  box-shadow: none !important;
-  height: var(--default-height);
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  font-weight: 400;
-  font-size: calc(-webkit-fill-available - 8px);
-  transition: background 0.15s ease-in-out, border 0.15s ease-in-out,
-    box-shadow 0.15s ease-in-out, color 0.15s ease-in-out;
-}
-
-.btn:hover {
-  background: #8bbb11;
-}
-
-.btn:focus {
-  background: #6f9412;
-}
-
-.btn:disabled {
-  background: #0D113B;
-  color: rgba(255,255,255, .45) !important;
-  font-weight: 600;
-}
-
 .progress-bar-model {
   margin-top: 1svh;
 }
