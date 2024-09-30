@@ -328,3 +328,30 @@ class BlockscoutAPI:
 
         trades = self.find_trades_results(transactions_df)
         return trades
+
+    def get_account_trades(self, wallet: str):
+        """
+        Retrieve and identify all trade transactions for a given wallet
+        address. This method fetches all transactions for the specified
+        wallet and identifies the trades by combining buy and sell
+        transactions.
+
+        Parameters
+        ----------
+        wallet : str
+            The wallet address to retrieve and analyze transactions for.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing all identified trade transactions,
+            sorted by their original index. The returned DataFrame
+            includes the columns: 'from', 'to', 'from_coin_name', and
+            'to_coin_name', and has an index named 'Trade Number'.
+        """
+        transactions = self.get_account_transactions(wallet, True)
+        transactions_df = pd.DataFrame(transactions).iloc[::-1].copy()
+        transactions_df = transactions_df.reset_index(drop=True)
+
+        trades = self.find_trades(transactions_df)
+        return trades
