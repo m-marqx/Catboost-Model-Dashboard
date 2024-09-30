@@ -683,18 +683,6 @@ p {
   }
 }
 
-.btn .spinner-loader {
-  width: 2.5vh;
-  height: 2.5vh;
-  margin-top: 0px !important;
-  margin-right: auto;
-  display: inline-block;
-  border: 0.5vh solid #e4f88b;
-  border-radius: 50%;
-  border-top-color: transparent;
-  border-bottom-color: transparent;
-  animation: rot5 1s infinite;
-}
 
 .negative-2vh {
   margin-top: -1vh !important;
