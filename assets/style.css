@@ -155,8 +155,9 @@
 }
 
 .model-btn {
-  height: 3.5vh !important;
-  font-size: 1.8vh !important;
+  height: 3.5vh;
+  padding: 1svh;
+  text-align: center;
 }
 
 .btn {
