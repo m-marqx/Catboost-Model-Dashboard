@@ -208,9 +208,10 @@
 .btn-outline-secondary {
   background: none;
   border-radius: 2svh !important;
-  padding: 1rem 1.5rem;
   color: rgba(255, 255, 255, 0.85) !important;
   border: 0.12svw solid #7BB4DB !important;
+  box-shadow: none !important;
+  cursor: pointer;
   font-size: max(1.8svh, 1.8rem); /* 4k resolution */
   @media (max-width: 2560px) {
     font-size: max(1.5svh, 1.5rem); /* 2.5k resolution */
@@ -220,24 +221,18 @@
   }
 }
 
-.btn.btn-outline-secondary:active {
+.btn-outline-secondary:active {
   background: none !important;
-  padding: 1rem 1.5rem;
-  box-shadow: none;
   transition: background 0.08s ease-in-out;
 }
 
-.btn.btn-outline-secondary:hover {
+.btn-outline-secondary:hover {
   background: #1F2687;
-  padding: 1rem 1.5rem;
-  box-shadow: none;
   transition: background 0.08s ease-in-out;
 }
 
-.btn.btn-outline-secondary:focus {
+.btn-outline-secondary:focus {
   background: #1F2687 !important;
-  padding: 1rem 1.5rem;
-  box-shadow: none;
   transition: background 0.08s ease-in-out;
 }
 
