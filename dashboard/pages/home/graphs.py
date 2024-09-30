@@ -115,7 +115,7 @@ def resample_calculate_win_rate(
         win_rate.resample(period).sum()
         / win_rate.resample(period).count()
     )
-    return win_rate
+    return win_rate.dropna()
 
 def rolling_calculate_drawdown(
     series: pd.Series,
