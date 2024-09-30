@@ -275,3 +275,31 @@ class BlockscoutAPI:
         trades.index.name = "Trade Number"
 
         return trades
+
+    def find_trades_results(self, transactions_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Calculate the trade results from a DataFrame of transactions.
+        This method identifies buy and sell transactions and computes
+        the trade results as the percentage change between the buy and
+        sell amounts.
+
+        Parameters
+        ----------
+        transactions_df : pd.DataFrame
+            A DataFrame containing transaction data. The DataFrame must
+            include the following columns: 'from', 'to', 'from_coin_name',
+            and 'to_coin_name'.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing the trade results, with one column
+            named 'Trade Result' representing the percentage change
+            between the buy and sell amounts.
+        """
+        sells = self.find_sells(transactions_df)
+        buys = self.find_buys(transactions_df)
+        executed_trades = buys["to"] / sells["from"] - 1
+
+        return pd.DataFrame(executed_trades, columns=["Trade Result"]) * 100
+
