@@ -303,3 +303,28 @@ class BlockscoutAPI:
 
         return pd.DataFrame(executed_trades, columns=["Trade Result"]) * 100
 
+    def get_account_trade_results(self, wallet: str):
+        """
+        Retrieve and calculate trade results for a given wallet address.
+        This method fetches all transactions for the specified wallet,
+        identifies the trades, and calculates the trade results as the
+        percentage change between the buy and sell amounts.
+
+        Parameters
+        ----------
+        wallet : str
+            The wallet address to retrieve and analyze transactions for.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing the trade results, with one column
+            named 'Trade Result' representing the percentage change
+            between the buy and sell amounts.
+        """
+        transactions = self.get_account_transactions(wallet, True)
+        transactions_df = pd.DataFrame(transactions).iloc[::-1].copy()
+        transactions_df = transactions_df.reset_index(drop=True)
+
+        trades = self.find_trades_results(transactions_df)
+        return trades
