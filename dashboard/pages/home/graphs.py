@@ -235,20 +235,20 @@ def rolling_calculate_win_rate(
     return win_rate
 
 def display_linechart(
-    return_source: pd.DataFrame,
+    return_source: pd.Series,
     validation_date: str | pd.Timestamp,
     stat: str,
     period: Literal["full", "test", "validation"] = "validation",
     time_period: int | str = 30,
     iqr_scales: None | list[float] = None,
     get_data: bool = False,
-) -> px.line:
+    method: Literal["rolling", "resample"] = "rolling",
+):
     """
     Display a line chart.
 
-    Parameters:
-        asset_source (pd.DataFrame): The asset source data.
-        return_source (pd.DataFrame): The return source data.
+    Parameters
+        return_source (pd.Series): The return source data.
         validation_date (str | pd.Timestamp): The validation date.
         stat (str): The statistic to display on the chart.
         period (Literal["full", "test", "validation"]): The period of
@@ -262,12 +262,12 @@ def display_linechart(
         get_data (bool): Whether to return the calculated data.
         (default: False)
 
-    Returns:
+    Returns
         px.line: The line chart.
 
     """
-    time_period = int(time_period)
-    method = "rolling"
+    if isinstance(time_period, float):
+        time_period = int(time_period)
 
     calculate_drawdown = (
         resample_calculate_drawdown
@@ -293,7 +293,6 @@ def display_linechart(
         else rolling_calculate_win_rate
     )
 
-
     match stat:
         case "drawdown":
             result_df = calculate_drawdown(return_source, time_period)
@@ -305,6 +304,8 @@ def display_linechart(
             result_df = calculate_payoff(return_source, "mean", time_period)
         case "winrate":
             result_df = calculate_win_rate(return_source, time_period)
+        case _:
+            raise ValueError(f"Invalid stat: {stat}")
 
     match period:
         case "test":
