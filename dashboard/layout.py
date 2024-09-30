@@ -4,7 +4,6 @@ from dash import dcc, DiskcacheManager
 import diskcache
 import dash_bootstrap_components as dbc
 
-from .navbar import navbar_components
 
 theme = dbc.themes.MORPH
 style_sheet = ["assets/style"]
@@ -27,7 +26,6 @@ app = dash.Dash(
 app.layout = dbc.Container(
     [
         dcc.Location(id="url", refresh=False),
-        dbc.Row(navbar_components),
         dbc.Col(id="page-content"),
         dash.page_container,
     ],

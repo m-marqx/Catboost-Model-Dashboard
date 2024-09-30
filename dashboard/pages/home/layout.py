@@ -1,6 +1,7 @@
 from dash import dcc, html, register_page
 import dash_bootstrap_components as dbc
 from dashboard.pages.lang import en_US, pt_BR
+from dashboard.navbar import navbar_components
 
 
 register_page(
@@ -18,6 +19,7 @@ def layout(lang="en_US"):
         lang = pt_BR
 
     return [
+        dbc.Row(navbar_components(lang)),
         dbc.Container(
             [
                 dbc.Row([
@@ -87,6 +89,7 @@ def layout(lang="en_US"):
                                         id="dev_text_model_spinner",
                                         color="primary",
                                         spinner_class_name="spinner-loader",
+                                        spinner_style={"margin": "0 0"},
                                     ),
                                     html.P(id="dev_signal_output", style={"margin-bottom": "0px"}),
                                     html.P(id="dev_new_signal_output"),

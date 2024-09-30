@@ -1,17 +1,13 @@
 import dash_bootstrap_components as dbc
-from dash import dcc
+from dash import dcc, html
 
-menu = dbc.Nav(
-    [
-        dbc.NavItem(
-            dbc.NavLink(
-                "DASHBOARD",
-                href="/",
-                active=True,
-                id="home",
-            )
-        ),
-    ],
+menu = html.Div(
+    dbc.NavLink(
+        "DASHBOARD",
+        href="/",
+        active=True,
+        id="home",
+    ), className="nav-start"
 )
 
 lang_menu = dbc.Col(
@@ -40,37 +36,32 @@ lang_menu = dbc.Col(
     width=5,
 )
 
-ml_buttons = [
-    dbc.Button(
-        "RUN_MODEL",
+def model_buttons(lang):
+    return html.Div([
+    html.Button(
+        lang["RUN_MODEL"],
         id="dev_run_model",
         style={
             "border-top-left-radius": "2svh",
             "border-bottom-left-radius": "2svh",
             "border-top-right-radius": "0px",
             "border-bottom-right-radius": "0px",
-            "margin-left": "auto",
         },
-        color="primary",
-        outline=False,
-        className="model-btn",
+        className="btn-primary",
     ),
-    dbc.Button(
-        "CANCEL_MODEL",
+    html.Button(
+        lang["CANCEL_MODEL"],
         id="dev_cancel_model",
         style={
             "border-top-left-radius": "0px",
             "border-bottom-left-radius": "0px",
             "border-top-right-radius": "2svh",
             "border-bottom-right-radius": "2svh",
-            "margin-right": "auto",
         },
-        color="primary",
+        className="btn-primary",
         disabled=True,
-        outline=False,
-        className="model-btn",
     ),
-]
+], className="model-buttons")
 
 model_upload = dcc.Upload(
     id="upload-data",
@@ -80,19 +71,21 @@ model_upload = dcc.Upload(
         "display": "grid",
         "align-content": "center",
     },
-    className="model-btn btn btn-outline-secondary",
+    className="model-btn btn-outline-secondary",
 )
 
-navbar_components = dbc.Navbar(
-    [
-        dbc.Collapse([menu] + ml_buttons, id="navbar-collapse", navbar=True),
-        dbc.DropdownMenu(
-            lang_menu,
-            id="navbar-dropdown",
-            nav=True,
-            align_end=True,
-            label="文/A",
-        ),
-        model_upload,
-    ],
-)
+def navbar_components(lang):
+    ml_buttons = model_buttons(lang)
+    return dbc.Navbar(
+        [
+            dbc.Collapse([menu, ml_buttons, html.Div()], id="navbar-collapse", navbar=True),
+            dbc.DropdownMenu(
+                lang_menu,
+                id="navbar-dropdown",
+                nav=True,
+                align_end=True,
+                label="文/A",
+            ),
+            model_upload,
+        ],
+    )
