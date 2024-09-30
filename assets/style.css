@@ -129,6 +129,10 @@
   width: 5vw;
 }
 
+.nav-start {
+  margin-left: 2svh;
+}
+
 .dropdown-toggle.nav-link:hover {
   background: transparent !important;
 }
