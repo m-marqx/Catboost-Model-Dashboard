@@ -87,8 +87,8 @@ en_US = {
     # Presets
     "PRESET": "Preset",
     "COMBINATION": "Combination",
-    "RUN_MODEL": "Run Model",
-    "CANCEL_MODEL": "Cancel Model",
+    "RUN_MODEL": "Recalculate",
+    "CANCEL_MODEL": "Cancel",
     "USE_PREBUILD_MODELS": "Use Prebuild Models",
 
     #General Components
