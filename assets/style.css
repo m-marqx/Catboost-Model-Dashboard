@@ -656,7 +656,7 @@ p {
 .spinner-loader {
   width: 3.2vh;
   height: 3.2vh;
-  margin-top: auto;
+  margin-top: 1svh;
   display: inline-block;
   border: 0.5vh solid #e4f88b;
   border-radius: 50%;
