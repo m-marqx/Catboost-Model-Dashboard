@@ -232,7 +232,7 @@ def rolling_calculate_win_rate(
     neg_count = neg_values.rolling(period).count()
 
     win_rate = pos_count / (pos_count + neg_count)
-    return win_rate
+    return win_rate.dropna()
 
 def display_linechart(
     return_source: pd.Series,
