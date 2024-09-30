@@ -159,7 +159,6 @@ ___*
 *.csv
 *.json
 *.ipynb
-*.parquet
 *.tmp
 *.db*
 *.tsv

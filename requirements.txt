@@ -3,7 +3,6 @@ tradingview_indicators==0.1.1.0
 catboost==1.2.2
 klib==1.1.1
 ccxt==4.0.86
-dill==0.3.7
 dash[diskcache]==2.10.2
 dash_ag_grid==2.1.0
 dash_bootstrap_components==1.4.1
