@@ -472,6 +472,11 @@ p {
   height: 4vh;
 }
 
+.model-buttons {
+  display: flex;
+  flex-direction: row;
+}
+
 .nav-link {
   display: flex;
   align-items: center;
