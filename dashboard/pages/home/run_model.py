@@ -29,8 +29,8 @@ class DevRunModel:
     )
     def update_upload_button(filename):
         if filename is not None:
-            return filename, "btn btn-outline-secondary-filled"
-        return "Upload Model", "btn btn-outline-secondary"
+            return filename, "model-btn btn-outline-secondary-filled"
+        return "Upload Model", "model-btn btn-outline-secondary"
 
     @callback(
         Output("dev_model_text_output", "children"),
