@@ -236,11 +236,12 @@
   transition: background 0.08s ease-in-out;
 }
 
-.btn.btn-outline-secondary-filled {
+.btn-outline-secondary-filled {
   background: none;
   border-radius: 2svh !important;
   padding: 1rem 1.5rem;
   color: rgba(255, 255, 255, 0.85) !important;
+  cursor: pointer;
   border: 0.22svh solid #7BB4DB !important;
   font-weight: 400;
   background: #1F2687 !important;
