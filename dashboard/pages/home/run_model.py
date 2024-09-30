@@ -10,7 +10,7 @@ import numpy as np
 import klib
 
 from machine_learning.ml_utils import DataHandler
-from machine_learning.model_builder import model_creation
+from machine_learning.model_builder import base_model_creation
 
 from dashboard.pages.home.graph_layout import GraphLayout
 from dashboard.pages.home.graphs import (
@@ -107,7 +107,7 @@ class DevRunModel:
         max_trades = int(model_configs["max_trades"])
         off_days = int(model_configs["off_days"])
 
-        result, _, _, _ = model_creation(
+        result, _, _, _ = base_model_creation(
             feat_params,
             hyperparams,
             test_index,
