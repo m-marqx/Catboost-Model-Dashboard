@@ -165,33 +165,32 @@
 }
 
 .btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 3.5vh;
+  width: 8svw;
   position: relative;
-  padding: 1rem 1.5rem;
   border: none;
   background: #7BB4DB;
-  color: #1F2687 !important;
+  color: #1F2687;
   font-weight: 600;
   border-radius: 1vh;
   box-shadow: none;
   transition: background 0.15s ease-in-out, border 0.15s ease-in-out,
     box-shadow 0.15s ease-in-out, color 0.15s ease-in-out;
-}
-
-.btn.btn-primary:active {
-  position: relative;
-  color: rgba(31, 38, 17, 0.85);
-  padding: 1rem 1.5rem;
-  border: none;
-  border-radius: 1svh;
-  background: #c9e75d;
-  box-shadow: none !important;
-  transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
+  font-size: max(2.5svh, 2.5rem); /* 4k resolution */
+  @media (max-width: 2560px) {
+    font-size: max(1.5svh, 1.5rem); /* 2.5k resolution */
+  }
+  @media (max-width: 1920px) {
+    font-size: max(1.3svh, 1.3rem); /* FHD resolution */
+  }
 }
 
 .btn-primary:hover {
   position: relative;
-  color: #7BB4DB !important;
-  padding: 1rem 1.5rem;
+  color: #7BB4DB;
   border: none;
   border-radius: 1vh;
   background: #1F2687;
