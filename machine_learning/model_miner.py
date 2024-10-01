@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 from machine_learning.ml_utils import DataHandler
-from machine_learning.model_builder import model_creation
+from machine_learning.model_builder import mining_model_creation
 from machine_learning.model_creator import (
     adjust_predict_one_side,
 )
@@ -503,7 +503,7 @@ class ModelMiner:
         start: float = time.perf_counter()
 
         try:
-            mta, index_splits, all_y, _ = model_creation(
+            mta, index_splits, all_y, _ = mining_model_creation(
                 feat_parameters,
                 hyperparams,
                 test_index,

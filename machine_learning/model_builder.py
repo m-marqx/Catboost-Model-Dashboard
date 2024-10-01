@@ -265,7 +265,7 @@ def calculate_model(
 
     raise ValueError("Invalid output parameter")
 
-def model_creation(
+def mining_model_creation(
     feat_parameters: dict,
     hyperparams: dict,
     test_index: int,

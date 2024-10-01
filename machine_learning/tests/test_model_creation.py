@@ -4,7 +4,7 @@ import warnings
 import pandas as pd
 from pandas import Timestamp, Interval
 import numpy as np
-from machine_learning.model_builder import model_creation
+from machine_learning.model_builder import mining_model_creation
 from machine_learning.tests.test_assert_functions import assert_count_series
 
 
@@ -140,7 +140,7 @@ class TestModelCreationOPT(unittest.TestCase):
     with warnings.catch_warnings():
         warnings.simplefilter(action="ignore", category=RuntimeWarning)
 
-        mh2, index_splits, all_y, features_df = model_creation(
+        mh2, index_splits, all_y, features_df = mining_model_creation(
             feat_params,
             hyperparams,
             test_index,
@@ -160,7 +160,7 @@ class TestModelCreationOPT(unittest.TestCase):
         params["random_macd_diff_method"] = "absolute"
 
         with self.assertWarns(UserWarning):
-            model_creation(
+            mining_model_creation(
                 params,
                 self.hyperparams,
                 self.test_index,
@@ -180,7 +180,7 @@ class TestModelCreationOPT(unittest.TestCase):
         params["random_macd_column"] = "macd"
 
         with self.assertWarns(UserWarning):
-            model_creation(
+            mining_model_creation(
                 params,
                 self.hyperparams,
                 self.test_index,
@@ -1320,7 +1320,7 @@ class TestModelCreationNormal(unittest.TestCase):
     with warnings.catch_warnings():
         warnings.simplefilter(action="ignore", category=RuntimeWarning)
 
-        mh2, index_splits, all_y, features_df = model_creation(
+        mh2, index_splits, all_y, features_df = mining_model_creation(
             feat_params,
             hyperparams,
             test_index,
