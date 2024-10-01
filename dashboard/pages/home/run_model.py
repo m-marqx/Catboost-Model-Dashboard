@@ -97,7 +97,11 @@ class DevRunModel:
         model_df = klib.convert_datatypes(model_df)
         model_df["Target_bin"] = model_df["Target_bin"].replace({0: -1})
 
-        hyperparams = model_configs["hyperparameters"][0]
+        if isinstance(model_configs["hyperparameters"], list):
+            hyperparams = model_configs["hyperparameters"][0]
+        else:
+            hyperparams = model_configs["hyperparameters"]
+
         hyperparams["iterations"] = 1000
 
         feat_params = literal_eval(model_configs["feat_parameters"])[0]
